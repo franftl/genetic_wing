@@ -1,0 +1,65 @@
+{
+  "generation": 6,
+  "score": 2.592398221249445,
+  "objetivo_usado": "evaluar_mision",
+  "_datos_de_entrada_no_optimizados": {
+    "semi_envergadura_m": 1.1,
+    "cg_frac_mac": 0.25,
+    "masa_total_kg": 3.0
+  },
+  "flecha_deg": 20.673173873860677,
+  "cuerdas_mm": {
+    "root_chord": 420.0,
+    "chord_1": 370.0,
+    "chord_2": 310.0,
+    "chord_3": 250.0,
+    "chord_4": 217.97718378438745,
+    "chord_5": 130.0
+  },
+  "le_offsets_frac_halfspan": {
+    "le_offset_1": 0.005,
+    "le_offset_2": 0.011501919743518288,
+    "le_offset_3": 0.011501919743518288,
+    "le_offset_4": 0.038268481242032956,
+    "le_offset_5": 0.05
+  },
+  "le_offsets_mm": {
+    "le_offset_1": 5.5,
+    "le_offset_2": 12.652111717870117,
+    "le_offset_3": 12.652111717870117,
+    "le_offset_4": 42.09532936623626,
+    "le_offset_5": 55.00000000000001
+  },
+  "torsiones_deg": {
+    "twist_0": 2.0,
+    "twist_1": 0.5,
+    "twist_2": -0.5,
+    "twist_3": -1.5,
+    "twist_4": -2.1233174582868424,
+    "twist_5": -3.1554490585781716
+  },
+  "elevacion_diedro_mm": {
+    "elev_1": 4.4,
+    "elev_2": 11.0,
+    "elev_3": 15.158713044279576,
+    "elev_4": 16.867463862717827,
+    "elev_5": 71.96078003296371
+  },
+  "diedro_equivalente_deg": 3.742893030412096,
+  "perfiles": {
+    "raiz": "mh80",
+    "medio": "mh80",
+    "punta": "naca2412",
+    "posicion_del_medio_frac_semienvergadura": 0.5084936126605901,
+    "_nota": "perfiles REALES de la base UIUC; las secciones intermedias son mezclas lineales"
+  },
+  "winglet": {
+    "presente": true,
+    "largo_desarrollado_mm": 120.0,
+    "cant_deg": 25.0,
+    "taper": 0.5500622971803332,
+    "flecha_deg": 28.0,
+    "radio_transicion_frac_largo": 0.41562206502178994,
+    "radio_transicion_mm": 49.87464780261479
+  }
+}

@@ -1,0 +1,21 @@
+# Entorno virtual de Python -- NO se comparte, se recrea con:
+#   python -m venv .venv
+#   pip install -r requirements.txt
+# Es la causa principal de que subir la carpeta tarde horas: son miles de
+# archivos chicos de paquetes instalados, no código del proyecto.
+.venv/
+venv/
+env/
+
+# Cache de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Checkpoints de Jupyter
+.ipynb_checkpoints/
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini

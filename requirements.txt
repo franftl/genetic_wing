@@ -1,0 +1,11 @@
+# UAV FP -- optimizacion_ala
+# Instalar con:  pip install -r requirements.txt
+# (dentro de un entorno virtual -- ver INSTRUCCIONES_VSCODE.md)
+
+aerosandbox>=4.2
+pandas>=2.0
+matplotlib>=3.8
+plotly>=5.0        # visualizacion 3D interactiva (secciones 7 y 8 del notebook)
+numpy>=1.26
+jupyter>=1.0
+ipykernel>=6.29

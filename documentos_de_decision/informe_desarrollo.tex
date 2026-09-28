@@ -1,0 +1,417 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, citecolor=blue!50!black, urlcolor=blue!40!black}
+
+\definecolor{codebg}{RGB}{245,245,245}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  framesep=3pt,
+  columns=fullflexible,
+  showstringspaces=false,
+}
+
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Optimización de UAV -- estado del desarrollo}
+\lhead{Proyecto Final ITBA}
+\cfoot{\thepage}
+
+\title{\textbf{Arquitectura y estado del desarrollo}\\[2mm]
+\Large Optimización multi-topología de un UAV de ala fija por algoritmo genético}
+\author{Felipe -- Proyecto Final de Ingeniería Mecánica, ITBA}
+\date{18 de septiembre de 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Este informe documenta el estado del paquete \texttt{optimizacion\_avion}: qué hace cada módulo, cómo se traducen los requisitos de vuelo y estabilidad en restricciones y términos de puntaje, por qué se tomaron las decisiones de diseño de la parametrización (winglets, volumen mínimo de fuselaje, misión de tres puntos de vuelo), dónde se cambia cada parámetro, y los resultados de la última corrida de la competencia entre cinco topologías (18 de septiembre de 2026), con las curvas de convergencia del algoritmo genético para cada una.
+\end{abstract}
+
+\tableofcontents
+
+% ======================================================================
+\section{La misión de diseño}
+% ======================================================================
+
+El problema es optimizar un UAV de ala fija con motor eléctrico, capaz de:
+
+\begin{itemize}[nosep]
+  \item volar en \textbf{crucero de diseño a 80~km/h} (22.2~m/s) con 3.0~kg de carga útil -- éste es el punto donde se optimizan eficiencia aerodinámica, estabilidad estática y margen de ráfaga;
+  \item alcanzar una \textbf{velocidad máxima de 120~km/h} (33.3~m/s), como requisito de reserva frente a viento y ráfagas -- entra como restricción dura y como término adicional de puntaje, pero \emph{ya no es el punto de diseño};
+  \item volar \textbf{lento, a 10~m/s}, para reconocimiento, despegue y aterrizaje, con margen del 20\% sobre la velocidad de pérdida.
+\end{itemize}
+
+Estos tres puntos de vuelo compiten entre sí: crucero eficiente pide ala chica y perfiles de poco camber, vuelo lento pide ala grande y perfiles de alta sustentación (o flaps), y velocidad máxima pide baja resistencia de perfil a bajo $C_L$. La Sección~\ref{sec:mision} explica en detalle cómo se codifica esa tensión.
+
+La misión bajó de crucero a 120~km/h a 80~km/h el 18/09/2026 tras un análisis de alcance con batería (Research Note 15): pedir 300~km de autonomía volando a 120~km/h exige cerca de 8.6~kg de batería sobre un avión de $\sim$7~kg en seco, porque el alcance eléctrico $R = E\eta/D$ se maximiza a resistencia mínima, que para este avión cae cerca de 70--80~km/h y no a 120. El requisito de 120~km/h no se eliminó: se reclasificó como velocidad máxima, ver Sección~\ref{sec:decisiones}.
+
+% ======================================================================
+\section{Arquitectura del software}
+% ======================================================================
+
+El paquete \texttt{optimizacion\_avion} es la evolución de \texttt{optimizacion\_ala} (que optimiza un ala volante única). Comparte con aquel el método -- algoritmo genético con operadores BLX-$\alpha$ -- y las constantes de material, pero no la geometría: acá compiten cinco \emph{topologías} completas (ala + fuselaje + cola), cada una con su propio espacio de parámetros.
+
+\subsection{Mapa de módulos}
+
+\begin{longtable}{@{}p{3.4cm}p{11.6cm}@{}}
+\toprule
+\textbf{Módulo} & \textbf{Responsabilidad} \\
+\midrule
+\endhead
+\code{perfiles_avion.py} & Catálogo de 19 perfiles aerodinámicos (índices 0--11 = catálogo del ala volante, sin reordenar; 12--18 = perfiles nuevos de alta sustentación). Carga y mezcla perfiles reales de la base UIUC vía AeroSandbox, y modela el flap deflectando el contorno del perfil (no por tabla). \\
+\addlinespace
+\code{geometria_avion.py} & Define las 5 topologías (\code{TOPOLOGIAS}), sus \code{BOUNDS} de diseño, construye la geometría 3D (\code{construir_avion}) como un \code{asb.Airplane}: ala de 5 estaciones con winglets, fuselaje con morro/boat-tail de forma libre, colas (convencional, T, V, doble boom). Calcula diagnósticos: volumen de cola, geometría del flap. \\
+\addlinespace
+\code{estructura_avion.py} & Modelo de masa: larguero del ala dimensionado por flexión \emph{y} rigidez sobre la distribución real de cuerdas, piel, winglets, mecanismo de flap, cola, fuselaje, vigas de boom. Resuelve por punto fijo la circularidad masa$\leftrightarrow$carga (\code{converger_masa_avion}). \\
+\addlinespace
+\code{mision_avion.py} & El corazón del problema de optimización: evalúa los tres puntos de vuelo, las restricciones duras (estructura, volumen de fuselaje, vuelo a $V_\text{max}$, vuelo lento, estabilidad, ráfaga) y arma el puntaje escalar que ve el GA (\code{evaluar_mision_avion}). \\
+\addlinespace
+\code{ga_numerico_avion.py} & Operadores genéticos: cruza BLX-$\alpha$ entre dos padres, mutación gaussiana, individuos \emph{wildcard} (muestreo uniforme). Genera la lista de hijos de una generación. \\
+\addlinespace
+\code{evolucion_avion.py} & Bucle evolutivo de \emph{una} topología: mantiene el estado (2 padres elite, generación, racha sin mejora), corre generaciones, guarda/carga checkpoints, decide cuándo parar. \\
+\addlinespace
+\code{competencia.py} & Orquesta la competencia entre las 5 topologías: corre cada una con su propia subpoblación (nunca se cruzan entre sí, ver Sección~\ref{sec:ga}), y compara los puntajes finales. Contiene las semillas (\code{SEEDS_POR_TOPOLOGIA}, cargadas de \code{semillas.json}). \\
+\addlinespace
+\code{gen_semillas.py} & Script standalone que \emph{genera} \code{semillas.json}: define una base de diseño razonable a mano por topología y afina numéricamente por bisección el CG (margen estático objetivo) y la incidencia de cola (trim). Se corre una sola vez por revisión de misión/geometría, no en cada optimización. \\
+\addlinespace
+\code{__init__.py} & Re-exporta la API pública del paquete; es lo único que el notebook necesita importar. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Flujo de datos}
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}c@{}}
+\code{semillas.json} $\rightarrow$ \code{competencia.SEEDS_POR_TOPOLOGIA}\\[2pt]
+$\downarrow$\\[2pt]
+\code{competencia.correr_competencia()} -- una vez por topología\\[2pt]
+$\downarrow$\\[2pt]
+\code{evolucion_avion.correr_evolucion_completa_avion()} -- bucle de generaciones\\[2pt]
+$\downarrow \quad\quad \uparrow$\\[2pt]
+\code{ga_numerico_avion.generar_hijos_avion()} $\quad$ \code{mision_avion.evaluar_mision_avion()}\\[2pt]
+(propone geometrías) $\quad\quad\quad\quad\quad$ (las puntúa)\\[2pt]
+$\quad\quad\quad\quad\quad\quad\quad\downarrow$\\[2pt]
+\code{geometria_avion.construir_avion()} $\to$ \code{estructura_avion.converger_masa_avion()} $\to$ AeroSandbox
+\end{tabular}
+\end{center}
+
+\begin{sloppypar}
+Un candidato es un diccionario de parámetros (\code{params}) más la topología a la que pertenece (\code{CandidateAvion}). \code{construir_avion(params, topologia)} arma el \code{asb.Airplane}; \code{converger_masa_avion} itera masa estructural $\to$ peso $\to$ sustentación requerida $\to$ carga estructural $\to$ masa estructural hasta converger (circularidad clásica de diseño preliminar); y \code{analizar_mision_avion} corre AeroSandbox (\code{AeroBuildup}) en los tres puntos de vuelo y arma el diccionario de resultados que consume tanto el puntaje como el reporte impreso (\code{desglose_mision_avion}).
+\end{sloppypar}
+
+% ======================================================================
+\section{De los requisitos de vuelo a las restricciones del código}
+\label{sec:mision}
+% ======================================================================
+
+Esta sección es la traducción explícita que se pidió: qué pide la misión en palabras, y qué línea de \code{mision_avion.py} lo hace cumplir.
+
+\subsection{Los tres puntos de vuelo}
+
+\begin{longtable}{@{}p{3.6cm}p{3.4cm}p{7.9cm}@{}}
+\toprule
+\textbf{Requisito} & \textbf{Constante} & \textbf{Cómo se aplica} \\
+\midrule
+\endhead
+Crucero de diseño, 80 km/h & \code{V_CRUCERO = 80/3.6} & Punto donde se calculan $C_L$, $C_D$, $L/D$, derivadas de estabilidad ($C_{m_\alpha}$, margen estático), trim ($C_{m,\text{crucero}}$) y respuesta a ráfaga. Domina el puntaje vía \code{PESO_EFICIENCIA=1.0} sobre $f_\text{ef} = D_\text{REFERENCIA}/D_\text{crucero}$. \\
+\addlinespace
+Velocidad máxima, 120 km/h & \code{V_MAX = 120/3.6} & Restricción dura: si $C_L$ requerido en $V_\text{max}$ $\geq$ $C_{L,\max}$ a ese Reynolds, el candidato se descarta (no se sostiene). Además puntúa con \code{PESO_VELMAX=0.5} sobre $f_\text{vm} = D_\text{REFERENCIA\_VMAX}/D_\text{vmax}$ -- la mitad del peso del crucero, porque es un requisito de reserva, no el régimen habitual de vuelo. \\
+\addlinespace
+Vuelo lento, 10 m/s & \code{V_LENTO = 10.0} & Restricción dura: la velocidad de pérdida con flap desplegado tiene que ser $< V_\text{LENTO}$. Puntúa el margen \emph{sobre} el objetivo (no solo el paso/no-paso) con \code{PESO_LENTO=1.0} vía \code{margen_lento = (V_LENTO - v_stall)/(V_LENTO - V_STALL_OBJETIVO)}, para que el optimizador no se quede pegado al borde de la restricción. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Restricciones duras (descartan el candidato, no puntúan)}
+
+\begin{itemize}[nosep]
+  \item \textbf{Estructura que no cierra}: \code{converger_masa_avion} no converge o da masa $> 60$~kg $\Rightarrow$ \code{None}.
+  \item \textbf{Volumen de fuselaje insuficiente}: $\eta_\text{vol} \cdot V_\text{geométrico} < V_\text{requerido}$ (ver Sección~\ref{sec:decisiones}).
+  \item \textbf{No se sostiene a 120~km/h}, o no puede volar a 10~m/s ni con flap desplegado.
+  \item \textbf{Margen estático negativo} ($SM = -\,dC_m/dC_L \leq 0$): el avión sería inestable en cabeceo.
+  \item \textbf{$C_{n_\beta} \leq 0$ o $C_{l_\beta} \geq 0$}: inestabilidad direccional o lateral.
+  \item \textbf{Entra en pérdida con la ráfaga de diseño} (3.0~m/s vertical) en crucero.
+\end{itemize}
+
+\subsection{Puntaje (término suave, pondera candidatos válidos entre sí)}
+
+\begin{equation}
+\text{score} = \sum_i w_i \, f_i, \qquad f_i \in [0, \sim 1]
+\end{equation}
+
+\begin{longtable}{@{}p{4.6cm}p{2cm}p{8.7cm}@{}}
+\toprule
+\textbf{Término} & \textbf{Peso} & \textbf{Definición} \\
+\midrule
+\endhead
+Eficiencia en crucero & 1.0 & $f_\text{ef} = D_\text{REF}/D_\text{crucero}$ \\
+Masa total & 0.3 & $f_\text{ma} = M_\text{REF}/M_\text{total}$ \\
+Estabilidad (margen estático) & 1.5 & meseta suave dentro de la banda $[SM_\text{min}, SM_\text{max}]$ por topología \\
+Ráfaga (suavidad) & 0.4 & meseta sobre el factor de carga incremental $\Delta n$ \\
+Margen de pérdida & 0.4 & $\min(1, \text{margen}/0.20)$ \\
+Equilibrio en crucero (trim) & 0.3 & $\exp(-(C_{m,\text{crucero}}/0.02)^2)$ \\
+Direccional ($C_{n_\beta}$) & 0.3 & $\min(1, C_{n_\beta}/0.0015)$ \\
+Lateral ($C_{l_\beta}$) & 0.3 & $\min(1, -C_{l_\beta}/0.0015)$ \\
+Vuelo lento & 1.0 & margen sobre el objetivo de velocidad de pérdida \\
+Velocidad máxima & 0.5 & $f_\text{vm} = D_\text{REF\_VMAX}/D_\text{vmax}$ \\
+\bottomrule
+\end{longtable}
+
+Los pesos de estabilidad (1.5) y vuelo lento (1.0) son los más altos a propósito: son requisitos de misión y de seguridad, no preferencias de eficiencia -- si el optimizador pudiera ``vender'' estabilidad por un poco más de $L/D$, el diseño resultante no sería volable.
+
+% ======================================================================
+\section{Variables de diseño y dónde cambiarlas}
+\label{sec:donde-cambiar}
+% ======================================================================
+
+\subsection{Tabla de referencia rápida}
+
+\begingroup\small
+\begin{longtable}{@{}p{4.6cm}p{3.0cm}p{6.9cm}@{}}
+\toprule
+\textbf{Quiero cambiar...} & \textbf{Archivo} & \textbf{Dónde} \\
+\midrule
+\endhead
+Velocidad de crucero, máxima o de vuelo lento & \code{mision_avion.py} & \code{V_CRUCERO}, \code{V_MAX}, \code{V_LENTO} \\
+Pesos del puntaje & \code{mision_avion.py} & bloque \code{PESO_*} \\
+Volumen mínimo de fuselaje / factor de empaquetado & \code{mision_avion.py} & \code{VOLUMEN_UTIL_MIN_L}, \code{FACTOR_UTILIZACION_VOLUMEN} \\
+Carga útil, masa de sistemas & \texttt{optimizacion\_ala/\linebreak[1]estructura.py} & \code{MASA_PAYLOAD}, \code{MASA_SISTEMAS} (reutilizadas tal cual) \\
+Rango de envergadura, cuerdas, torsión, diedro & \code{geometria_avion.py} & \code{BOUNDS_ALA} \\
+Rango de winglets & \code{geometria_avion.py} & \code{BOUNDS_ALA["winglet_height"]} y afines \\
+Rango de flaps & \code{geometria_avion.py} & \code{BOUNDS_FLAP} \\
+Rango de fuselaje (largo, diámetro, morro, boat-tail) & \code{geometria_avion.py} & \code{BOUNDS_FUSELAJE} (y overrides por topología en \code{BOUNDS_DOBLE_BOOM}/\code{BOUNDS_POD_BOOM}) \\
+Rango de cola (span, cuerda, flecha, incidencia) & \code{geometria_avion.py} & \code{_BOUNDS_COLA_HV}, \code{BOUNDS_V_TAIL}, \code{BOUNDS_DOBLE_BOOM} \\
+Banda de margen estático aceptable & \code{geometria_avion.py} & \code{TOPOLOGIAS[topologia]["sm_band"]} \\
+Agregar/quitar una topología & \code{geometria_avion.py} & diccionario \code{TOPOLOGIAS} + constructor de cola si hace falta \\
+Catálogo de perfiles & \code{perfiles_avion.py} & \code{CATALOGO_AVION} (agregar SOLO al final, nunca reordenar) \\
+Modelo de masa estructural & \code{estructura_avion.py} & \code{RHO_LARGUERO}, \code{SIGMA_ADM}, \code{MASA_AREAL_PIEL}, etc. (heredadas de \code{optimizacion_ala.estructura}) \\
+Densidad lineal de vigas de boom & \code{estructura_avion.py} & \code{MASA_LINEAL_BOOM} \\
+Penalización de masa de cola en T & \code{estructura_avion.py} & \code{FACTOR_MASA_T} \\
+Semillas de partida (dos por topología) & \code{gen_semillas.py} & diccionarios \code{BASE}/\code{BASE_B} y \code{EXTRA}/\code{EXTRA_B}; correr el script después para regenerar \code{semillas.json} \\
+Parámetros del GA (tamaño de camada, paciencia, generaciones) & \code{competencia.py} / llamada a \code{correr_competencia} & argumentos \code{n_crossbred}, \code{n_wildcard}, \code{paciencia}, \code{max_generaciones} \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\textbf{Importante}: cualquier cambio en \code{BOUNDS_*} o en la misión (velocidades, restricción de volumen) puede volver inválidas las semillas actuales. El procedimiento correcto es correr \code{python -m optimizacion_avion.gen_semillas} para regenerar \code{semillas.json} \emph{antes} de lanzar una competencia nueva -- así se hizo el 18/09/2026 al bajar el crucero a 80~km/h y agregar la restricción de volumen (Sección~\ref{sec:decisiones}).
+
+% ======================================================================
+\section{El algoritmo genético}
+\label{sec:ga}
+% ======================================================================
+
+\subsection{Operadores (\texttt{ga\_numerico\_avion.py})}
+
+Cada generación produce hijos de dos tipos, a partir de los 2 padres elite actuales:
+
+\begin{itemize}[nosep]
+  \item \textbf{Cruza BLX-$\alpha$} ($n=7$ por defecto): para cada parámetro, se muestrea uniformemente en $[\min(v_1,v_2) - \alpha\,d,\ \max(v_1,v_2) + \alpha\,d]$ con $d = |v_1-v_2|$ y $\alpha=0.5$ -- permite explorar más allá del segmento entre los dos padres, no solo interpolar. Después se aplica mutación gaussiana con probabilidad 0.3 y $\sigma = 0.08\,(hi-lo)$.
+  \item \textbf{Wildcards} ($n=3$ por defecto): muestreo uniforme independiente dentro de los \code{BOUNDS}, sin relación con los padres -- inyectan diversidad y evitan que la población colapse prematuramente a un óptimo local.
+\end{itemize}
+
+\subsection{Selección y estado (\texttt{evolucion\_avion.py})}
+
+Estrategia $(\mu{+}\lambda)$ con $\mu=2$: los 2 padres y los $n_\text{crossbred}+n_\text{wildcard}$ hijos compiten juntos, sobreviven los 2 mejores por puntaje. El criterio de parada (\code{deberia_parar}, reutilizado de \code{optimizacion_ala.evolucion}) corta si no hay mejora del mejor puntaje durante \code{paciencia} generaciones consecutivas, o al llegar a \code{max_generaciones}.
+
+\subsection{Por qué subpoblaciones separadas por topología}
+
+El puntaje de \code{evaluar_mision_avion} \emph{sí} es comparable entre topologías (mismos nueve/diez términos, mismos pesos, misma misión), así que competir por el mejor puntaje final es válido. Lo que \emph{no} es válido es cruzar por BLX-$\alpha$ un padre de cola en V con uno de doble boom: sus vectores de parámetros no tienen ni la misma forma (uno tiene \code{v_tail_span}, el otro \code{boom_largo}), así que ``mezclarlos'' no daría un diseño coherente de ninguna de las dos familias. \code{competencia.py} corre cada topología de punta a punta con su propia subpoblación, y compara los mejores puntajes finales al terminar -- es una comparación de ``quién llega más alto'', no un cruzamiento entre familias.
+
+% ======================================================================
+\section{Decisiones de diseño y su fundamento}
+\label{sec:decisiones}
+% ======================================================================
+
+\subsection{Por qué estas cinco topologías (y no canard ni box-wing)}
+
+McGeer \& Kroo~\cite{mcgeer1983} muestran que, a envergadura dada y con las restricciones de trimado y estabilidad impuestas, la configuración convencional con cola trasera está muy cerca del óptimo teórico, y ni el canard ni el tándem la superan salvo en casos marginales. Es decir: no corresponde esperar que una topología exótica gane por una diferencia enorme -- lo que separa a los candidatos es resistencia parásita, peso estructural y $C_{L,\max}$, y por eso la competencia entre topologías \emph{convencionales} (con distintas variantes de cola y fuselaje) sigue siendo la comparación más informativa.
+
+No se incluyeron canard ni box-wing/joined-wing: el canard limita el $C_{L,\max}$ utilizable del ala principal, que es justamente el recurso más escaso con el requisito de vuelo a 10~m/s; y el box-wing necesita una separación vertical $h/b \sim 0.2$ (aquí, $\sim$0.5~m) para que aparezca el beneficio inducido de Prandtl, que a la escala de 7~kg de construcción artesanal se pierde frente a la resistencia parásita y la interferencia estructural de las uniones.
+
+\subsection{Winglets: por qué el optimizador los descartaba, y qué se hizo}
+
+Con la parametrización anterior (winglets fijos en cero) y la misión anterior (crucero de diseño a 120~km/h), el GA eliminaba sistemáticamente los winglets. El motivo es físico, no un error:
+
+\begin{itemize}[nosep]
+  \item El arrastre inducido escala con $C_L^2$; a $C_L \approx 0.11$ (crucero a 120~km/h) el inducido es apenas $\sim$3\% del arrastre total, mientras que a $C_L\approx 1.2$ (vuelo lento) llega al 73\%. Un winglet ataca específicamente el inducido, así que su beneficio depende fuertemente del punto de vuelo.
+  \item Maughmer~\cite{maughmer2003} formaliza la velocidad de cruce $V_{CR}$: por debajo de ella el ahorro de inducido supera la penalización de perfil del winglet, por encima ocurre lo contrario. Calculado numéricamente para este avión, $V_{CR}\approx 18.6$~m/s ($C_L\approx0.35$) -- muy por debajo del crucero anterior de 33.3~m/s.
+  \item Scholz~\cite{scholz2018} mide que los winglets reales entregan en promedio solo $\sim$36\% del beneficio que daría una extensión de envergadura equivalente en momento flector de raíz; como acá la envergadura ya es libre, el optimizador tiene una palanca más barata para el mismo objetivo.
+  \item Hepperle~\cite{hepperle} señala que el winglet paga más cuando reemplaza una deriva vertical inexistente (ala volante); las topologías de este proyecto ya tienen cola vertical, así que el winglet no compra estabilidad direccional adicional.
+  \item A los Reynolds de esta escala (2--7$\times10^5$) el winglet se degrada por separación laminar: Weierman~\cite{weierman2010} mide que la resistencia de perfil aproximadamente se duplica al partir el Reynolds a la mitad, y Nikolaou et al.~\cite{nikolaou2025} miden experimentalmente en un mini-UAV un winglet con $+4.48\%$ de $C_{L,\max}$ pero también $+1.29\%$ de $C_{D,\min}$.
+\end{itemize}
+
+\textbf{Decisión}: no forzar geometría de winglet. Se dejó \code{winglet_height} como variable libre en $[0, 0.25]$~m (ya lo era) y se recalculó el trade-off bajando el crucero de diseño a 80~km/h, más cerca del cruce $V_{CR}$. El resultado de la corrida del 18/09 (Sección~\ref{sec:resultados}) confirma que el trade-off cambió: con la misión nueva, tres de las cinco topologías eligen winglets no triviales (hasta 0.20~m en doble boom), y dos los mantienen cerca de cero -- es el optimizador resolviendo el compromiso, no una regla impuesta.
+
+\subsection{Volumen mínimo de fuselaje}
+
+Con las semillas anteriores, 7 de 10 no entraban el volumen de carga útil (payload + batería + aviónica) a una utilización de empaquetado razonable. Se agregó como restricción geométrica dura, siguiendo la formulación estándar de optimización multidisciplinaria de Hajdik, Adler \& Martins~\cite{hajdik2023}:
+
+\begin{equation}
+g(x) = V_\text{requerido} - \eta_\text{vol} \cdot V_\text{geométrico}(x) \leq 0
+\end{equation}
+
+con $V_\text{requerido}=8.2$~L (anclado en 3.0~kg de payload a 0.5~kg/L, densidad de empaque declarada del UAV Penguin B~\cite{penguinb}, más $\sim$0.5~L de batería y 1.67~L de aviónica estimados) y $\eta_\text{vol}=0.55$ como supuesto de ingeniería declarado (no hay valor publicado para UAV de esta escala en Roskam~\cite{roskam}, Raymer o Torenbeek). $V_\text{geométrico}$ sale de \code{avion.fuselages[0].volume()}, siempre el fuselaje o góndola principal, nunca las vigas de cola. Ambas constantes están declaradas arriba de \code{mision_avion.py} para moverlas fácilmente en un análisis de sensibilidad.
+
+Consecuencia sobre el espacio de diseño: \code{doble_boom} y \code{pod_boom} tienen fuselaje/góndola corto por diseño (esa es la esencia de la topología), así que se amplió su cota superior de \code{fuselaje_diametro} de 0.24 a 0.32~m -- el volumen de un cuerpo de revolución crece con el cuadrado del radio, es la palanca más barata que tienen para no perder por empaquetamiento sin renunciar a la ventaja de arrastre de un fuselaje corto.
+
+\subsection{Modelo de flap sin tabla}
+
+El incremento de $C_{L,\max}$ por flap no se toma de tabla (Raymer/Roskam: plain $\sim$0.9) porque esas tablas están medidas a Reynolds de avión grande ($10^6$--$10^7$), y este UAV vuela lento a Re$\sim2\times10^5$. En su lugar se deflecta la geometría del perfil (\code{add_control_surface}) y se evalúa con NeuralFoil al Reynolds real del vuelo lento -- el mismo modelo aerodinámico que el resto del pipeline. Medido así, un flap plain del 25\% a 30$^\circ$ da $\Delta C_{L,\max}\sim0.43$--$0.58$, bastante por debajo del 0.9 de tabla, consistente cualitativamente con la degradación a bajo Reynolds reportada en ICAS 2010, paper 246~\cite{icas2010}. Limitación honesta: el método representa bien un flap \emph{plain} (sin ranura); un flap ranurado o Fowler tiene física adicional que una deflexión de contorno no captura.
+
+\subsection{Catálogo de perfiles de alta sustentación}
+
+Se agregaron 7 perfiles de alta sustentación (naca4412, naca6412, sd7062, fx63137, e423, s1210, s1223) al final del catálogo existente, sin reordenar los 12 originales (reordenar cambiaría el significado de índices ya usados). El s1223, el de mayor $C_{L,\max}$ del catálogo, está caracterizado específicamente para bajo Reynolds por Guglielmo \& Selig~\cite{guglielmo1997}.
+
+% ======================================================================
+\section{Resultados de la corrida del 18 de septiembre de 2026}
+\label{sec:resultados}
+% ======================================================================
+
+Corrida completa de las 5 topologías bajo la misión de tres puntos de vuelo (crucero 80~km/h, máxima 120~km/h, lento 10~m/s) y la restricción de volumen de fuselaje, con \code{paciencia=8}, \code{max_generaciones=35}. Tiempo total: 1030~s.
+
+\subsection{Tabla comparativa}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Topología & Score & Gen. & $L/D$ crucero & $D$ crucero [N] & Masa [kg] & $b$ [m] & winglet [m] \\
+\midrule
+\textbf{Cola en V} & \textbf{5.267} & 35 & 16.77 & 4.32 & 7.41 & 2.89 & 0.003 \\
+Pod-boom (motovelero) & 5.182 & 35 & 16.53 & 4.28 & 7.30 & 3.03 & 0.009 \\
+Convencional & 4.989 & 35 & 15.83 & 5.15 & 7.53 & 2.92 & 0.040 \\
+Cola en T & 4.927 & 14 & 15.79 & 4.51 & 7.62 & 3.00 & 0.153 \\
+Doble boom & 4.416 & 10 & 13.11 & 6.13 & 7.86 & 3.38 & 0.203 \\
+\bottomrule
+\end{tabular}
+\caption{Resultado final de la competencia. ``Gen.'' es la generación en la que se detuvo (por paciencia agotada o por llegar al máximo de 35). El winglet de doble boom está cerca del límite superior del bound (0.25~m).}
+\end{table}
+
+\textbf{Gana la topología cola en V}, con el mejor $L/D$ de crucero (16.77) y el mejor margen estático (17.8\%, dentro de la banda 10--20\%). Le sigue de cerca el motovelero pod-boom (5.18), con masa total menor (7.30~kg) -- son las dos configuraciones que McGeer \& Kroo~\cite{mcgeer1983} predecirían cerca del óptimo, sin ganador aplastante. Doble boom queda última: su fuselaje corto, ahora obligado a ensancharse para cumplir el volumen mínimo, paga en resistencia parásita ($D$ crucero 6.13~N, la peor de las cinco) más de lo que gana en brazo de cola.
+
+Cola en T y doble boom pararon antes de las 35 generaciones por \emph{paciencia agotada} (8 generaciones sin mejora): no es que hayan corrido menos, es que convergieron antes a su óptimo local dentro de esa subpoblación.
+
+\subsection{Winglets: el resultado que motivó el replanteo de la misión}
+
+Con el crucero de diseño ya en 80~km/h ($C_L\approx0.25$--0.26, más cerca del cruce $V_{CR}\approx0.35$ calculado en la Sección~\ref{sec:decisiones}), el resultado por topología es heterogéneo -- ninguna regla impuesta, es el trade-off real resuelto caso por caso:
+
+\begin{itemize}[nosep]
+  \item \textbf{Doble boom (0.203~m) y cola en T (0.153~m)}: winglet sustancial, cerca o dentro del tercio superior del rango permitido.
+  \item \textbf{Convencional (0.040~m)}: winglet chico pero no nulo.
+  \item \textbf{Cola en V (0.003~m) y pod-boom (0.009~m)}: winglet efectivamente nulo (por debajo de \code{WINGLET_MIN_H}, se considera que no hay winglet).
+\end{itemize}
+
+Es un resultado plausible: las topologías que ganan más -- V y pod-boom -- ya tienen alta eficiencia por otras vías (menor masa, mejor forma en planta) y no necesitan el winglet; las que compiten peor en resistencia de perfil lo usan como recurso adicional.
+
+\subsection{Curvas de convergencia}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\textwidth]{convergencia_todas.pdf}
+\caption{Mejor puntaje acumulado por generación, las cinco topologías. El punto final marca dónde se detuvo cada una (por paciencia agotada o por llegar a 35 generaciones).}
+\label{fig:convergencia-todas}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\textwidth]{convergencia_v_tail_detalle.pdf}
+\caption{Detalle de la topología ganadora (cola en V): puntos grises = mejor hijo de cada generación (ruidoso, refleja la exploración de BLX-$\alpha$ + wildcards); línea verde = mejor puntaje acumulado entre los padres (estrategia $(\mu{+}\lambda)$, nunca decrece). La brecha entre ambas curvas es la señal de que la exploración sigue aportando diversidad incluso cerca de la convergencia.}
+\label{fig:convergencia-vtail}
+\end{figure}
+
+Las cinco curvas muestran el patrón esperado de un $(\mu{+}\lambda)$ elitista: progreso rápido en las primeras 5--10 generaciones (las semillas A/B, deliberadamente en extremos opuestos del compromiso ala grande/ala chica, dejan mucho margen de mejora por cruza), seguido de una meseta ruidosa con escalones ocasionales cuando un wildcard o una mutación grande encuentra una dirección nueva.
+
+\subsection{Geometría y estabilidad del ganador (cola en V)}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lrlr@{}}
+\toprule
+Masa total & 7.41 kg & Margen estático (SM) & 17.8\% (banda 10--20\%) \\
+Envergadura & 2.89 m & $C_{n_\beta}$ & 0.00193 /grado ($>0$) \\
+Superficie & 0.911 m$^2$ & $C_{l_\beta}$ & $-$0.00318 /grado ($<0$) \\
+Alargamiento (AR) & 9.16 & $V_H$ & 0.268 (ref. clase: 0.5--0.7) \\
+Carga alar & 79.8 N/m$^2$ & $V_V$ & 0.0253 (ref. clase: 0.02--0.05) \\
+$C_L$ crucero (80 km/h) & 0.264 & Velocidad de pérdida & 8.32 m/s (objetivo $\leq$8.33) \\
+$D$ a 120 km/h & 7.88 N & Volumen útil de fuselaje & 9.36 L ($\geq$8.2 L requeridos) \\
+\bottomrule
+\end{tabular}
+\caption{Resumen del candidato ganador, topología cola en V. $V_H$ queda por debajo del rango de referencia de Scholz~\cite{scholz2021} -- señal a revisar: puede indicar un horizontal (o el equivalente en V) algo chico para el brazo y la superficie que tiene, compensado en el margen estático por otra vía (posición del CG). No se impone como restricción porque el objetivo es que el optimizador dimensione la cola por sus consecuencias, no por una regla de manual, pero conviene señalarlo para revisión de diseño preliminar.}
+\end{table}
+
+% ======================================================================
+\section{Qué queda fuera del modelo actual}
+% ======================================================================
+
+\begin{itemize}[nosep]
+  \item \textbf{Torsión y flameo del ala}: el criterio de rigidez en flexión frena el alargamiento, pero un ala esbelta puede ser inviable por torsión mucho antes, y este modelo no lo ve. Importa más ahora que la envergadura es libre.
+  \item \textbf{Pandeo del recubrimiento.}
+  \item \textbf{Masa de vigas de boom declarada}, no dimensionada por flexión (densidad lineal fija, \code{MASA_LINEAL_BOOM}); el diámetro de la viga ya es variable de diseño pero no se usa todavía para dimensionar su espesor de pared.
+  \item \textbf{Potencia disponible real}: la restricción de $V_\text{max}$ es aerodinámica (¿el ala se sostiene?), no verifica que el motor/hélice elegido entregue la potencia que exige $D_\text{vmax}\cdot V_\text{max}$.
+  \item \textbf{Factor de utilización volumétrica (0.55)}: supuesto de ingeniería declarado, no medido; conviene validarlo con un CAD real del compartimiento de carga.
+\end{itemize}
+
+% ======================================================================
+\section{Conclusiones}
+% ======================================================================
+
+El paquete quedó estructurado en capas claras -- geometría, estructura, misión, GA, competencia -- con cada decisión de parametrización (envergadura libre, winglets, volumen de fuselaje, flap sin tabla, tres puntos de vuelo) trazable a una razón física o a una referencia bibliográfica, y con las constantes que definen la misión y las restricciones declaradas en un único lugar (\code{mision_avion.py}) para que sea fácil de auditar y de mover en un análisis de sensibilidad. La corrida del 18/09/2026 bajo la misión de tres puntos de vuelo da a la topología cola en V como ganadora, con un resultado de winglets heterogéneo por topología que confirma que la decisión de no forzarlos fue la correcta: el optimizador encuentra winglets donde ayudan y los descarta donde no, sin necesidad de una regla externa.
+
+% ======================================================================
+\begin{thebibliography}{99}
+
+\bibitem{mcgeer1983} McGeer, T., Kroo, I. (1983). ``A Fundamental Comparison of Canard and Conventional Configurations.'' \textit{Journal of Aircraft}, 20(11). \url{https://ntrs.nasa.gov/citations/19840028263}
+
+\bibitem{maughmer2003} Maughmer, M. D. (2003). ``The Design of Winglets for Low-Speed Aircraft.'' \textit{Technical Soaring} / AIAA.
+
+\bibitem{scholz2018} Scholz, D. (2018). ``On the Aerodynamic Efficiency of Winglets.'' DGLR.
+
+\bibitem{hepperle} Hepperle, M. (DLR). ``Aerodynamic Design of Winglets.'' \url{https://www.mh-aerotools.de/}
+
+\bibitem{weierman2010} Weierman, R. (2010). ``Winglet Design and Optimization for UAVs.'' MS Thesis, Wichita State University.
+
+\bibitem{nikolaou2025} Nikolaou, N. et al. (2025). Estudio experimental de winglets en un mini-UAV, Re$\approx3.86\times10^5$.
+
+\bibitem{hajdik2023} Hajdik, H., Adler, E., Martins, J. R. R. A. (2023). ``Physics-Based Aerostructural Optimization of Conventional and Strut-Braced Wing Aircraft.'' AIAA 2023-3589.
+
+\bibitem{penguinb} UAV Factory. Especificación pública del UAV Penguin B (densidad de empaque payload/volumen de bahía).
+
+\bibitem{roskam} Roskam, J. \textit{Airplane Design}, Parts I--VI.
+
+\bibitem{icas2010} ICAS 2010, paper 246: NACA 2412 con flap del 30\%c a Re 61k--260k.
+
+\bibitem{guglielmo1997} Guglielmo, J. J., Selig, M. S. (1997). ``High-Lift Low Reynolds Number Airfoil Design.'' \textit{Journal of Aircraft}, 34(1). \url{https://m-selig.ae.illinois.edu/pubs/GuglielmoSelig-1997-JofAC-S1223.pdf}
+
+\bibitem{scholz2021} Scholz, D. (2021). ``Tail Volume Coefficients.'' \textit{INCAS Bulletin}, 13(3). \url{https://www.fzt.haw-hamburg.de/pers/Scholz/Aero/AERO_PUB_INCAS_TailVolume_Vol13No3_2021.pdf}
+
+\bibitem{zahm1928} Zahm, A. F., Smith, R. H., Louden, F. A. (1928). NACA Report 291: fineness ratio óptimo de fuselaje.
+
+\end{thebibliography}
+
+\end{document}

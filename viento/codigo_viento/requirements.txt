@@ -1,0 +1,7 @@
+# Dependencias de codigo_viento (además de las de genetic_wing/requirements.txt)
+#   pip install -r requirements.txt
+aerosandbox>=4.2
+numpy>=1.26
+matplotlib>=3.8
+pyyaml>=6.0
+pytest>=7.0

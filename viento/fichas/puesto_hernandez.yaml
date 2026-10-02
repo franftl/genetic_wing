@@ -1,0 +1,186 @@
+# Ficha de viento — Puesto Hernández (N de Neuquén / S de Mendoza)
+# Generada por scripts/procesar_viento.py. No editar a mano: cambiar el script y regenerar.
+
+sitio: Puesto Hernández (N de Neuquén / S de Mendoza)
+descripcion_punto: Punto ~20 km al NO de Rincón de los Sauces, dentro del área de concesión Puesto Hernández (límite
+  Neuquén–Mendoza).
+ubicacion:
+  lat: -37.27
+  lon: -69.08
+  celda_era5:
+    lat: -37.25
+    lon: -69
+    resolucion_deg: 0.25
+  cota_terreno_m: 671
+fuente_principal:
+  dataset: ERA5 (ECMWF / Copernicus C3S), reanálisis horario
+  acceso: Open-Meteo Historical Weather API (models=era5)
+  periodo: 2016-01-01 a 2025-12-31
+  horas: 87672
+  horas_faltantes: 0
+  url_consulta: https://archive-api.open-meteo.com/v1/archive?latitude=-37.27&longitude=-69.08&start_date=2016-01-01&end_date=2025-12-31&hourly=wind_speed_10m,wind_speed_100m,wind_gusts_10m,wind_direction_10m,wind_direction_100m,temperature_2m,surface_pressure&wind_speed_unit=ms&models=era5&timezone=America%2FArgentina%2FBuenos_Aires
+unidades: m/s, m, grados (dirección DE DONDE viene el viento, meteorológica), kg/m3
+atmosfera:
+  densidad_superficie:
+    media: 1.132
+    p05: 1.071
+    p50: 1.132
+    p95: 1.192
+    min: 1.029
+    max: 1.284
+  densidad_a_120m_factor: 0.986
+  densidad_diseno_kg_m3: 1.056
+  nota: 'rho = p_sup/(R T_2m), aire seco. Para performance usar la baja (p05 x 0.986 a 120 m): el ala necesita más
+    CL.'
+  temperatura_C:
+    media: 15.68
+    p05: 2.2
+    p95: 31.1
+    min: -16
+    max: 42.3
+viento_crucero:
+  altura_m: 120
+  metodo: ERA5 a 100 m extrapolado a 120 m con el alfa horario (V120 = V100 * 1.2^alfa)
+  todas_las_horas:
+    media: 4.315
+    p50: 3.502
+    p75: 5.783
+    p90: 8.717
+    p95: 10.455
+    p99: 13.636
+    max: 23.286
+  horas_diurnas_08_19:
+    media: 4.227
+    p50: 3.338
+    p75: 5.511
+    p90: 8.767
+    p95: 10.86
+    p99: 14.425
+    max: 23.286
+  weibull:
+    k: 1.477
+    c_ms: 4.771
+    metodo: momentos
+  direcciones_predominantes:
+  - ENE (12%, media 4.8 m/s)
+  - E (10%, media 4.4 m/s)
+  - SO (9%, media 5.4 m/s)
+  mes_mas_ventoso: Dic
+  mes_mas_calmo: May
+  correccion_cola_recomendada:
+    factor: 1.1
+    aplica_a: percentiles >= p90 y extremos
+    justificacion: Validación ERA5 vs estación Neuquén Aero (WMO 87715), ~180 km al SE, en valle; ver documento
+      de trazabilidad.
+viento_superficie_10m:
+  media_p50_p90_p95_p99_max:
+  - 2.796
+  - 2.19
+  - 5.57
+  - 6.94
+  - 9.5
+  - 15.44
+  weibull:
+    k: 1.474
+    c_ms: 3.09
+  rafaga_10m:
+    media: 5.718
+    p50: 4.7
+    p90: 10.7
+    p95: 13
+    p99: 17.3
+    max: 28.7
+  rafaga_10m_diurna:
+    media: 6.801
+    p90: 12
+    p95: 14.5
+    p99: 18.9
+    max: 28.7
+  factor_de_rafaga_mediana: 1.891
+  nota: Ráfaga ERA5 = máxima ráfaga de 3 s de la hora anterior, a 10 m.
+gradiente_vertical:
+  ley: 'potencia: U(z) = U_ref * (z / z_ref)^alfa'
+  z_ref_m: 10
+  alfa_mediana: 0.13
+  alfa_p90: 0.282
+  alfa_mediodia_13_16h: 0.096
+  alfa_noche_00_06h: 0.246
+  nota: Calculado entre 10 y 100 m de ERA5, horas con V10 >= 3 m/s. De día el aire se mezcla (alfa ~0.10); de noche
+    es estable (alfa ~0.22-0.25).
+  ley_logaritmica_alternativa:
+    z0_m: 0.03
+    nota: 'estepa: terreno abierto con pasto/arbusto bajo (clasificación de Davenport)'
+turbulencia_continua:
+  modelo: Dryden, baja altura (h < 1000 ft) según MIL-F-8785C / MIL-HDBK-1797
+  W20_estimado_sitio_ms: 9.8
+  W20_estimado_sitio_kt: 19.0
+  categoria_del_sitio: entre ligera y moderada
+  como_se_estimo: p99 de V10 ERA5 x factor de cola 1.1, llevado a 20 ft con la ley de potencia
+  chequeo_capa_limite:
+    u_estrella_ms: 0.72
+    sigma_w_ms: 0.899
+    formula: u* = 0.4 U10 / ln(10/z0); sigma_w = 1.25 u*
+  diseno_recomendado: moderada (W20 = 30 kt = 15.4 m/s) para ambos sitios, como envolvente única
+  a_120m:
+    sigma_w_ms: 1.543
+    sigma_u_ms: 2.035
+    sigma_v_ms: 2.035
+    MIL_F_8785C:
+      Lu_m: 275.0
+      Lv_m: 275.0
+      Lw_m: 120.0
+    MIL_HDBK_1797:
+      Lu_m: 275.0
+      Lv_m: 137.5
+      Lw_m: 60.0
+  a_30m_despegue_aterrizaje:
+    sigma_w_ms: 1.543
+    sigma_u_ms: 2.653
+    sigma_v_ms: 2.653
+    MIL_F_8785C:
+      Lu_m: 152.5
+      Lv_m: 152.5
+      Lw_m: 30.0
+    MIL_HDBK_1797:
+      Lu_m: 152.5
+      Lv_m: 76.2
+      Lw_m: 15.0
+rafaga_discreta:
+  forma: '1 - coseno: w(x) = (U_ds/2) (1 - cos(pi x / H)), 0 <= x <= 2H'
+  U_ds_ms:
+    operacional_2sigma_moderada: 3.09
+    diseno_3sigma_moderada: 4.63
+    nominal_3sigma_ligera: 2.31
+    referencia_CS23_FAR23_a_VC: 15.24
+  H_m:
+    CS23_FAR23: 12.5 * cuerda media (longitud total 25 cuerdas)
+    barrido_sugerido:
+    - 12.5 c_media
+    - 120.0
+  alivio_de_rafaga: Kg = 0.88 mu / (5.3 + mu), mu = 2 (W/S) / (rho c_media CL_alpha g) (FAR 23.341)
+  nota: Los 15.24 m/s de CS-23 están pensados para aviones tripulados rápidos; en un UAV de ~17 m/s implican entrar
+    en pérdida, así que la carga queda limitada por CL_max. Ver documento de trazabilidad.
+extremos_en_tierra:
+  rafaga10_max_anual_era5:
+  - 23
+  - 28.7
+  - 25.4
+  - 24.3
+  - 26.3
+  - 26.3
+  - 23.6
+  - 28.3
+  - 22
+  - 22
+  rafaga10_retorno_10_anios_ms: 28.1
+  rafaga10_retorno_50_anios_ms: 31.3
+  nota: Gumbel por momentos sobre 10 máximos anuales. Sirve para anclaje/estiba del UAV en tierra, no para vuelo.
+    Con la corrección de cola, sumar ~10-25%.
+archivos_relacionados:
+  resumen_completo: datos/puesto_hernandez_era5_resumen.json
+  tablas:
+  - tablas/puesto_hernandez_mensual.csv
+  - tablas/puesto_hernandez_diurno.csv
+  - tablas/puesto_hernandez_rosa_120m.csv
+  - tablas/puesto_hernandez_excedencia.csv
+  figura: figuras/puesto_hernandez_panel.png

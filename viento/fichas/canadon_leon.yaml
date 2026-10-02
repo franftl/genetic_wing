@@ -1,0 +1,186 @@
+# Ficha de viento — Cañadón León (Santa Cruz)
+# Generada por scripts/procesar_viento.py. No editar a mano: cambiar el script y regenerar.
+
+sitio: Cañadón León (Santa Cruz)
+descripcion_punto: Punto representativo del yacimiento, junto a Cañadón Seco (NE de Santa Cruz, Cuenca del Golfo
+  San Jorge).
+ubicacion:
+  lat: -46.56
+  lon: -67.62
+  celda_era5:
+    lat: -46.5
+    lon: -67.5
+    resolucion_deg: 0.25
+  cota_terreno_m: 140
+fuente_principal:
+  dataset: ERA5 (ECMWF / Copernicus C3S), reanálisis horario
+  acceso: Open-Meteo Historical Weather API (models=era5)
+  periodo: 2016-01-01 a 2025-12-31
+  horas: 87672
+  horas_faltantes: 0
+  url_consulta: https://archive-api.open-meteo.com/v1/archive?latitude=-46.56&longitude=-67.62&start_date=2016-01-01&end_date=2025-12-31&hourly=wind_speed_10m,wind_speed_100m,wind_gusts_10m,wind_direction_10m,wind_direction_100m,temperature_2m,surface_pressure&wind_speed_unit=ms&models=era5&timezone=America%2FArgentina%2FBuenos_Aires
+unidades: m/s, m, grados (dirección DE DONDE viene el viento, meteorológica), kg/m3
+atmosfera:
+  densidad_superficie:
+    media: 1.21
+    p05: 1.156
+    p50: 1.209
+    p95: 1.269
+    min: 1.104
+    max: 1.325
+  densidad_a_120m_factor: 0.986
+  densidad_diseno_kg_m3: 1.14
+  nota: 'rho = p_sup/(R T_2m), aire seco. Para performance usar la baja (p05 x 0.986 a 120 m): el ala necesita más
+    CL.'
+  temperatura_C:
+    media: 12.774
+    p05: 2.3
+    p95: 24.2
+    min: -6.7
+    max: 36.5
+viento_crucero:
+  altura_m: 120
+  metodo: ERA5 a 100 m extrapolado a 120 m con el alfa horario (V120 = V100 * 1.2^alfa)
+  todas_las_horas:
+    media: 9.209
+    p50: 9.019
+    p75: 12.022
+    p90: 14.629
+    p95: 16.133
+    p99: 19.097
+    max: 30.33
+  horas_diurnas_08_19:
+    media: 8.905
+    p50: 8.586
+    p75: 11.624
+    p90: 14.577
+    p95: 16.297
+    p99: 19.629
+    max: 30.33
+  weibull:
+    k: 2.421
+    c_ms: 10.387
+    metodo: momentos
+  direcciones_predominantes:
+  - O (25%, media 11.7 m/s)
+  - ONO (15%, media 11.1 m/s)
+  - OSO (12%, media 9.6 m/s)
+  mes_mas_ventoso: Dic
+  mes_mas_calmo: May
+  correccion_cola_recomendada:
+    factor: 1.25
+    aplica_a: percentiles >= p90 y extremos
+    justificacion: Validación ERA5 vs estación Comodoro Rivadavia Aero (WMO 87860), ~85 km al N, costera; ver documento
+      de trazabilidad.
+viento_superficie_10m:
+  media_p50_p90_p95_p99_max:
+  - 5.844
+  - 5.59
+  - 9.8
+  - 11
+  - 13.22
+  - 21.46
+  weibull:
+    k: 2.16
+    c_ms: 6.599
+  rafaga_10m:
+    media: 10.111
+    p50: 9.8
+    p90: 16.4
+    p95: 18.4
+    p99: 22.129
+    max: 36
+  rafaga_10m_diurna:
+    media: 11.213
+    p90: 17.5
+    p95: 19.5
+    p99: 23.4
+    max: 36
+  factor_de_rafaga_mediana: 1.691
+  nota: Ráfaga ERA5 = máxima ráfaga de 3 s de la hora anterior, a 10 m.
+gradiente_vertical:
+  ley: 'potencia: U(z) = U_ref * (z / z_ref)^alfa'
+  z_ref_m: 10
+  alfa_mediana: 0.177
+  alfa_p90: 0.286
+  alfa_mediodia_13_16h: 0.108
+  alfa_noche_00_06h: 0.223
+  nota: Calculado entre 10 y 100 m de ERA5, horas con V10 >= 3 m/s. De día el aire se mezcla (alfa ~0.10); de noche
+    es estable (alfa ~0.22-0.25).
+  ley_logaritmica_alternativa:
+    z0_m: 0.03
+    nota: 'estepa: terreno abierto con pasto/arbusto bajo (clasificación de Davenport)'
+turbulencia_continua:
+  modelo: Dryden, baja altura (h < 1000 ft) según MIL-F-8785C / MIL-HDBK-1797
+  W20_estimado_sitio_ms: 15.14
+  W20_estimado_sitio_kt: 29.4
+  categoria_del_sitio: moderada
+  como_se_estimo: p99 de V10 ERA5 x factor de cola 1.25, llevado a 20 ft con la ley de potencia
+  chequeo_capa_limite:
+    u_estrella_ms: 1.138
+    sigma_w_ms: 1.422
+    formula: u* = 0.4 U10 / ln(10/z0); sigma_w = 1.25 u*
+  diseno_recomendado: moderada (W20 = 30 kt = 15.4 m/s) para ambos sitios, como envolvente única
+  a_120m:
+    sigma_w_ms: 1.543
+    sigma_u_ms: 2.035
+    sigma_v_ms: 2.035
+    MIL_F_8785C:
+      Lu_m: 275.0
+      Lv_m: 275.0
+      Lw_m: 120.0
+    MIL_HDBK_1797:
+      Lu_m: 275.0
+      Lv_m: 137.5
+      Lw_m: 60.0
+  a_30m_despegue_aterrizaje:
+    sigma_w_ms: 1.543
+    sigma_u_ms: 2.653
+    sigma_v_ms: 2.653
+    MIL_F_8785C:
+      Lu_m: 152.5
+      Lv_m: 152.5
+      Lw_m: 30.0
+    MIL_HDBK_1797:
+      Lu_m: 152.5
+      Lv_m: 76.2
+      Lw_m: 15.0
+rafaga_discreta:
+  forma: '1 - coseno: w(x) = (U_ds/2) (1 - cos(pi x / H)), 0 <= x <= 2H'
+  U_ds_ms:
+    operacional_2sigma_moderada: 3.09
+    diseno_3sigma_moderada: 4.63
+    nominal_3sigma_ligera: 2.31
+    referencia_CS23_FAR23_a_VC: 15.24
+  H_m:
+    CS23_FAR23: 12.5 * cuerda media (longitud total 25 cuerdas)
+    barrido_sugerido:
+    - 12.5 c_media
+    - 120.0
+  alivio_de_rafaga: Kg = 0.88 mu / (5.3 + mu), mu = 2 (W/S) / (rho c_media CL_alpha g) (FAR 23.341)
+  nota: Los 15.24 m/s de CS-23 están pensados para aviones tripulados rápidos; en un UAV de ~17 m/s implican entrar
+    en pérdida, así que la carga queda limitada por CL_max. Ver documento de trazabilidad.
+extremos_en_tierra:
+  rafaga10_max_anual_era5:
+  - 33.8
+  - 27
+  - 28.4
+  - 29.8
+  - 28.5
+  - 31.3
+  - 27.4
+  - 30.4
+  - 28.3
+  - 36
+  rafaga10_retorno_10_anios_ms: 33.9
+  rafaga10_retorno_50_anios_ms: 37.6
+  nota: Gumbel por momentos sobre 10 máximos anuales. Sirve para anclaje/estiba del UAV en tierra, no para vuelo.
+    Con la corrección de cola, sumar ~10-25%.
+archivos_relacionados:
+  resumen_completo: datos/canadon_leon_era5_resumen.json
+  tablas:
+  - tablas/canadon_leon_mensual.csv
+  - tablas/canadon_leon_diurno.csv
+  - tablas/canadon_leon_rosa_120m.csv
+  - tablas/canadon_leon_excedencia.csv
+  figura: figuras/canadon_leon_panel.png

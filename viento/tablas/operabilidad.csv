@@ -1,0 +1,17 @@
+﻿sitio,serie,V_crucero_ms,V_crucero_kmh,pct_horas_diurnas_sin_avance_contra_viento,pct_horas_diurnas_ida_vuelta_menor_1.5x,factor_tiempo_ida_vuelta_medio
+Cañadón León (Santa Cruz),ERA5,16.7,60,4.6,58.5,1.74
+Cañadón León (Santa Cruz),ERA5 x1.25,16.7,60,16.9,39.8,2.11
+Cañadón León (Santa Cruz),ERA5,20.0,72,1.1,74.2,1.47
+Cañadón León (Santa Cruz),ERA5 x1.25,20.0,72,7.0,53.9,1.83
+Cañadón León (Santa Cruz),ERA5,22.0,79,0.4,80.4,1.36
+Cañadón León (Santa Cruz),ERA5 x1.25,22.0,79,2.9,62.9,1.67
+Cañadón León (Santa Cruz),ERA5,25.0,90,0.1,87.7,1.24
+Cañadón León (Santa Cruz),ERA5 x1.25,25.0,90,1.1,74.2,1.47
+Puesto Hernández (N de Neuquén / S de Mendoza),ERA5,16.7,60,0.3,92.0,1.17
+Puesto Hernández (N de Neuquén / S de Mendoza),ERA5 x1.1,16.7,60,0.7,89.2,1.22
+Puesto Hernández (N de Neuquén / S de Mendoza),ERA5,20.0,72,0.0,96.1,1.11
+Puesto Hernández (N de Neuquén / S de Mendoza),ERA5 x1.1,20.0,72,0.1,93.3,1.14
+Puesto Hernández (N de Neuquén / S de Mendoza),ERA5,22.0,79,0.0,97.4,1.08
+Puesto Hernández (N de Neuquén / S de Mendoza),ERA5 x1.1,22.0,79,0.0,96.1,1.11
+Puesto Hernández (N de Neuquén / S de Mendoza),ERA5,25.0,90,0.0,98.7,1.06
+Puesto Hernández (N de Neuquén / S de Mendoza),ERA5 x1.1,25.0,90,0.0,98.0,1.07

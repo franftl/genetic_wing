@@ -1,0 +1,6 @@
+# Salidas que se regeneran al correr el análisis (no hace falta versionarlas)
+codigo_viento/resultados/
+# Datos crudos de ERA5 (pesados; se bajan con scripts/descargar_era5.py)
+datos_crudos/
+# Cache de pytest (se crea al correr los tests)
+.pytest_cache/

@@ -31,6 +31,8 @@ Estos tres puntos de vuelo compiten entre sí: crucero eficiente pide ala chica 
 
 La misión bajó de crucero a 120 km/h a 80 km/h el 18/09/2026 tras un análisis de alcance con batería (ver [Research Note 15](<documentos_de_decision/Research Note 15 - Winglets, volumen de fuselaje y replanteo de la mision (2026-09-18).md>)): pedir 300 km de autonomía volando a 120 km/h exige cerca de 8.6 kg de batería sobre un avión de ~7 kg en seco, porque el alcance eléctrico R = Eη/D se maximiza a resistencia mínima, que para este avión cae cerca de 70–80 km/h y no a 120. El requisito de 120 km/h no se eliminó: se reclasificó como velocidad máxima.
 
+**Viento de los sitios (2026-10-02).** Con `VIENTO_ACTIVO = True` en `mision_avion.py`, la misión se evalúa con el aire y la ráfaga reales del peor caso de los dos sitios candidatos (densidad 1.056 kg/m³ y ráfaga de 4.63 m/s, en vez de 1.225 kg/m³ y 3 m/s), y se suma un término de eficiencia en turbulencia. Con `False` todo da exactamente lo mismo que antes. Detalle y resultados en la [Research Note 16](<documentos_de_decision/Research Note 16 - Viento de los sitios en la optimizacion (2026-10-02).md>); datos de viento en `viento/`.
+
 ## 2. Arquitectura del software
 
 ### 2.1 Mapa de módulos
@@ -81,7 +83,8 @@ Un candidato es un diccionario de parámetros (`params`) más la topología a la
 - **No se sostiene a 120 km/h**, o no puede volar a 10 m/s ni con flap desplegado.
 - **Margen estático negativo** ($SM = -dC_m/dC_L \leq 0$): el avión sería inestable en cabeceo.
 - **$C_{n_\beta} \leq 0$ o $C_{l_\beta} \geq 0$**: inestabilidad direccional o lateral.
-- **Entra en pérdida con la ráfaga de diseño** (3.0 m/s vertical) en crucero.
+- **Entra en pérdida con la ráfaga de diseño** (3.0 m/s vertical; 4.63 m/s con viento del sitio) en crucero.
+- **Con viento del sitio: la ráfaga supera la carga última** ($n > N_{ULTIMO} = 4.5$).
 
 ### 3.3 Puntaje (término suave, pondera candidatos válidos entre sí)
 
@@ -99,6 +102,7 @@ score = Σᵢ wᵢ·fᵢ, con fᵢ ∈ [0, ~1]:
 | Lateral ($C_{l_\beta}$) | 0.3 | $\min(1, -C_{l_\beta}/0.0015)$ |
 | Vuelo lento | 1.0 | margen sobre el objetivo de velocidad de pérdida |
 | Velocidad máxima | 0.5 | $f_{vm} = D_{REF\_VMAX}/D_{vmax}$ |
+| Turbulencia (solo con viento del sitio) | 0.75 | $1/(1 + \Delta D_{turb}/D)$, ver `viento.py` |
 
 Los pesos de estabilidad (1.5) y vuelo lento (1.0) son los más altos a propósito: son requisitos de misión y de seguridad, no preferencias de eficiencia — si el optimizador pudiera "vender" estabilidad por un poco más de L/D, el diseño resultante no sería volable.
 
@@ -108,6 +112,8 @@ Los pesos de estabilidad (1.5) y vuelo lento (1.0) son los más altos a propósi
 |---|---|---|
 | Velocidad de crucero, máxima o de vuelo lento | `mision_avion.py` | `V_CRUCERO`, `V_MAX`, `V_LENTO` |
 | Pesos del puntaje | `mision_avion.py` | bloque `PESO_*` |
+| Activar/desactivar el viento de los sitios | `mision_avion.py` | `VIENTO_ACTIVO` |
+| Datos de viento (densidad, ráfaga, turbulencia) | `viento.py` | constantes `*_SITIO`, `SIGMA_*` (salen de `viento/fichas`) |
 | Volumen mínimo de fuselaje / factor de empaquetado | `mision_avion.py` | `VOLUMEN_UTIL_MIN_L`, `FACTOR_UTILIZACION_VOLUMEN` |
 | Carga útil, masa de sistemas | `optimizacion_ala/estructura.py` | `MASA_PAYLOAD`, `MASA_SISTEMAS` (reutilizadas tal cual) |
 | Rango de envergadura, cuerdas, torsión, diedro | `geometria_avion.py` | `BOUNDS_ALA` |

@@ -5,7 +5,7 @@ Paquete de Python que convierte las fichas de viento (`../fichas/*.yaml`) en alg
 - operabilidad de la misión,
 - cargas de ráfaga.
 
-**Es independiente del código del optimizador** (`genetic_wing`, de Felipe). No modifica ningún archivo de ese repositorio. Para evaluar los diseños, solamente **lee** `optimizacion_avion/ganadores.json` y llama a `construir_avion()` para armar la geometría.
+**Es independiente del código del optimizador** (`optimizacion_avion`): para evaluar los diseños, solamente **lee** `optimizacion_avion/ganadores.json` y llama a `construir_avion()` para armar la geometría. Para que el viento entre en la *optimización* (no solo en la evaluación) ver `optimizacion_avion/viento.py` y la Research Note 16; sus pruebas están en `tests/test_optimizador_viento.py`.
 
 ## Estructura
 
@@ -19,6 +19,7 @@ codigo_viento/
 ├── ejemplos/
 │   └── evaluar_ganadores_con_viento.py   evalúa los 5 ganadores del optimizador en los dos sitios
 ├── tests/test_viento.py   12 pruebas de verificación
+├── tests/test_optimizador_viento.py   6 pruebas del viento dentro del optimizador
 └── resultados/            salida del ejemplo (CSV + figuras)
 ```
 
@@ -107,6 +108,6 @@ El modo dinámico reproduce la fórmula con Kg con un error de alrededor del 3 %
 
 ## Pendiente
 
-- Integrar el análisis al puntaje del optimizador. Eso implica tocar `mision_avion.py`, así que queda para que lo decida y lo haga quien mantiene ese código. Las funciones de `mision_viento` están pensadas para eso: reciben la ráfaga y la densidad como argumentos.
+- ~~Integrar el análisis al puntaje del optimizador.~~ Hecho el 2026-10-02 (Research Note 16).
 - Agregar cabeceo a la respuesta dinámica (2 grados de libertad) y alivio inercial.
 - Cortante vertical en despegue y aterrizaje: el campo `CortanteVertical` ya está hecho, falta el análisis de trayectoria.

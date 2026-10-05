@@ -59,13 +59,20 @@ from typing import Optional
 from .evolucion_avion import EstadoEvolucionAvion, correr_evolucion_completa_avion
 from .ga_numerico_avion import generar_hijos_avion
 from .geometria_avion import TOPOLOGIAS, clamp_to_bounds_avion
+from . import mision_avion
 from .mision_avion import evaluar_mision_avion
 
 _RUTA_SEMILLAS = Path(__file__).with_name("semillas.json")
+# Con el viento del sitio (mision_avion.VIENTO_ACTIVO) las semillas de
+# semillas.json no pueden volar a 10 m/s con el aire más liviano (pérdida a
+# ~10.1-10.6 m/s), así que se arranca desde los ganadores SIN viento de la
+# corrida del 18/09 (ganadores.json), que sí son válidos. Ver Research Note 16.
+_RUTA_SEMILLAS_VIENTO = Path(__file__).with_name("semillas_viento.json")
 
 
 def _cargar_semillas() -> dict:
-    with open(_RUTA_SEMILLAS) as f:
+    ruta = _RUTA_SEMILLAS_VIENTO if mision_avion.VIENTO_ACTIVO else _RUTA_SEMILLAS
+    with open(ruta) as f:
         crudas = json.load(f)
     # Se vuelven a pasar por clamp: si alguien edita el JSON a mano, el
     # candidato entra igual al pipeline como diseño fabricable.

@@ -6,7 +6,7 @@
 
 ```
 Datos de viento/
-├── LEEME - Datos de viento.md      ← este archivo (resultados, supuestos, fuentes)
+├── LEEME.md                        ← este archivo (resultados, supuestos, fuentes)
 ├── fichas/
 │   ├── canadon_leon.yaml           ← parámetros listos para el código
 │   └── puesto_hernandez.yaml
@@ -22,6 +22,8 @@ Datos de viento/
 │   ├── descargar_era5.py           ← baja la serie horaria completa y rehace los resúmenes
 │   └── procesar_viento.py          ← genera fichas, tablas y figuras a partir de datos/
 ├── codigo_viento/                  ← implementación: paquete viento_uav, tests y evaluación de los ganadores
+├── optimizar_con_viento.py         ← corre la competencia de topologías CON viento y la compara con la del 18/09
+├── resultados_optimizacion/        ← tabla y gráficos de esa comparación
 └── caracterizacion_viento.pdf/.tex ← informe completo
 ```
 
@@ -55,7 +57,7 @@ Todos los valores son a **120 m sobre el terreno** (altura máxima típica de op
 
 ## 3. Qué implica para el diseño actual (repositorio `genetic_wing`, misión del 18/09)
 
-El optimizador actual (`optimizacion_avion`) compite 5 topologías con crucero de diseño a **80 km/h**, velocidad máxima de **120 km/h** y vuelo lento a 10 m/s. Lo que sigue es la evaluación de esos diseños con el viento de los sitios. Se hizo con el código de `codigo_viento/` (sección 4), **sin modificar nada del repositorio**.
+El optimizador actual (`optimizacion_avion`) compite 5 topologías con crucero de diseño a **80 km/h**, velocidad máxima de **120 km/h** y vuelo lento a 10 m/s. Lo que sigue es la evaluación de esos diseños con el viento de los sitios. Se hizo con el código de `codigo_viento/` (sección 4). Desde el 2026-10-02 el viento además **entra en la optimización** (`VIENTO_ACTIVO` en `optimizacion_avion/mision_avion.py`): ver la Research Note 16 en `documentos_de_decision/`.
 
 **a) Velocidad de crucero y operabilidad.** El peor caso es el viento soplando a lo largo de la ruta. En ese caso, el tiempo de ida y vuelta se multiplica por 1/(1 − (W/V)²).
 
@@ -80,7 +82,7 @@ Al pasar el crucero de 60 a 80 km/h, el problema de Cañadón León se achicó m
 
 El momento flector en la raíz con ráfaga es de 3 a 5 veces el de vuelo a 1 g; el detalle está en `codigo_viento/resultados/`.
 
-**d) Densidad y constantes de viento.** El optimizador usa ρ = 1.225 kg/m³ y viento de Neuquén Aeropuerto (media de 3.1 m/s). En los sitios, el CL de crucero real es entre un 7 % (Cañadón León) y un 16 % (Puesto Hernández) mayor. Incorporar la densidad y la ráfaga del sitio al puntaje requiere tocar `mision_avion.py`, así que queda para que lo decida quien mantiene ese código. Las funciones de `codigo_viento/viento_uav/mision_viento.py` ya reciben esos dos valores como argumentos.
+**d) Densidad y constantes de viento.** El optimizador usa ρ = 1.225 kg/m³ y viento de Neuquén Aeropuerto (media de 3.1 m/s). En los sitios, el CL de crucero real es entre un 7 % (Cañadón León) y un 16 % (Puesto Hernández) mayor. Desde el 2026-10-02 la densidad y la ráfaga del sitio ya entran en el puntaje del optimizador (`optimizacion_avion/viento.py`, Research Note 16). Resultado: el optimizador agranda el ala para recuperar el vuelo lento, y la cola en V sigue ganando.
 
 Sobre la ráfaga de CS-23/FAR-23 (15.24 m/s a V_C): en un avión de unos 22 m/s implica Δα ≈ 19°, es decir, entrada en pérdida segura. Por eso no se usa como ráfaga de diseño.
 

@@ -116,6 +116,20 @@ Research Note 15):
    Research Note 15), así que el trade-off del winglet es menos
    desfavorable que antes, pero sigue siendo una decisión del optimizador,
    no una restricción geométrica.
+
+5. VIENTO DE LOS SITIOS (2026-10-02, ver Research Note 16 y viento.py). Con
+   VIENTO_ACTIVO = True la misión se evalúa con el aire y la ráfaga reales
+   de los sitios candidatos (peor caso de Cañadón León y Puesto Hernández):
+   - densidad del aire 1.056 kg/m3 en vez de 1.225 (en las fórmulas y en
+     AeroBuildup), y el Reynolds con la viscosidad del sitio;
+   - ráfaga vertical de diseño 4.63 m/s en vez de 3.0;
+   - restricción dura: si la ráfaga lleva el ala más allá de la carga
+     ÚLTIMA (N_ULTIMO), el candidato se descarta;
+   - término nuevo de puntaje: eficiencia en turbulencia continua
+     (PESO_TURBULENCIA), la resistencia extra que genera volar en aire
+     turbulento.
+   Con VIENTO_ACTIVO = False el optimizador da exactamente los mismos
+   resultados que antes de este cambio.
 """
 
 from __future__ import annotations
@@ -123,7 +137,9 @@ from __future__ import annotations
 import aerosandbox as asb
 import numpy as np
 
-from optimizacion_ala.estructura import G, MASA_PAYLOAD, MASA_SISTEMAS
+from optimizacion_ala.estructura import G, MASA_PAYLOAD, MASA_SISTEMAS, N_LIMITE, N_ULTIMO
+
+from . import viento as _viento
 
 from .estructura_avion import converger_masa_avion
 from .geometria_avion import (
@@ -143,16 +159,35 @@ V_LENTO = 10.0                # [m/s] reconocimiento / despegue / aterrizaje
 MARGEN_SOBRE_PERDIDA = 1.20
 V_STALL_OBJETIVO = V_LENTO / MARGEN_SOBRE_PERDIDA   # 8.33 m/s
 
-RAFAGA_VERTICAL = 3.0
-VIENTO_MEDIO = 3.1
-RAFAGA_HORIZONTAL_MAX = 14.4
+# Viento del sitio (ver encabezado, punto 5). En False: aire a nivel del mar
+# y ráfaga de 3 m/s, exactamente como antes del 2026-10-02.
+VIENTO_ACTIVO = True
 
-NU_AIRE = 1.5e-5              # viscosidad cinemática [m2/s]
+RAFAGA_VERTICAL = 3.0         # [m/s] ráfaga SIN viento del sitio; con viento: viento.RAFAGA_VERTICAL_SITIO
+VIENTO_MEDIO = _viento.VIENTO_MEDIO_SITIO              # [m/s] antes 3.1 -- informativo, no entra en cuentas
+RAFAGA_HORIZONTAL_MAX = _viento.VIENTO_FUERTE_SITIO    # [m/s] antes 14.4 -- informativo, no entra en cuentas
+
+NU_AIRE = 1.5e-5              # viscosidad cinemática [m2/s] a nivel del mar
 
 _A_LO, _A_HI = 1.0, 5.0
 _B_LO, _B_HI = -3.0, 3.0
 _PBAR_PERT = 0.05
 _RBAR_PERT = 0.05
+
+
+
+def _atmosfera() -> asb.Atmosphere:
+    return _viento.ATMOSFERA_SITIO if VIENTO_ACTIVO else asb.Atmosphere(altitude=0)
+
+
+def _rafaga_vertical() -> float:
+    return _viento.RAFAGA_VERTICAL_SITIO if VIENTO_ACTIVO else RAFAGA_VERTICAL
+
+
+def _nu_aire(atm: asb.Atmosphere) -> float:
+    """NU_AIRE escalada a la atmósfera dada (aire más liviano -> nu mayor -> Re menor)."""
+    return NU_AIRE * float(atm.kinematic_viscosity() / asb.Atmosphere(altitude=0).kinematic_viscosity())
+
 
 # =====================================================================
 # CRITERIOS
@@ -214,6 +249,12 @@ PESO_LENTO = 1.0
 # más alta (CL bajo, régimen de perfil) y no es donde el avión pasa la
 # mayor parte de la misión.
 PESO_VELMAX = 0.5
+# Turbulencia (solo con VIENTO_ACTIVO): el término es 1 / (1 + resistencia
+# extra por turbulencia). El peso NO es una preferencia: se elige para que un
+# 1 % de resistencia por turbulencia cueste en el puntaje lo mismo que un 1 %
+# de resistencia de crucero en el término de eficiencia
+# (PESO_EFICIENCIA * D_REFERENCIA / D_crucero ~ 1.0 * 3.2 / 4.3 ~ 0.75).
+PESO_TURBULENCIA = 0.75
 
 # Referencias de escala. D_REFERENCIA se recalibró 2026-09-18 para el nuevo
 # crucero de diseño a 80 km/h (antes 120 km/h, D_REFERENCIA=5.0 N).
@@ -349,12 +390,14 @@ def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
         S = float(avion.s_ref)
         c_ref = float(avion.c_ref)
         b_ref = float(avion.b_ref)
-        rho = float(asb.Atmosphere(altitude=0).density())
+        atm = _atmosfera()
+        rho = float(atm.density())
+        nu = _nu_aire(atm)
         q = 0.5 * rho * V_CRUCERO ** 2
 
-        Re_crucero = V_CRUCERO * c_ref / NU_AIRE
-        Re_lento = V_LENTO * c_ref / NU_AIRE
-        Re_vmax = V_MAX * c_ref / NU_AIRE
+        Re_crucero = V_CRUCERO * c_ref / nu
+        Re_lento = V_LENTO * c_ref / nu
+        Re_vmax = V_MAX * c_ref / nu
 
         # --- 2. Punto de vuelo LENTO (nuevo) ----------------------------
         # Se evalúa PRIMERO porque es la restricción que más aprieta: si el
@@ -380,7 +423,7 @@ def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
         pts = []
         for a in (_A_LO, _A_HI):
             r = asb.AeroBuildup(airplane=avion,
-                                op_point=asb.OperatingPoint(velocity=V_CRUCERO, alpha=a)).run()
+                                op_point=asb.OperatingPoint(atmosphere=atm, velocity=V_CRUCERO, alpha=a)).run()
             pts.append((_escalar(r["CL"]), _escalar(r["Cm"])))
         (CL1, Cm1), (CL2, Cm2) = pts
         if abs(CL2 - CL1) < 1e-9:
@@ -397,8 +440,9 @@ def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
         alpha_crucero = _A_LO + (CL_crucero - CL1) / CL_alpha
 
         r = asb.AeroBuildup(airplane=avion,
-                            op_point=asb.OperatingPoint(velocity=V_CRUCERO, alpha=alpha_crucero)).run()
+                            op_point=asb.OperatingPoint(atmosphere=atm, velocity=V_CRUCERO, alpha=alpha_crucero)).run()
         CD = _escalar(r["CD"])
+        frac_inducida = _escalar(r["D_induced"]) / _escalar(r["D"])
         CL_real = _escalar(r["CL"])
         Cm_crucero = _escalar(r["Cm"])
         if CD <= 0 or not np.isfinite(CD):
@@ -428,7 +472,7 @@ def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
 
         alpha_vmax = _A_LO + (CL_vmax - CL1) / CL_alpha
         r_vmax = asb.AeroBuildup(airplane=avion,
-                                 op_point=asb.OperatingPoint(velocity=V_MAX, alpha=alpha_vmax)).run()
+                                 op_point=asb.OperatingPoint(atmosphere=atm, velocity=V_MAX, alpha=alpha_vmax)).run()
         CD_vmax = _escalar(r_vmax["CD"])
         CD_vmax = CD_vmax * (1.0 + PENAL_CD_FLAP * fl["frac_superficie"]) if fl["tiene_flap"] else CD_vmax
         if CD_vmax <= 0 or not np.isfinite(CD_vmax):
@@ -439,19 +483,28 @@ def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
         CL_alpha_rad = np.degrees(CL_alpha)   # [1/deg] * 57.3 = [1/rad]
         mu = 2.0 * (W / S) / (rho * c_ref * CL_alpha_rad * G)
         Kg = 0.88 * mu / (5.3 + mu)
-        d_alpha = np.degrees(np.arctan(Kg * RAFAGA_VERTICAL / V_CRUCERO))
+        rafaga = _rafaga_vertical()
+        d_alpha = np.degrees(np.arctan(Kg * rafaga / V_CRUCERO))
         dCL_rafaga = CL_alpha * d_alpha
         dn_rafaga = dCL_rafaga * q * S / W
         margen_perdida = (CL_max_crucero - (CL_crucero + dCL_rafaga)) / CL_max_crucero
         if margen_perdida <= 0.0:
             return None
+        # Con la ráfaga del sitio: si lleva el ala más allá de la carga ÚLTIMA
+        # con la que se dimensiona la estructura, el ala se rompería.
+        if VIENTO_ACTIVO and 1.0 + dn_rafaga > N_ULTIMO:
+            return None
+
+        # --- 4b. Turbulencia continua (ver viento.py) ---------------------
+        sigma_n = _viento.sigma_n_turbulencia(W / S, CL_alpha_rad, rho, V_CRUCERO)
+        extra_turbulencia = _viento.resistencia_extra_turbulencia(frac_inducida, sigma_n, V_CRUCERO)
 
         # --- 5. Estabilidad látero-direccional estática -----------------
         pts_beta = []
         for b in (_B_LO, _B_HI):
             r_b = asb.AeroBuildup(
                 airplane=avion,
-                op_point=asb.OperatingPoint(velocity=V_CRUCERO, alpha=alpha_crucero, beta=b)).run()
+                op_point=asb.OperatingPoint(atmosphere=atm, velocity=V_CRUCERO, alpha=alpha_crucero, beta=b)).run()
             pts_beta.append((_escalar(r_b["Cl"]), _escalar(r_b["Cn"])))
         (Cl_lo, Cn_lo), (Cl_hi, Cn_hi) = pts_beta
         if not all(np.isfinite(v) for v in (Cl_lo, Cl_hi, Cn_lo, Cn_hi)):
@@ -465,15 +518,15 @@ def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
         p0 = _PBAR_PERT * 2.0 * V_CRUCERO / b_ref
         r0 = _RBAR_PERT * 2.0 * V_CRUCERO / b_ref
         rp_hi = asb.AeroBuildup(airplane=avion, op_point=asb.OperatingPoint(
-            velocity=V_CRUCERO, alpha=alpha_crucero, p=p0)).run()
+            atmosphere=atm, velocity=V_CRUCERO, alpha=alpha_crucero, p=p0)).run()
         rp_lo = asb.AeroBuildup(airplane=avion, op_point=asb.OperatingPoint(
-            velocity=V_CRUCERO, alpha=alpha_crucero, p=-p0)).run()
+            atmosphere=atm, velocity=V_CRUCERO, alpha=alpha_crucero, p=-p0)).run()
         Cl_p = (_escalar(rp_hi["Cl"]) - _escalar(rp_lo["Cl"])) / (2.0 * _PBAR_PERT)
         Cn_p = (_escalar(rp_hi["Cn"]) - _escalar(rp_lo["Cn"])) / (2.0 * _PBAR_PERT)
         rr_hi = asb.AeroBuildup(airplane=avion, op_point=asb.OperatingPoint(
-            velocity=V_CRUCERO, alpha=alpha_crucero, r=r0)).run()
+            atmosphere=atm, velocity=V_CRUCERO, alpha=alpha_crucero, r=r0)).run()
         rr_lo = asb.AeroBuildup(airplane=avion, op_point=asb.OperatingPoint(
-            velocity=V_CRUCERO, alpha=alpha_crucero, r=-r0)).run()
+            atmosphere=atm, velocity=V_CRUCERO, alpha=alpha_crucero, r=-r0)).run()
         Cl_r = (_escalar(rr_hi["Cl"]) - _escalar(rr_lo["Cl"])) / (2.0 * _RBAR_PERT)
         Cn_r = (_escalar(rr_hi["Cn"]) - _escalar(rr_lo["Cn"])) / (2.0 * _RBAR_PERT)
 
@@ -518,6 +571,11 @@ def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
             # ráfaga
             "d_alpha_rafaga": d_alpha, "dn_rafaga": dn_rafaga, "Kg": Kg, "mu": mu,
             "n_con_rafaga": 1.0 + dn_rafaga, "margen_perdida": margen_perdida,
+            # viento del sitio
+            "viento_activo": VIENTO_ACTIVO, "rho": rho, "rafaga_vertical": rafaga,
+            "frac_inducida": frac_inducida, "sigma_n_turbulencia": sigma_n,
+            "extra_turbulencia": extra_turbulencia,
+            "D_turbulento": D_crucero * (1.0 + extra_turbulencia),
         }
     except Exception:
         return None
@@ -540,7 +598,7 @@ def _terminos(a: dict) -> list:
     f_la = min(1.0, -a["Cl_beta"] / CL_BETA_REFERENCIA)
     f_le = min(1.0, max(a["margen_lento"], 0.0))
     f_vm = D_REFERENCIA_VMAX / a["D_vmax"]
-    return [
+    terminos = [
         ("eficiencia (D crucero)", PESO_EFICIENCIA, f_ef),
         ("masa total", PESO_MASA, f_ma),
         ("estabilidad (margen est.)", PESO_ESTABILIDAD, f_es),
@@ -552,6 +610,9 @@ def _terminos(a: dict) -> list:
         ("vuelo lento (10 m/s)", PESO_LENTO, f_le),
         ("velocidad maxima (120 km/h)", PESO_VELMAX, f_vm),
     ]
+    if VIENTO_ACTIVO:
+        terminos.append(("turbulencia (eficiencia)", PESO_TURBULENCIA, 1.0 / (1.0 + a["extra_turbulencia"])))
+    return terminos
 
 
 def evaluar_mision_avion(params: dict, topologia: str) -> float:
@@ -632,9 +693,16 @@ def desglose_mision_avion(params: dict, topologia: str) -> str:
     L.append(f"  Cl_p {a['Cl_p']:8.4f}   Cn_r {a['Cn_r']:8.4f}   "
              f"Cn_p {a['Cn_p']:8.4f}   Cl_r {a['Cl_r']:8.4f}   [/rad]")
     L.append("")
-    L.append(f"RAFAGA VERTICAL DE DISENO {RAFAGA_VERTICAL:.1f} m/s  (en crucero)")
+    if a["viento_activo"]:
+        L.append("VIENTO DEL SITIO  (peor caso Canadon Leon / Puesto Hernandez, ver viento.py)")
+        L.append(f"  densidad del aire ..... {a['rho']:6.3f} kg/m3   (nivel del mar: 1.225)")
+        L.append(f"  turbulencia ........... sigma_n = {a['sigma_n_turbulencia']:.3f}  -> "
+                 f"+{100*a['extra_turbulencia']:.1f} % de resistencia  (D = {a['D_turbulento']:.2f} N)")
+        L.append("")
+    L.append(f"RAFAGA VERTICAL DE DISENO {a['rafaga_vertical']:.2f} m/s  (en crucero)")
     L.append(f"  Kg = {a['Kg']:.3f}  (mu = {a['mu']:.1f})   d_alpha = {a['d_alpha_rafaga']:.2f} grados")
-    L.append(f"  dn = {a['dn_rafaga']:.2f}  -> factor de carga {a['n_con_rafaga']:.2f} g")
+    L.append(f"  dn = {a['dn_rafaga']:.2f}  -> factor de carga {a['n_con_rafaga']:.2f} g   "
+             f"(estructura: limite {N_LIMITE:.1f}, ultima {N_ULTIMO:.1f})")
     L.append(f"  margen de perdida ..... {100*a['margen_perdida']:6.1f} %   (puntaje pleno desde {100*MARGEN_PERDIDA_OK:.0f}%)")
     L.append("")
     L.append("PUNTAJE")

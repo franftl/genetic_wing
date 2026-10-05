@@ -1,0 +1,288 @@
+{
+  "score": 5.964368294824023,
+  "generaciones": 15,
+  "params": {
+    "envergadura": 3.3352642973558932,
+    "root_chord": 0.4016562517588105,
+    "chord_1": 0.3847152704742502,
+    "chord_2": 0.3700354731438215,
+    "chord_3": 0.28327426894746677,
+    "chord_4": 0.1540504902522145,
+    "le_offset_1": 0.0034182521802000646,
+    "le_offset_2": 0.0034182521802000646,
+    "le_offset_3": 0.04106785094826164,
+    "le_offset_4": 0.11899024473247835,
+    "twist_0": 1.5322185191247824,
+    "twist_1": -2.686932461206614,
+    "twist_2": 3.281879360952361,
+    "twist_3": -3.554413533011502,
+    "twist_4": -3.9677812801219687,
+    "elev_1": -0.017029147753243996,
+    "elev_2": 0.012844192400168363,
+    "elev_3": 0.052684021620314436,
+    "elev_4": 0.08112268380965586,
+    "perfil_raiz": 14.0,
+    "perfil_medio": 9.0,
+    "perfil_punta": 14.0,
+    "perfil_pos_medio": 0.5434512656383776,
+    "winglet_height": 0.006511183622809551,
+    "winglet_cant_deg": 22.270355283273066,
+    "winglet_taper": 0.5757215068944317,
+    "winglet_sweep_deg": 10.755837393326123,
+    "flap_cuerda_frac": 0.254723484823578,
+    "flap_inicio_frac": 0.019358561237118453,
+    "flap_fin_frac": 0.8790032560635618,
+    "flap_defl_deg": 39.615528747940765,
+    "fuselaje_largo": 1.7462629433298027,
+    "fuselaje_diametro": 0.12975717530357364,
+    "morro_largo_frac": 0.26060625804339055,
+    "morro_exp": 0.5528208987374996,
+    "boattail_largo_frac": 0.30616913027460474,
+    "boattail_radio_frac": 0.13341834566346075,
+    "ala_x_frac_fuselaje": 0.2892747096161118,
+    "cg_frac_mac": 0.29951135211705265,
+    "v_tail_span": 0.9320951478514774,
+    "v_tail_root_chord": 0.20932480373468473,
+    "v_tail_taper": 0.5115736310765964,
+    "v_dihedral_deg": 43.61121148185725,
+    "v_tail_sweep_deg": 21.162503237993416,
+    "v_tail_incidencia_deg": -0.6849366778758763,
+    "v_tail_arm_frac": 0.8413214059720114
+  },
+  "analisis": {
+    "topologia": "v_tail",
+    "masa_total": 7.82360866817103,
+    "masa_estructura": 3.32360890596752,
+    "masa_larguero": 0.03665228475412144,
+    "masa_piel_ala": 2.264386942651391,
+    "masa_winglet": 0.0,
+    "masa_flap": 0.14962999903658472,
+    "masa_cola": 0.3022971915579321,
+    "masa_fuselaje": 0.5706424879674907,
+    "masa_boom": 0.0,
+    "fraccion_estructural": 0.42481788736303183,
+    "flecha_punta_mm": 83.96781706834749,
+    "manda_rigidez": true,
+    "envergadura": 3.3587313055943886,
+    "S": 1.1046244472036224,
+    "AR": 10.212589456749797,
+    "MAC": 0.3445983651951597,
+    "carga_alar": 69.4802665548919,
+    "peso": 76.7496010347578,
+    "V_H": 0.20464308276890428,
+    "V_V": 0.019055097683451882,
+    "CL_crucero": 0.2664726132076816,
+    "alpha_crucero": 0.6092510239890094,
+    "CD_crucero": 0.015426861526952499,
+    "D_crucero": 4.443253860723303,
+    "LD_crucero": 17.131555420599867,
+    "potencia_W": 98.73897468274006,
+    "Re_crucero": 451711.81539589213,
+    "CL_max_crucero": 1.3953499209861782,
+    "CL_vmax": 0.11843227253674736,
+    "CL_max_vmax": 1.4419230926761306,
+    "D_vmax": 7.961798550514331,
+    "CD_vmax": 0.012285847523691548,
+    "alpha_vmax": -0.8469800486573735,
+    "vol_geo_fuselaje_L": 16.31811829129601,
+    "vol_util_fuselaje_L": 8.974965060212806,
+    "v_stall": 8.293828667018978,
+    "V_LENTO": 10.0,
+    "Re_lento": 203270.31692815144,
+    "CL_max_lento": 1.9130108549853118,
+    "margen_lento": 1.0237027997886134,
+    "CL_lento": 1.3159141392971931,
+    "tiene_flap": true,
+    "flap_frac_superficie": 0.9109152914841399,
+    "flap_deflexion": 39.615528747940765,
+    "flap_cuerda_frac": 0.254723484823578,
+    "cg_frac_mac": 0.29951135211705265,
+    "SM": 0.13241972926997223,
+    "Cm_alpha_por_grado": -0.013461779659085661,
+    "Cm_crucero": 0.0005819177136873732,
+    "Cm0": 0.03577646071634943,
+    "CL_trim": 0.27017470065514,
+    "CL_alpha_por_grado": 0.10165992434284701,
+    "sm_min": 0.1,
+    "sm_max": 0.2,
+    "Cl_beta": -0.003204536269062115,
+    "Cn_beta": 0.0015168997425150758,
+    "Cl_p": -0.7199421888563462,
+    "Cn_p": -0.014043667869910618,
+    "Cl_r": 0.05413675312408776,
+    "Cn_r": -0.06483361420999253,
+    "d_alpha_rafaga": 5.838462698562611,
+    "dn_rafaga": 2.2273871564873424,
+    "Kg": 0.49078266958285877,
+    "mu": 6.683022428629752,
+    "n_con_rafaga": 3.2273871564873424,
+    "margen_perdida": 0.3836597712964574,
+    "viento_activo": true,
+    "rho": 1.0560000000000016,
+    "rafaga_vertical": 4.63,
+    "frac_inducida": 0.1794706040627985,
+    "sigma_n_turbulencia": 0.253955607642719,
+    "extra_turbulencia": 0.018455622163393304,
+    "D_turbulento": 4.525256875152851
+  },
+  "historial": [
+    {
+      "generation": 0,
+      "status": "seeded",
+      "parent_scores": [
+        5.65430316789637,
+        5.65430316789637
+      ]
+    },
+    {
+      "generation": 1,
+      "status": "in_progress",
+      "parent_scores": [
+        5.668098566890632,
+        5.65430316789637
+      ],
+      "best_child_score": 5.668098566890632,
+      "mejoro": true
+    },
+    {
+      "generation": 2,
+      "status": "in_progress",
+      "parent_scores": [
+        5.793567063076422,
+        5.668098566890632
+      ],
+      "best_child_score": 5.793567063076422,
+      "mejoro": true
+    },
+    {
+      "generation": 3,
+      "status": "in_progress",
+      "parent_scores": [
+        5.793567063076422,
+        5.7777600126738
+      ],
+      "best_child_score": 5.7777600126738,
+      "mejoro": false
+    },
+    {
+      "generation": 4,
+      "status": "in_progress",
+      "parent_scores": [
+        5.93009915553146,
+        5.916820817018696
+      ],
+      "best_child_score": 5.93009915553146,
+      "mejoro": true
+    },
+    {
+      "generation": 5,
+      "status": "in_progress",
+      "parent_scores": [
+        5.959625631157583,
+        5.93009915553146
+      ],
+      "best_child_score": 5.959625631157583,
+      "mejoro": true
+    },
+    {
+      "generation": 6,
+      "status": "in_progress",
+      "parent_scores": [
+        5.959625631157583,
+        5.9542039256316714
+      ],
+      "best_child_score": 5.9542039256316714,
+      "mejoro": false
+    },
+    {
+      "generation": 7,
+      "status": "in_progress",
+      "parent_scores": [
+        5.964368294824023,
+        5.959625631157583
+      ],
+      "best_child_score": 5.964368294824023,
+      "mejoro": true
+    },
+    {
+      "generation": 8,
+      "status": "in_progress",
+      "parent_scores": [
+        5.964368294824023,
+        5.959625631157583
+      ],
+      "best_child_score": 5.946394039684406,
+      "mejoro": false
+    },
+    {
+      "generation": 9,
+      "status": "in_progress",
+      "parent_scores": [
+        5.964368294824023,
+        5.959625631157583
+      ],
+      "best_child_score": 5.946257219918238,
+      "mejoro": false
+    },
+    {
+      "generation": 10,
+      "status": "in_progress",
+      "parent_scores": [
+        5.964368294824023,
+        5.959625631157583
+      ],
+      "best_child_score": 5.8894176507153055,
+      "mejoro": false
+    },
+    {
+      "generation": 11,
+      "status": "in_progress",
+      "parent_scores": [
+        5.964368294824023,
+        5.959625631157583
+      ],
+      "best_child_score": 5.951590225817736,
+      "mejoro": false
+    },
+    {
+      "generation": 12,
+      "status": "in_progress",
+      "parent_scores": [
+        5.964368294824023,
+        5.959625631157583
+      ],
+      "best_child_score": 5.924825870930561,
+      "mejoro": false
+    },
+    {
+      "generation": 13,
+      "status": "in_progress",
+      "parent_scores": [
+        5.964368294824023,
+        5.959625631157583
+      ],
+      "best_child_score": 5.939349840803553,
+      "mejoro": false
+    },
+    {
+      "generation": 14,
+      "status": "in_progress",
+      "parent_scores": [
+        5.964368294824023,
+        5.963810395867366
+      ],
+      "best_child_score": 5.963810395867366,
+      "mejoro": false
+    },
+    {
+      "generation": 15,
+      "status": "in_progress",
+      "parent_scores": [
+        5.964368294824023,
+        5.963810395867366
+      ],
+      "best_child_score": 5.955549580007764,
+      "mejoro": false
+    }
+  ]
+}

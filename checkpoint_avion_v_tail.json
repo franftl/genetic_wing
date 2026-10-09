@@ -1,0 +1,561 @@
+{
+  "topologia": "v_tail",
+  "generation": 44,
+  "non_improving_streak": 10,
+  "parents": [
+    {
+      "topologia": "v_tail",
+      "params": {
+        "envergadura": 2.957128367607086,
+        "root_chord": 0.48502762688464107,
+        "chord_1": 0.48502762688464107,
+        "chord_2": 0.3580365957352183,
+        "chord_3": 0.2691459649475043,
+        "chord_4": 0.14554348334427514,
+        "le_offset_1": 0.0,
+        "le_offset_2": 0.0017145716932395498,
+        "le_offset_3": 0.03351933057400129,
+        "le_offset_4": 0.1320802335352963,
+        "twist_0": 2.318953530811454,
+        "twist_1": -1.7301881692213512,
+        "twist_2": 1.7551369727037414,
+        "twist_3": -1.9622960077221454,
+        "twist_4": -2.9832902514116837,
+        "elev_1": -0.011848610543232906,
+        "elev_2": 0.013492210454946562,
+        "elev_3": 0.013492210454946562,
+        "elev_4": 0.1184341991318217,
+        "perfil_raiz": 14.0,
+        "perfil_medio": 9.0,
+        "perfil_punta": 14.0,
+        "perfil_pos_medio": 0.5240387952985419,
+        "winglet_height": 0.0,
+        "winglet_cant_deg": 23.16837070576679,
+        "winglet_taper": 0.6831158109777865,
+        "winglet_sweep_deg": 0.0,
+        "flap_cuerda_frac": 0.2485034797578837,
+        "flap_inicio_frac": 0.05962385208284345,
+        "flap_fin_frac": 0.9294055587044958,
+        "flap_defl_deg": 39.715478317751405,
+        "fuselaje_largo": 1.6570687872959706,
+        "fuselaje_diametro": 0.126127852651952,
+        "morro_largo_frac": 0.19094246406922433,
+        "morro_exp": 0.5052241832621681,
+        "boattail_largo_frac": 0.33363818244371735,
+        "boattail_radio_frac": 0.15625701051976845,
+        "ala_x_frac_fuselaje": 0.24500885673127898,
+        "cg_frac_mac": 0.26268278972035186,
+        "v_tail_span": 0.8953880174574159,
+        "v_tail_root_chord": 0.19952832419802857,
+        "v_tail_taper": 0.500397187616015,
+        "v_dihedral_deg": 43.60264505375217,
+        "v_tail_sweep_deg": 21.148693361454946,
+        "v_tail_incidencia_deg": -1.2805969607256447,
+        "v_tail_arm_frac": 0.8925892162269464
+      },
+      "score": 6.005081722221789
+    },
+    {
+      "topologia": "v_tail",
+      "params": {
+        "envergadura": 2.9612388259616136,
+        "root_chord": 0.4845778096707838,
+        "chord_1": 0.4511512531013609,
+        "chord_2": 0.32509809523065974,
+        "chord_3": 0.29638421865477504,
+        "chord_4": 0.1453510325897457,
+        "le_offset_1": 0.0009239087012938071,
+        "le_offset_2": 0.00962075403926501,
+        "le_offset_3": 0.016647766309355053,
+        "le_offset_4": 0.13728073374331876,
+        "twist_0": 2.3220288639039213,
+        "twist_1": -1.8027436663927228,
+        "twist_2": 1.7984191984618345,
+        "twist_3": -2.165171101492488,
+        "twist_4": -2.9874423027568153,
+        "elev_1": -0.05053163520915542,
+        "elev_2": 0.00809894836481731,
+        "elev_3": 0.010068468512108245,
+        "elev_4": 0.11760565011665583,
+        "perfil_raiz": 14.0,
+        "perfil_medio": 9.0,
+        "perfil_punta": 14.0,
+        "perfil_pos_medio": 0.5221595864480184,
+        "winglet_height": 0.0,
+        "winglet_cant_deg": 23.168348965404597,
+        "winglet_taper": 0.6827534945745345,
+        "winglet_sweep_deg": 11.653821098322041,
+        "flap_cuerda_frac": 0.24189162279599213,
+        "flap_inicio_frac": 0.05962333904600461,
+        "flap_fin_frac": 0.95,
+        "flap_defl_deg": 39.75775009025492,
+        "fuselaje_largo": 1.6570545014076639,
+        "fuselaje_diametro": 0.1262027624422973,
+        "morro_largo_frac": 0.19368777085762992,
+        "morro_exp": 0.5055918200572029,
+        "boattail_largo_frac": 0.333659913753251,
+        "boattail_radio_frac": 0.1590317595762945,
+        "ala_x_frac_fuselaje": 0.24687134961286178,
+        "cg_frac_mac": 0.2626431363804042,
+        "v_tail_span": 0.8959390739140405,
+        "v_tail_root_chord": 0.21691321471227182,
+        "v_tail_taper": 0.45,
+        "v_dihedral_deg": 43.52186364866469,
+        "v_tail_sweep_deg": 21.20206511254864,
+        "v_tail_incidencia_deg": -1.2251516877892736,
+        "v_tail_arm_frac": 0.8855835855140943
+      },
+      "score": 6.000579740610896
+    }
+  ],
+  "historial": [
+    {
+      "generation": 0,
+      "status": "seeded",
+      "parent_scores": [
+        5.654303167896383,
+        5.654303167896383
+      ]
+    },
+    {
+      "generation": 1,
+      "status": "in_progress",
+      "parent_scores": [
+        5.895792587649572,
+        5.654303167896383
+      ],
+      "best_child_score": 5.895792587649572,
+      "mejoro": true
+    },
+    {
+      "generation": 2,
+      "status": "in_progress",
+      "parent_scores": [
+        5.948934931379953,
+        5.895792587649572
+      ],
+      "best_child_score": 5.948934931379953,
+      "mejoro": true
+    },
+    {
+      "generation": 3,
+      "status": "in_progress",
+      "parent_scores": [
+        5.948934931379953,
+        5.895792587649572
+      ],
+      "best_child_score": 5.848077282136061,
+      "mejoro": false
+    },
+    {
+      "generation": 4,
+      "status": "in_progress",
+      "parent_scores": [
+        5.948934931379953,
+        5.895792587649572
+      ],
+      "best_child_score": 5.883526045914846,
+      "mejoro": false
+    },
+    {
+      "generation": 5,
+      "status": "in_progress",
+      "parent_scores": [
+        5.948934931379953,
+        5.895792587649572
+      ],
+      "best_child_score": 5.87485376866409,
+      "mejoro": false
+    },
+    {
+      "generation": 6,
+      "status": "in_progress",
+      "parent_scores": [
+        5.948934931379953,
+        5.925854651476431
+      ],
+      "best_child_score": 5.925854651476431,
+      "mejoro": false
+    },
+    {
+      "generation": 7,
+      "status": "in_progress",
+      "parent_scores": [
+        5.9656746069715165,
+        5.948934931379953
+      ],
+      "best_child_score": 5.9656746069715165,
+      "mejoro": true
+    },
+    {
+      "generation": 8,
+      "status": "in_progress",
+      "parent_scores": [
+        5.9656746069715165,
+        5.948934931379953
+      ],
+      "best_child_score": 5.926631118839718,
+      "mejoro": false
+    },
+    {
+      "generation": 9,
+      "status": "in_progress",
+      "parent_scores": [
+        5.9656746069715165,
+        5.948934931379953
+      ],
+      "best_child_score": 5.93114702772907,
+      "mejoro": false
+    },
+    {
+      "generation": 10,
+      "status": "in_progress",
+      "parent_scores": [
+        5.9656746069715165,
+        5.948934931379953
+      ],
+      "best_child_score": 5.78695740691301,
+      "mejoro": false
+    },
+    {
+      "generation": 11,
+      "status": "in_progress",
+      "parent_scores": [
+        5.9656746069715165,
+        5.948934931379953
+      ],
+      "best_child_score": 5.9298535163716215,
+      "mejoro": false
+    },
+    {
+      "generation": 12,
+      "status": "in_progress",
+      "parent_scores": [
+        5.9656746069715165,
+        5.948934931379953
+      ],
+      "best_child_score": 5.905320381061402,
+      "mejoro": false
+    },
+    {
+      "generation": 13,
+      "status": "in_progress",
+      "parent_scores": [
+        5.968892766293043,
+        5.9656746069715165
+      ],
+      "best_child_score": 5.968892766293043,
+      "mejoro": true
+    },
+    {
+      "generation": 14,
+      "status": "in_progress",
+      "parent_scores": [
+        5.968892766293043,
+        5.9656746069715165
+      ],
+      "best_child_score": 5.9579564616137075,
+      "mejoro": false
+    },
+    {
+      "generation": 15,
+      "status": "in_progress",
+      "parent_scores": [
+        5.968892766293043,
+        5.9656746069715165
+      ],
+      "best_child_score": 5.910231994585376,
+      "mejoro": false
+    },
+    {
+      "generation": 16,
+      "status": "in_progress",
+      "parent_scores": [
+        5.979546931880278,
+        5.968892766293043
+      ],
+      "best_child_score": 5.979546931880278,
+      "mejoro": true
+    },
+    {
+      "generation": 17,
+      "status": "in_progress",
+      "parent_scores": [
+        5.979546931880278,
+        5.968892766293043
+      ],
+      "best_child_score": 5.9412700875733835,
+      "mejoro": false
+    },
+    {
+      "generation": 18,
+      "status": "in_progress",
+      "parent_scores": [
+        5.979546931880278,
+        5.968892766293043
+      ],
+      "best_child_score": 5.944150178684648,
+      "mejoro": false
+    },
+    {
+      "generation": 19,
+      "status": "in_progress",
+      "parent_scores": [
+        5.979546931880278,
+        5.968892766293043
+      ],
+      "best_child_score": 5.94534506751918,
+      "mejoro": false
+    },
+    {
+      "generation": 20,
+      "status": "in_progress",
+      "parent_scores": [
+        5.979546931880278,
+        5.968892766293043
+      ],
+      "best_child_score": 5.941193904976833,
+      "mejoro": false
+    },
+    {
+      "generation": 21,
+      "status": "in_progress",
+      "parent_scores": [
+        5.979546931880278,
+        5.968892766293043
+      ],
+      "best_child_score": 5.9106914426063355,
+      "mejoro": false
+    },
+    {
+      "generation": 22,
+      "status": "in_progress",
+      "parent_scores": [
+        5.979546931880278,
+        5.968892766293043
+      ],
+      "best_child_score": 5.475274713741282,
+      "mejoro": false
+    },
+    {
+      "generation": 23,
+      "status": "in_progress",
+      "parent_scores": [
+        5.979546931880278,
+        5.978875748248824
+      ],
+      "best_child_score": 5.978875748248824,
+      "mejoro": false
+    },
+    {
+      "generation": 24,
+      "status": "in_progress",
+      "parent_scores": [
+        5.999469546996604,
+        5.979546931880278
+      ],
+      "best_child_score": 5.999469546996604,
+      "mejoro": true
+    },
+    {
+      "generation": 25,
+      "status": "in_progress",
+      "parent_scores": [
+        5.999469546996604,
+        5.979546931880278
+      ],
+      "best_child_score": 5.6608481322749435,
+      "mejoro": false
+    },
+    {
+      "generation": 26,
+      "status": "in_progress",
+      "parent_scores": [
+        5.999469546996604,
+        5.994513587758377
+      ],
+      "best_child_score": 5.994513587758377,
+      "mejoro": false
+    },
+    {
+      "generation": 27,
+      "status": "in_progress",
+      "parent_scores": [
+        5.999469546996604,
+        5.994513587758377
+      ],
+      "best_child_score": 5.979784251226197,
+      "mejoro": false
+    },
+    {
+      "generation": 28,
+      "status": "in_progress",
+      "parent_scores": [
+        5.999469546996604,
+        5.994513587758377
+      ],
+      "best_child_score": 5.986608770621384,
+      "mejoro": false
+    },
+    {
+      "generation": 29,
+      "status": "in_progress",
+      "parent_scores": [
+        5.999469546996604,
+        5.994513587758377
+      ],
+      "best_child_score": 5.982715505344969,
+      "mejoro": false
+    },
+    {
+      "generation": 30,
+      "status": "in_progress",
+      "parent_scores": [
+        6.000579740610896,
+        5.999469546996604
+      ],
+      "best_child_score": 6.000579740610896,
+      "mejoro": true
+    },
+    {
+      "generation": 31,
+      "status": "in_progress",
+      "parent_scores": [
+        6.000579740610896,
+        5.999469546996604
+      ],
+      "best_child_score": 5.9607173488676715,
+      "mejoro": false
+    },
+    {
+      "generation": 32,
+      "status": "in_progress",
+      "parent_scores": [
+        6.000579740610896,
+        5.999469546996604
+      ],
+      "best_child_score": 5.9468826955082275,
+      "mejoro": false
+    },
+    {
+      "generation": 33,
+      "status": "in_progress",
+      "parent_scores": [
+        6.000579740610896,
+        5.999469546996604
+      ],
+      "best_child_score": 5.973598168822149,
+      "mejoro": false
+    },
+    {
+      "generation": 34,
+      "status": "in_progress",
+      "parent_scores": [
+        6.005081722221789,
+        6.000579740610896
+      ],
+      "best_child_score": 6.005081722221789,
+      "mejoro": true
+    },
+    {
+      "generation": 35,
+      "status": "in_progress",
+      "parent_scores": [
+        6.005081722221789,
+        6.000579740610896
+      ],
+      "best_child_score": 5.860678213817429,
+      "mejoro": false
+    },
+    {
+      "generation": 36,
+      "status": "in_progress",
+      "parent_scores": [
+        6.005081722221789,
+        6.000579740610896
+      ],
+      "best_child_score": 5.922585441330077,
+      "mejoro": false
+    },
+    {
+      "generation": 37,
+      "status": "in_progress",
+      "parent_scores": [
+        6.005081722221789,
+        6.000579740610896
+      ],
+      "best_child_score": 5.932989788817501,
+      "mejoro": false
+    },
+    {
+      "generation": 38,
+      "status": "in_progress",
+      "parent_scores": [
+        6.005081722221789,
+        6.000579740610896
+      ],
+      "best_child_score": 5.991818386902012,
+      "mejoro": false
+    },
+    {
+      "generation": 39,
+      "status": "in_progress",
+      "parent_scores": [
+        6.005081722221789,
+        6.000579740610896
+      ],
+      "best_child_score": 5.982497270968267,
+      "mejoro": false
+    },
+    {
+      "generation": 40,
+      "status": "in_progress",
+      "parent_scores": [
+        6.005081722221789,
+        6.000579740610896
+      ],
+      "best_child_score": 5.959392516181634,
+      "mejoro": false
+    },
+    {
+      "generation": 41,
+      "status": "in_progress",
+      "parent_scores": [
+        6.005081722221789,
+        6.000579740610896
+      ],
+      "best_child_score": 5.998284874480342,
+      "mejoro": false
+    },
+    {
+      "generation": 42,
+      "status": "in_progress",
+      "parent_scores": [
+        6.005081722221789,
+        6.000579740610896
+      ],
+      "best_child_score": 5.962078079084302,
+      "mejoro": false
+    },
+    {
+      "generation": 43,
+      "status": "in_progress",
+      "parent_scores": [
+        6.005081722221789,
+        6.000579740610896
+      ],
+      "best_child_score": 5.960273565493794,
+      "mejoro": false
+    },
+    {
+      "generation": 44,
+      "status": "in_progress",
+      "parent_scores": [
+        6.005081722221789,
+        6.000579740610896
+      ],
+      "best_child_score": 5.8880102691691505,
+      "mejoro": false
+    }
+  ]
+}

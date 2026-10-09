@@ -21,12 +21,10 @@ El detalle técnico está en la [Research Note 16](<../documentos_de_decision/Re
 | Archivo | Tipo | Qué cambia |
 |---|---|---|
 | `mision_avion.py` | modificado | Interruptor `VIENTO_ACTIVO`. Con `True`: aire del sitio, ráfaga real, regla de rotura y término de turbulencia |
-| `competencia.py` | modificado (~10 líneas) | Con viento, arranca desde `semillas_viento.json` |
 | `viento.py` | nuevo | Datos de los sitios y modelo de turbulencia |
-| `semillas_viento.json` | nuevo | Semillas válidas con viento (los ganadores del 18/09) |
 | `ganadores_viento.json` | nuevo | Ganadores con viento. `ganadores.json` no se tocó |
 
-El resto del optimizador (geometría, estructura, algoritmo genético, perfiles, notebook) quedó intacto. También se agregaron dos líneas al `README.md` y la Research Note 16.
+El resto del optimizador (geometría, estructura, algoritmo genético, perfiles, semillas, `competencia.py`, notebook) quedó intacto. Con y sin viento se arranca desde las mismas semillas de Felipe (`semillas.json`). También se agregaron dos líneas al `README.md` y la Research Note 16.
 
 ---
 
@@ -47,6 +45,8 @@ El resto del optimizador (geometría, estructura, algoritmo genético, perfiles,
 
 ## 3. Resultados
 
+> **Pendiente:** estos números son de la corrida que arrancaba desde los ganadores del 18/09. Hay que volver a correr `optimizar_con_viento.py` con las semillas de Felipe.
+
 | Cola en V (ganadora) | Sin viento (18/09) | Con viento |
 |---|---|---|
 | Superficie alar | 0.91 m² | 1.10 m² (**+21 %**) |
@@ -63,7 +63,7 @@ El resto del optimizador (geometría, estructura, algoritmo genético, perfiles,
 
 ## 4. Cómo usarlo
 
-- **Con o sin viento:** `VIENTO_ACTIVO` en `optimizacion_avion/mision_avion.py`. Conviene cambiarlo en el archivo, porque las semillas se eligen al cargar el módulo.
+- **Con o sin viento:** `VIENTO_ACTIVO` en `optimizacion_avion/mision_avion.py`.
 - **Comparación completa** (~30–45 min): `python viento/optimizar_con_viento.py`
 - **Solo rehacer la tabla y los gráficos:** `python viento/optimizar_con_viento.py --solo-comparar`
 - **Notebook `02_Optimizacion_Avion.ipynb`:** corre con viento si `VIENTO_ACTIVO = True`. Ojo: la celda de exportación anota la ráfaga como `mis.RAFAGA_VERTICAL` (3.0), aunque con viento se usa 4.63.

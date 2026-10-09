@@ -47,7 +47,11 @@ Se descartaron las corridas de sensibilidad con varios pesos: con pesos derivado
 
 ### 2.3 Semillas
 
-Con el aire del sitio, las 10 semillas de `semillas.json` entran en pérdida a 10.1–10.6 m/s y son inválidas. Con viento, `competencia.py` arranca desde `semillas_viento.json`, que son los ganadores sin viento del 18/09 (válidos en el sitio). `semillas.json` no se tocó.
+Con y sin viento se arranca desde las **mismas semillas de Felipe** (`semillas.json`), así las dos corridas parten del mismo punto y `competencia.py` queda igual que en `main`.
+
+Con el aire del sitio, esas 10 semillas entran en pérdida a 10.1–10.6 m/s y son inválidas, así que la corrida con viento arranca con los dos padres en −∞. No es un problema: el GA reemplaza a los padres por el primer hijo válido. Probado con la cola en V (paciencia 8, máximo 8 generaciones): ya en la generación 1 aparecen hijos válidos (score 4.70) y en la 8 llega a 5.53.
+
+*Versión anterior (descartada):* con viento se arrancaba desde `semillas_viento.json`, que eran los ganadores sin viento del 18/09. Tenía dos problemas: las dos corridas no partían del mismo lugar, y esas semillas ya daban n ≈ 3.1–3.3 con la ráfaga del sitio, por encima de `N_LIMITE`. Los resultados de la sección 3 son de esa versión y hay que volver a correrlos.
 
 ## 3. Resultados (corrida del 2026-10-02)
 

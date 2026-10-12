@@ -66,6 +66,8 @@ ESTRUCTURA DEL PUNTAJE
           + w_di  * f_direccional  (Cn_beta)
           + w_la  * f_lateral      (Cl_beta)
           + w_le  * f_lento        (NUEVO: cuánto margen sobra en vuelo lento)
+          + w_en  * f_envergadura  (NUEVO 2026-09-28: penaliza envergadura > 2.0 m,
+                                     dificultad de fabricación artesanal)
 
 RESTRICCIONES DURAS: estructura que no cierra, no sostenerse a 120 km/h, no
 poder volar a 10 m/s ni con flap, margen estático negativo, Cn_beta <= 0,
@@ -130,6 +132,43 @@ Research Note 15):
      turbulento.
    Con VIENTO_ACTIVO = False el optimizador da exactamente los mismos
    resultados que antes de este cambio.
+
+==========================================================================
+ACTUALIZACIÓN 2026-09-28 -- PENALIZACIÓN POR ENVERGADURA (FABRICACIÓN)
+==========================================================================
+Pedido de Felipe después de revisar el código: una semiala de más de 1 m
+(envergadura total > 2.0 m) deja de entrar en una sola pieza en moldes o
+mesas de trabajo artesanales, y empalmarla en dos tramos agrega peso de
+unión y riesgo de fabricación que el modelo no ve de ninguna otra forma --
+ni la masa estructural (`estructura_avion.py`) ni la aerodinámica cobran
+nada por esto hoy.
+
+Se implementa como término de PUNTAJE adicional (`f_en`, peso
+`PESO_ENVERGADURA`), no como restricción dura: 2.0 m sigue siendo
+alcanzable -- de hecho es el límite INFERIOR de `BOUNDS_ALA["envergadura"]`
+en `geometria_avion.py`, así que todo el rango de diseño queda por encima
+de o en el umbral -- pero por encima cuesta puntaje, con una caída suave
+(meseta gaussiana, igual criterio que `_meseta` para estabilidad y ráfaga)
+en vez de un salto. Se eligió meseta y no gate duro porque la dificultad de
+fabricación es progresiva (1.1 m de semiala no es igual de grave que 1.75 m)
+y porque un gate en 2.0 m dejaría in-evaluable de golpe buena parte del
+rango ya explorado por corridas anteriores.
+
+==========================================================================
+ACTUALIZACIÓN 2026-10-12 -- BATERÍA DIMENSIONADA POR ALCANCE (350 km)
+==========================================================================
+Con BATERIA_ACTIVA = True (interruptor al lado de VIENTO_ACTIVO) la batería
+deja de ser parte de MASA_SISTEMAS y pasa a ser una masa explícita que sale de
+la resistencia de crucero del propio candidato: volar bateria.ALCANCE_KM (350)
+a V_CRUCERO constante cuesta E = (D*V/eta + P_avionica)*t*(1+reserva), y
+m_bat = E / (Wh/kg del pack). Como la batería pesa, el peso sube, la
+resistencia inducida sube y hace falta más batería: el lazo se cierra con
+`analizar_mision_avion` (varias pasadas aerodinámicas completas, ~2). El volumen
+que ocupa la batería se le suma al volumen mínimo de fuselaje.
+Todos los supuestos (rendimiento propulsivo 0.65, celda, reserva, overhead del
+pack) están como constantes nombradas al principio de bateria.py.
+Con BATERIA_ACTIVA = False vuelve el modelo anterior (batería dentro de
+MASA_SISTEMAS = 1.5 kg). Ver evaluacion_bateria_350km/LEEME.md.
 """
 
 from __future__ import annotations
@@ -140,6 +179,7 @@ import numpy as np
 from optimizacion_ala.estructura import G, MASA_PAYLOAD, MASA_SISTEMAS, N_LIMITE, N_ULTIMO
 
 from . import viento as _viento
+from . import bateria as _bat
 
 from .estructura_avion import converger_masa_avion
 from .geometria_avion import (
@@ -162,6 +202,12 @@ V_STALL_OBJETIVO = V_LENTO / MARGEN_SOBRE_PERDIDA   # 8.33 m/s
 # Viento del sitio (ver encabezado, punto 5). En False: aire a nivel del mar
 # y ráfaga de 3 m/s, exactamente como antes del 2026-10-02.
 VIENTO_ACTIVO = True
+
+# Batería dimensionada por ALCANCE (2026-10-12, ver bateria.py). En True la masa
+# de batería sale de la resistencia de crucero para volar _bat.ALCANCE_KM a
+# V_CRUCERO, y entra al peso del avión (lazo cerrado). En False todo vuelve a
+# ser exactamente como antes (batería dentro de MASA_SISTEMAS = 1.5 kg).
+BATERIA_ACTIVA = True
 
 RAFAGA_VERTICAL = 3.0         # [m/s] ráfaga SIN viento del sitio; con viento: viento.RAFAGA_VERTICAL_SITIO
 VIENTO_MEDIO = _viento.VIENTO_MEDIO_SITIO              # [m/s] antes 3.1 -- informativo, no entra en cuentas
@@ -228,6 +274,25 @@ VOLUMEN_UTIL_MIN_L = 8.2      # [L] volumen útil requerido (payload + bateria +
 FACTOR_UTILIZACION_VOLUMEN = 0.55
 
 # =====================================================================
+# LÍMITE DE ENVERGADURA POR FABRICACIÓN -- variable fácil de mover (ver
+# encabezado, actualización 2026-09-28)
+# =====================================================================
+# No es una restricción aerodinámica: por encima de esto, la semiala deja de
+# entrar en una sola pieza en los moldes/mesas de trabajo artesanales
+# disponibles. Se penaliza con una meseta suave (ver _meseta), no con un gate
+# duro -- 2.0 m coincide con el límite INFERIOR de BOUNDS_ALA["envergadura"]
+# en geometria_avion.py, así que TODO candidato queda en la zona penalizada
+# o justo en el borde; lo que el término hace es preferir, a igualdad de lo
+# demás, el extremo angosto de ese rango en vez de tratarlo como gratis.
+ENVERGADURA_MANUFACTURA_MAX = 2.0     # [m]
+# Ancho de la caída gaussiana (ver _meseta): a envergadura = MAX + TOL el
+# término vale exp(-1) = 0.37. 0.4 m es un compromiso deliberado: bastante
+# ancho para no castigar de forma abrupta 2.0-2.3 m (siguen siendo diseños
+# razonables si el resto de la misión los favorece), pero angosto para que
+# 3.0-3.5 m (el otro extremo de BOUNDS_ALA) quede claramente desfavorecido.
+ENVERGADURA_MANUFACTURA_TOL = 0.4     # [m]
+
+# =====================================================================
 # PESOS
 # =====================================================================
 PESO_EFICIENCIA = 1.0
@@ -249,6 +314,13 @@ PESO_LENTO = 1.0
 # más alta (CL bajo, régimen de perfil) y no es donde el avión pasa la
 # mayor parte de la misión.
 PESO_VELMAX = 0.5
+# NUEVO 2026-09-28: envergadura > 2.0 m, dificultad de fabricación artesanal
+# (ver ENVERGADURA_MANUFACTURA_MAX/TOL más arriba). Peso moderado, a
+# propósito comparable a masa/ráfaga/margen: es un criterio de INTEGRACIÓN
+# (¿entra en el taller?), no de misión (¿vuela lo que tiene que volar?), así
+# que no debería poder tapar a los términos de performance si el resto del
+# candidato es claramente mejor.
+PESO_ENVERGADURA = 0.3
 # Turbulencia (solo con VIENTO_ACTIVO): el término es 1 / (1 + resistencia
 # extra por turbulencia). El peso NO es una preferencia: se elige para que un
 # 1 % de resistencia por turbulencia cueste en el puntaje lo mismo que un 1 %
@@ -367,11 +439,18 @@ def _clmax_ala(params: dict, Re: float, velocidad: float, con_flap: bool) -> flo
     return FACTOR_CLMAX_3D * limpio + d
 
 
-def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
+def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = None) -> dict | None:
+    """Una pasada aerodinámica completa. `masa_bateria=None` es el modelo de
+    siempre; con un valor, la batería es una masa explícita de ese tamaño."""
     sm_min, sm_max = SM_BANDS[topologia]
     try:
         # --- 1. Masa ----------------------------------------------------
-        est = converger_masa_avion(params, topologia)
+        if masa_bateria is None:
+            est = converger_masa_avion(params, topologia)
+        else:
+            est = converger_masa_avion(params, topologia,
+                                       masa_sistemas=_bat.MASA_SISTEMAS_SIN_BATERIA,
+                                       masa_extra=masa_bateria)
         if est is None:
             return None
         W = est["peso_total"]
@@ -384,7 +463,11 @@ def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
         # PRINCIPAL (fuselages[0], ver construir_avion): nunca las vigas del
         # doble boom, que no cargan payload.
         vol_geo_L = float(avion.fuselages[0].volume()) * 1000.0
-        if vol_geo_L * FACTOR_UTILIZACION_VOLUMEN < VOLUMEN_UTIL_MIN_L:
+        vol_req_L = VOLUMEN_UTIL_MIN_L
+        if masa_bateria is not None:
+            # el 8.2 L ya traía ~0.5 L de batería: se cambia por el volumen real
+            vol_req_L += _bat.volumen_bateria_l(masa_bateria) - _bat.VOLUMEN_BATERIA_INCLUIDO_L
+        if vol_geo_L * FACTOR_UTILIZACION_VOLUMEN < vol_req_L:
             return None
 
         S = float(avion.s_ref)
@@ -573,12 +656,60 @@ def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
             "n_con_rafaga": 1.0 + dn_rafaga, "margen_perdida": margen_perdida,
             # viento del sitio
             "viento_activo": VIENTO_ACTIVO, "rho": rho, "rafaga_vertical": rafaga,
+            "masa_sistemas": est["masa_sistemas"], "masa_bateria_usada": masa_bateria,
+            "vol_geo_L": vol_geo_L, "vol_requerido_L": vol_req_L,
             "frac_inducida": frac_inducida, "sigma_n_turbulencia": sigma_n,
             "extra_turbulencia": extra_turbulencia,
             "D_turbulento": D_crucero * (1.0 + extra_turbulencia),
         }
     except Exception:
         return None
+
+
+def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
+    """Análisis completo de misión. Con BATERIA_ACTIVA = False es una sola
+    pasada con el modelo de masas de siempre. Con True cierra el lazo
+    batería <-> resistencia: cada pasada corre la aerodinámica completa con una
+    masa de batería dada, y de ahí sale (con la resistencia reescalada por peso,
+    ver bateria.resistencia_a_peso) la masa de batería que corresponde; se
+    repite hasta que deja de cambiar (en la práctica 2 pasadas)."""
+    if not BATERIA_ACTIVA:
+        return _analizar_pasada(params, topologia, None)
+
+    m_b = _bat.MASA_BATERIA_INICIAL_KG
+    a = None
+    for _ in range(_bat.MAX_PASADAS):
+        a = _analizar_pasada(params, topologia, m_b)
+        if a is None:
+            return None
+        D_ef = a["D_turbulento"] if VIENTO_ACTIVO else a["D_crucero"]
+        m_nueva = _bat.cerrar_masa_bateria(D_ef, a["frac_inducida"], a["peso"],
+                                           a["masa_total"] - m_b, m_b, V_CRUCERO)
+        if abs(m_nueva - m_b) <= _bat.TOL_MASA_BATERIA_KG:
+            break
+        m_b = m_nueva
+
+    # Balance de energía con la masa de batería que SE USÓ en la última pasada.
+    e_pack = _bat.energia_especifica_pack()
+    E_disp = m_b * e_pack
+    E_req = _bat.energia_requerida_wh(D_ef, V_CRUCERO)
+    pack = _bat.dimensionar_pack(max(E_req, E_disp))
+    despegue = _bat.estimar_despegue(a["peso"], a["rho"], pack)
+    P_el = _bat.potencia_electrica_crucero(D_ef, V_CRUCERO)
+    a["masa_bateria"] = m_b
+    a["bateria"] = {
+        "alcance_objetivo_km": _bat.ALCANCE_KM,
+        "alcance_logrado_km": _bat.ALCANCE_KM * E_disp / E_req,
+        "eta_propulsiva": _bat.ETA_PROPULSIVA_TOTAL,
+        "potencia_electrica_crucero_W": P_el,
+        "corriente_crucero_A": P_el / pack["tension_nominal_V"],
+        "energia_requerida_wh": E_req, "energia_disponible_wh": E_disp,
+        "energia_especifica_pack_wh_kg": e_pack,
+        "masa_bateria_kg": m_b, "fraccion_masa_bateria": m_b / a["masa_total"],
+        "volumen_bateria_l": _bat.volumen_bateria_l(m_b),
+        "pack": pack, "despegue": despegue,
+    }
+    return a
 
 
 def _terminos(a: dict) -> list:
@@ -598,6 +729,12 @@ def _terminos(a: dict) -> list:
     f_la = min(1.0, -a["Cl_beta"] / CL_BETA_REFERENCIA)
     f_le = min(1.0, max(a["margen_lento"], 0.0))
     f_vm = D_REFERENCIA_VMAX / a["D_vmax"]
+    # Envergadura > 2.0 m (fabricación): meseta que vale 1.0 hasta el límite
+    # y cae en gaussiana por encima. Reutiliza _meseta con lo=0.0 porque la
+    # envergadura nunca puede ser negativa ni (por BOUNDS_ALA) menor a 2.0 m
+    # -- la rama "por debajo de lo" de _meseta nunca se activa en la
+    # práctica, lo que importa acá es solo la rama "por encima de hi".
+    f_en = _meseta(a["envergadura"], 0.0, ENVERGADURA_MANUFACTURA_MAX, ENVERGADURA_MANUFACTURA_TOL)
     terminos = [
         ("eficiencia (D crucero)", PESO_EFICIENCIA, f_ef),
         ("masa total", PESO_MASA, f_ma),
@@ -609,6 +746,7 @@ def _terminos(a: dict) -> list:
         ("lateral (Cl_beta)", PESO_LATERAL, f_la),
         ("vuelo lento (10 m/s)", PESO_LENTO, f_le),
         ("velocidad maxima (120 km/h)", PESO_VELMAX, f_vm),
+        ("envergadura (fabricacion)", PESO_ENVERGADURA, f_en),
     ]
     if VIENTO_ACTIVO:
         terminos.append(("turbulencia (eficiencia)", PESO_TURBULENCIA, 1.0 / (1.0 + a["extra_turbulencia"])))
@@ -638,11 +776,15 @@ def desglose_mision_avion(params: dict, topologia: str) -> str:
     L.append("")
     L.append(f"VOLUMEN DE FUSELAJE  geometrico {a['vol_geo_fuselaje_L']:6.2f} L  x "
              f"{FACTOR_UTILIZACION_VOLUMEN:.0%} util. = {a['vol_util_fuselaje_L']:6.2f} L util  "
-             f"(requerido >= {VOLUMEN_UTIL_MIN_L:.1f} L)")
+             f"(requerido >= {a['vol_requerido_L']:.1f} L)")
     L.append("")
     L.append("MASA (calculada, no declarada)")
     L.append(f"  carga util ............ {MASA_PAYLOAD:6.2f} kg")
-    L.append(f"  sistemas .............. {MASA_SISTEMAS:6.2f} kg")
+    L.append(f"  sistemas .............. {a['masa_sistemas']:6.2f} kg"
+             + ("   (sin bateria)" if a.get("bateria") else "   (incluye bateria)"))
+    if a.get("bateria"):
+        L.append(f"  bateria ............... {a['masa_bateria']:6.2f} kg   "
+                 f"({100*a['bateria']['fraccion_masa_bateria']:.0f}% de la masa total)")
     L.append(f"  estructura ............ {a['masa_estructura']:6.2f} kg")
     L.append(f"     larguero {a['masa_larguero']:.3f} | piel ala {a['masa_piel_ala']:.3f} | "
              f"winglet {a['masa_winglet']:.3f} | flap {a['masa_flap']:.3f}")
@@ -652,7 +794,8 @@ def desglose_mision_avion(params: dict, topologia: str) -> str:
              f"({'la rigidez dimensiona el larguero' if a['manda_rigidez'] else 'manda la resistencia'})")
     L.append("")
     L.append("GEOMETRIA")
-    L.append(f"  envergadura ........... {a['envergadura']:6.2f} m   (variable de diseno)")
+    L.append(f"  envergadura ........... {a['envergadura']:6.2f} m   (variable de diseno; "
+             f"penalizada en puntaje por encima de {ENVERGADURA_MANUFACTURA_MAX:.1f} m, fabricacion)")
     L.append(f"  superficie ............ {a['S']:6.3f} m2   AR = {a['AR']:.1f}   MAC = {a['MAC']:.3f} m")
     L.append(f"  carga alar ............ {a['carga_alar']:6.1f} N/m2")
     L.append(f"  volumen de cola ....... V_H = {a['V_H']:.3f}   V_V = {a['V_V']:.4f}"
@@ -665,6 +808,20 @@ def desglose_mision_avion(params: dict, topologia: str) -> str:
     L.append(f"  resistencia ........... {a['D_crucero']:6.2f} N")
     L.append(f"  potencia aerodinamica . {a['potencia_W']:6.1f} W   (sin rendimiento de helice ni motor)")
     L.append("")
+    if a.get("bateria"):
+        b = a["bateria"]; pk = b["pack"]; dsp = b["despegue"]
+        L.append(f"BATERIA para {b['alcance_objetivo_km']:.0f} km a {3.6*V_CRUCERO:.0f} km/h constantes "
+                 f"(eta propulsiva {b['eta_propulsiva']:.2f}, ver bateria.py)")
+        L.append(f"  potencia electrica .... {b['potencia_electrica_crucero_W']:6.1f} W  "
+                 f"({b['corriente_crucero_A']:.1f} A a {pk['tension_nominal_V']:.0f} V)")
+        L.append(f"  energia requerida ..... {b['energia_requerida_wh']:6.0f} Wh   "
+                 f"disponible {b['energia_disponible_wh']:.0f} Wh   alcance logrado {b['alcance_logrado_km']:.0f} km")
+        L.append(f"  pack {pk['celda']} {pk['S']}S{pk['P']}P ({pk['n_celdas']} celdas): "
+                 f"{pk['capacidad_Ah']:.1f} Ah, {pk['masa_pack_kg']:.2f} kg, {b['volumen_bateria_l']:.1f} L")
+        L.append(f"  despegue (info) ....... empuje {dsp['empuje_kgf']:.1f} kgf, {dsp['potencia_electrica_W']:.0f} W, "
+                 f"{dsp['corriente_A']:.0f} A (pack aguanta {pk['corriente_continua_max_A']:.0f} A: "
+                 f"{'OK' if dsp['corriente_ok'] else 'NO ALCANZA'})")
+        L.append("")
     L.append(f"VELOCIDAD MAXIMA a {3.6*V_MAX:.0f} km/h   (requisito, ya NO punto de diseno)")
     L.append(f"  CL necesario .......... {a['CL_vmax']:6.3f}   (CL max limpio {a['CL_max_vmax']:.3f})")
     L.append(f"  resistencia ........... {a['D_vmax']:6.2f} N")

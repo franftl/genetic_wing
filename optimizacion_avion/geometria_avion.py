@@ -42,6 +42,56 @@ solo dos topologías. Esta revisión la reemplaza entera. Los cambios:
 6. CINCO TOPOLOGÍAS en vez de dos (ver `TOPOLOGIAS`).
 
 ==========================================================================
+REVISIÓN 2026-09-28 -- fabricación de la envergadura, sweep monótono en
+cualquier sentido, y más resolución en el ala
+==========================================================================
+Tres pedidos de Felipe después de revisar el código:
+
+1. LÍMITE DE ENVERGADURA POR FABRICACIÓN. Se agrega una penalización suave
+   (no un gate duro) en `mision_avion.py` por encima de 2.0 m: una semiala de
+   más de 1 m deja de entrar en una sola pieza en moldes/mesas de trabajo
+   artesanales, y empalmarla en dos tramos agrega peso de unión y riesgo de
+   fabricación que el modelo no ve de otra forma. Se implementa como término
+   de puntaje adicional, igual que el resto de la misión: 2.0 m sigue siendo
+   alcanzable (los BOUNDS de acá abajo ya arrancaban en 2.0), pero por encima
+   cuesta puntaje en vez de estar prohibido.
+
+2. SWEEP MONÓTONO, HACIA ATRÁS *O* HACIA ADELANTE. Hasta esta revisión
+   `le_offset_i` estaba acotado a `[0, hi]` y se proyectaba a NO DECRECIENTE
+   (`_proyectar_no_decreciente`): el borde de ataque solo podía flecharse
+   hacia atrás, nunca hacia adelante, porque el offset no podía ser negativo.
+   Ahora el rango se abre a `[-hi, hi]` y la proyección pasa a
+   `_proyectar_monotona` -- la MISMA función que ya se usaba para la
+   elevación (diedro/anedro, ver más abajo): elige la proyección monótona más
+   cercana, creciente O decreciente, la que quede más cerca en distancia L2.
+   El resultado es el mismo argumento que ya estaba documentado para el
+   diedro: una flecha hacia atrás (creciente) y una hacia adelante
+   (decreciente) son las dos formas fabricables con un larguero recto -- lo
+   que NO es fabricable es un borde de ataque que avanza, retrocede y vuelve
+   a avanzar, porque ahí la posición del larguero como fracción de la cuerda
+   se mueve de un lado a otro de la sección. Se mantiene como PROYECCIÓN y no
+   como rechazo, por la misma razón que ya regía acá: no quemar evaluaciones
+   del GA en diseños no fabricables.
+
+3. MÁS ESTACIONES DE DISCRETIZACIÓN EN EL ALA. Antes las 5 estaciones de
+   CONTROL (las variables de diseño que ve el GA) eran también,
+   directamente, las secciones que se le pasaban a AeroBuildup: el ala era
+   una poligonal de 4 tramos rectos. Ahora se separa una cosa de la otra,
+   igual que ya hacía `optimizacion_ala.geometria` con `N_SECCIONES_LOFT`:
+   las 5 estaciones de control se interpolan con PCHIP (spline monótona por
+   tramos, no se pasa de los puntos de control) a `N_ESTACIONES_LOFT = 11`
+   secciones reales para el solver. El número 11 se hereda del estudio de
+   convergencia ya documentado en `optimizacion_ala.geometria` (a partir de
+   11 el resultado no se mueve más de 0.03% aunque seguí subiendo), que usa
+   la misma técnica de lofting sobre una geometría comparable; no se repitió
+   ese estudio específicamente para esta ala con cola, así que conviene
+   confirmarlo si hace falta apurar el tiempo de corrida. IMPORTANTE: esto NO
+   agrega variables de diseño -- el GA sigue viendo exactamente los mismos 5
+   x 4 parámetros de forma en planta -- pero sí sube el costo por candidato
+   (más secciones = más llamadas a NeuralFoil por corrida de AeroBuildup),
+   así que una competencia completa va a tardar más que antes.
+
+==========================================================================
 LAS TOPOLOGÍAS, Y POR QUÉ ESTAS
 ==========================================================================
 Un resultado teórico condiciona toda la competencia y conviene tenerlo a la
@@ -84,6 +134,7 @@ from typing import Optional
 
 import aerosandbox as asb
 import aerosandbox.numpy as np
+from scipy.interpolate import PchipInterpolator
 
 # Las proyecciones isotónicas son matemática pura y no dependen de la
 # topología: se reutilizan tal cual del ala volante (ver allí el porqué de
@@ -103,9 +154,19 @@ from .perfiles_avion import (
 
 # Estaciones de control del ala: raíz (0) + 4. Una menos que el ala volante
 # (que usa 6) a propósito: acá el ala comparte el presupuesto de parámetros
-# con un fuselaje y una cola que el ala volante no tiene.
+# con un fuselaje y una cola que el ala volante no tiene. Estas son las
+# variables de diseño que ve el GA -- NO cambiar sin regenerar semillas y
+# checkpoints (semillas.json, ganadores.json, checkpoint_avion_*.json).
 N_ESTACIONES = 5
 _FRAC_ESTACION = np.linspace(0.0, 1.0, N_ESTACIONES)
+
+# Estaciones que se le pasan REALMENTE al solver, interpolando las de control
+# con PCHIP (ver la revisión 2026-09-28 en el encabezado del módulo). Esto es
+# pura resolución numérica: no agrega ni un parámetro al espacio de búsqueda,
+# solo hace que la superficie que ve AeroBuildup sea más fina que 4 tramos
+# rectos.
+N_ESTACIONES_LOFT = 11
+_FRAC_LOFT = np.linspace(0.0, 1.0, N_ESTACIONES_LOFT)
 
 # Perfil de las superficies de cola. Simétrico, como corresponde a una
 # superficie que tiene que dar fuerza en los dos sentidos. Se deja FIJO (no
@@ -192,8 +253,14 @@ BOUNDS_ALA = {
 
     # Borde de ataque: offset de cada estación como fracción de la
     # SEMI-envergadura (así el parámetro no cambia de significado cuando la
-    # envergadura varía). Se proyecta a no decreciente en clamp_to_bounds.
-    **{f"le_offset_{i}": (0.0, 0.14) for i in range(1, N_ESTACIONES)},
+    # envergadura varía), medido desde la raíz (offset_raiz = 0 por
+    # definición). Se permite NEGATIVO para que el ala pueda flecharse hacia
+    # ADELANTE y no solo hacia atrás -- antes el rango arrancaba en 0.0 y
+    # excluía esa opción por completo. Se proyecta a MONÓTONA (creciente o
+    # decreciente, nunca ondulada) en clamp_to_bounds_avion, con el mismo
+    # criterio y la misma función (_proyectar_monotona) que ya se usaba para
+    # la elevación -- ver la revisión 2026-09-28 en el encabezado del módulo.
+    **{f"le_offset_{i}": (-0.14, 0.14) for i in range(1, N_ESTACIONES)},
 
     # Torsión [deg] estación por estación. Rango que permite washout fuerte
     # (punta más descargada que la raíz) para que la punta no entre en
@@ -353,8 +420,11 @@ def clamp_to_bounds_avion(params: dict, topologia: str) -> dict:
     - CUERDAS no crecientes de raíz a punta. El ala volante esto lo
       verificaba y RECHAZABA (`_ahusamiento_valido` en mision.py); acá se
       proyecta, que es estrictamente mejor: no se pierde la evaluación.
-    - OFFSETS de borde de ataque no decrecientes (larguero recto: ver
-      `optimizacion_ala.geometria.clamp_to_bounds`).
+    - OFFSETS de borde de ataque MONÓTONOS -- flecha hacia atrás O hacia
+      adelante, pero pareja, nunca ondulada (larguero recto: ver la revisión
+      2026-09-28 en el encabezado del módulo, y
+      `optimizacion_ala.geometria.clamp_to_bounds` para el mismo argumento
+      aplicado al caso solo-hacia-atrás que regía antes acá).
     - ELEVACIÓN monótona (diedro o anedro, no ondulada).
     """
     bounds = BOUNDS_POR_TOPOLOGIA[topologia]
@@ -369,7 +439,7 @@ def clamp_to_bounds_avion(params: dict, topologia: str) -> dict:
         p[k] = min(max(v, lo), hi)
 
     claves_le = [f"le_offset_{i}" for i in range(1, N_ESTACIONES)]
-    for k, v in zip(claves_le, _proyectar_no_decreciente([p[k] for k in claves_le])):
+    for k, v in zip(claves_le, _proyectar_monotona([p[k] for k in claves_le])):
         lo, hi = bounds[k]
         p[k] = min(max(v, lo), hi)
 
@@ -398,26 +468,54 @@ def semi_envergadura(params: dict) -> float:
     return 0.5 * float(params["envergadura"])
 
 
-def _xsecs_ala(params: dict, x0: float = 0.0) -> list:
-    """Secciones del ala principal, con el borde de ataque de la raíz en x0.
+def _loftear_ala(params: dict, x0: float):
+    """Interpola las N_ESTACIONES de CONTROL (variables de diseño) a
+    N_ESTACIONES_LOFT secciones para el solver, con PCHIP -- mismo patrón y
+    misma razón que `optimizacion_ala.geometria.distribucion_envergadura` /
+    `elevacion_envergadura`: PCHIP es shape-preserving (si las cuerdas de
+    control decrecen de raíz a punta, las interpoladas también, sin jorobas
+    intermedias) y esto NO agrega variables de diseño, solo resolución
+    numérica (ver la revisión 2026-09-28 en el encabezado del módulo).
 
-    5 estaciones de control; AeroBuildup interpola linealmente entre ellas,
-    así que el borde de ataque resultante es una poligonal -- que es
-    exactamente lo que se construye en la práctica con un larguero recto y
-    nervaduras."""
+    Devuelve (y, cuerda, x_le, torsion, z) en las N_ESTACIONES_LOFT
+    fracciones finas de semi-envergadura."""
     b2 = semi_envergadura(params)
     cuerdas = [params["root_chord"]] + [params[f"chord_{i}"] for i in range(1, N_ESTACIONES)]
     offs = [0.0] + [params[f"le_offset_{i}"] for i in range(1, N_ESTACIONES)]
     elevs = [0.0] + [params[f"elev_{i}"] for i in range(1, N_ESTACIONES)]
     twists = [params[f"twist_{i}"] for i in range(N_ESTACIONES)]
 
+    cuerda = PchipInterpolator(_FRAC_ESTACION, cuerdas)(_FRAC_LOFT)
+    offset = PchipInterpolator(_FRAC_ESTACION, offs)(_FRAC_LOFT)
+    elev = PchipInterpolator(_FRAC_ESTACION, elevs)(_FRAC_LOFT)
+    torsion = PchipInterpolator(_FRAC_ESTACION, twists)(_FRAC_LOFT)
+
+    y = _FRAC_LOFT * b2
+    x_le = x0 + offset * b2
+    z = elev * b2
+    return y, cuerda, x_le, torsion, z
+
+
+def _xsecs_ala(params: dict, x0: float = 0.0) -> list:
+    """Secciones del ala principal, con el borde de ataque de la raíz en x0.
+
+    N_ESTACIONES puntos de control se interpolan a N_ESTACIONES_LOFT secciones
+    reales (ver `_loftear_ala`), así que el borde de ataque resultante ya no
+    es una poligonal de 4 tramos sino una curva suave discretizada en
+    N_ESTACIONES_LOFT -- más parecida a lo que da un larguero recto con
+    nervaduras densas que a una aproximación gruesa. El perfil se evalúa en
+    la fracción CONTINUA
+    real de cada sección de loft (`perfil_en_fraccion_avion` ya acepta
+    cualquier fracción), así que la transición de perfil también queda fina
+    y no escalonada en 4 tramos."""
+    y, cuerda, x_le, torsion, z = _loftear_ala(params, x0)
     xsecs = []
-    for i in range(N_ESTACIONES):
-        frac = float(_FRAC_ESTACION[i])
+    for i in range(N_ESTACIONES_LOFT):
+        frac = float(_FRAC_LOFT[i])
         xsecs.append(asb.WingXSec(
-            xyz_le=[float(x0 + offs[i] * b2), float(frac * b2), float(elevs[i] * b2)],
-            chord=float(cuerdas[i]),
-            twist=float(twists[i]),
+            xyz_le=[float(x_le[i]), float(y[i]), float(z[i])],
+            chord=float(cuerda[i]),
+            twist=float(torsion[i]),
             airfoil=perfil_en_fraccion_avion(params, frac),
         ))
     return xsecs

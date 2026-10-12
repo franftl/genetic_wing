@@ -243,14 +243,22 @@ def masa_estructura_avion(params: dict, topologia: str, masa_total_supuesta: flo
 
 
 def converger_masa_avion(params: dict, topologia: str, tol: float = 1e-4,
-                         max_iter: int = 30) -> dict | None:
-    """Punto fijo sobre la circularidad masa <-> carga."""
-    m_total = MASA_PAYLOAD + MASA_SISTEMAS + 1.0
+                         max_iter: int = 30, masa_sistemas: float | None = None,
+                         masa_extra: float = 0.0) -> dict | None:
+    """Punto fijo sobre la circularidad masa <-> carga.
+
+    `masa_sistemas` reemplaza a MASA_SISTEMAS (None = el valor de siempre) y
+    `masa_extra` suma una masa fija más (por ejemplo la batería dimensionada por
+    alcance, ver bateria.py). Con los valores por defecto el resultado es
+    exactamente el de antes de este cambio."""
+    m_sis = MASA_SISTEMAS if masa_sistemas is None else masa_sistemas
+    m_fija = MASA_PAYLOAD + m_sis + masa_extra
+    m_total = m_fija + 1.0
     for _ in range(max_iter):
         est = masa_estructura_avion(params, topologia, m_total)
         if est is None:
             return None
-        nueva = MASA_PAYLOAD + MASA_SISTEMAS + est["masa_estructura"]
+        nueva = m_fija + est["masa_estructura"]
         if not np.isfinite(nueva) or nueva > 60.0:
             return None
         if abs(nueva - m_total) < tol:
@@ -265,7 +273,7 @@ def converger_masa_avion(params: dict, topologia: str, tol: float = 1e-4,
         return None
     return {
         **est, "masa_total": m_total,
-        "masa_payload": MASA_PAYLOAD, "masa_sistemas": MASA_SISTEMAS,
+        "masa_payload": MASA_PAYLOAD, "masa_sistemas": m_sis, "masa_extra": masa_extra,
         "peso_total": m_total * G,
         "fraccion_estructural": est["masa_estructura"] / m_total,
     }

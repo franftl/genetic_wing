@@ -95,13 +95,13 @@ MAX_PASADAS = 3
 # =====================================================================
 # FUNCIONES
 # =====================================================================
-def energia_especifica_celda(celda: str = CELDA_POR_DEFECTO) -> float:
+def energia_especifica_celda(celda: str | None = None) -> float:
     """[Wh/kg] a nivel celda."""
-    c = CELDAS[celda]
+    c = CELDAS[celda or CELDA_POR_DEFECTO]
     return c["Ah"] * c["V"] / (c["g"] / 1000.0)
 
 
-def energia_especifica_pack(celda: str = CELDA_POR_DEFECTO) -> float:
+def energia_especifica_pack(celda: str | None = None) -> float:
     """[Wh/kg] a nivel pack (celda / overhead)."""
     return energia_especifica_celda(celda) / FACTOR_MASA_PACK
 
@@ -118,12 +118,12 @@ def energia_requerida_wh(D_efectiva: float, V: float, alcance_km: float | None =
     return potencia_electrica_crucero(D_efectiva, V) * t_h * (1.0 + RESERVA_ENERGIA)
 
 
-def masa_bateria_para(D_efectiva: float, V: float, celda: str = CELDA_POR_DEFECTO) -> float:
+def masa_bateria_para(D_efectiva: float, V: float, celda: str | None = None) -> float:
     """[kg] de pack para sostener el alcance con esa resistencia."""
     return energia_requerida_wh(D_efectiva, V) / energia_especifica_pack(celda)
 
 
-def volumen_bateria_l(masa_kg: float, celda: str = CELDA_POR_DEFECTO) -> float:
+def volumen_bateria_l(masa_kg: float, celda: str | None = None) -> float:
     """[L] que ocupa un pack de esa masa."""
     return masa_kg * energia_especifica_pack(celda) / ENERGIA_VOLUMETRICA_PACK_WH_L
 
@@ -136,7 +136,7 @@ def resistencia_a_peso(D0: float, frac_inducida: float, W0: float, W: float) -> 
 
 
 def cerrar_masa_bateria(D0: float, frac_inducida: float, W0: float, masa_resto_kg: float,
-                        masa_bat_usada: float, V: float, celda: str = CELDA_POR_DEFECTO,
+                        masa_bat_usada: float, V: float, celda: str | None = None,
                         g: float = 9.80665) -> float:
     """Punto fijo m_bat = f(D(W(m_bat))) con la aerodinámica de UNA pasada
     reescalada analíticamente. `masa_resto_kg` es todo lo que no es batería."""
@@ -151,9 +151,11 @@ def cerrar_masa_bateria(D0: float, frac_inducida: float, W0: float, masa_resto_k
     return m
 
 
-def dimensionar_pack(energia_wh: float, celda: str = CELDA_POR_DEFECTO,
-                     S: int = CELDAS_EN_SERIE) -> dict:
+def dimensionar_pack(energia_wh: float, celda: str | None = None,
+                     S: int | None = None) -> dict:
     """Configuración DISCRETA (S x P celdas) que cubre `energia_wh`."""
+    celda = celda or CELDA_POR_DEFECTO
+    S = S or CELDAS_EN_SERIE
     c = CELDAS[celda]
     wh_celda = c["Ah"] * c["V"]
     P = max(1, math.ceil(energia_wh / (S * wh_celda)))

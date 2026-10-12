@@ -108,6 +108,75 @@ for nombre, info in av.TOPOLOGIAS.items():
     print(f"  {'':<14} ref: {info['referencia_real']}")
 """)
 
+# ---------------------------------------------------------------- 1b
+md(r"""
+## 0. Interruptores de la rama `bateria-350km`
+
+Todo lo que se puede querer mover está en esta celda; hay que correrla **antes** de la sección 1.
+
+| Interruptor | Qué hace |
+|---|---|
+| `VIENTO` | `True`: la misión se evalúa con el aire y la ráfaga reales de los sitios (lo de imarzeniuk, `viento.py`). `False`: aire estándar y ráfaga de 3 m/s. |
+| `BATERIA` | `True`: la batería se dimensiona para el `ALCANCE_KM` a velocidad de crucero **todo el vuelo**, y su masa entra al peso del avión (`bateria.py`). `False`: vuelve el modelo viejo, con la batería dentro de `MASA_SISTEMAS = 1.5 kg`. |
+| `CORRIDA_RAPIDA` | `True`: 4 generaciones de paciencia, máximo 12, y solo v_tail y pod_boom (~15 min por topología). `False`: la competencia completa (10 / 60 / cinco topologías) y puede tardar **horas**, porque con batería cada candidato cuesta el doble. |
+
+Los supuestos de la batería (eficiencia propulsiva, reserva, celda, aviónica) son los de abajo; **ninguno está medido**, en particular `ETA_PROPULSIVA_TOTAL`.
+""")
+
+code(r"""
+import optimizacion_avion.bateria as bat
+
+# ------------------------------ INTERRUPTORES ------------------------------
+VIENTO = True            # lo de imarzeniuk (viento de los sitios)
+BATERIA = True           # bateria dimensionada por alcance
+CORRIDA_RAPIDA = True    # False = competencia completa (horas)
+
+# ------------------- SUPUESTOS DE LA BATERIA (bateria.py) -------------------
+bat.ALCANCE_KM = 350.0               # [km] a velocidad de crucero constante
+bat.ETA_PROPULSIVA_TOTAL = 0.65      # helice x motor x ESC en crucero (SUPUESTO)
+bat.POTENCIA_AVIONICA_W = 10.0       # [W] autopiloto + telemetria + camara
+bat.RESERVA_ENERGIA = 0.20           # [-] sobre la energia de crucero
+bat.CELDA_POR_DEFECTO = "molicel_m65a"   # molicel_m65a | lg_m58t | samsung_50g | molicel_p42a
+bat.CELDAS_EN_SERIE = 12             # 12S (solo informativo: la masa sale de la energia)
+
+# ------------------- PENALIZACION DE ENVERGADURA (fabricacion) -------------------
+mis.ENVERGADURA_MANUFACTURA_MAX = 2.0   # [m] por encima de esto se penaliza
+mis.ENVERGADURA_MANUFACTURA_TOL = 0.4   # [m] ancho de la caida gaussiana
+mis.PESO_ENVERGADURA = 0.3
+
+# ------------------------------ APLICAR ------------------------------
+mis.VIENTO_ACTIVO = VIENTO
+mis.BATERIA_ACTIVA = BATERIA
+
+# ---- Semillas validas para el escenario elegido ----
+# Las de semillas.json (7 kg, 8.2 L) quedan INVALIDAS con batería (~12 kg, ~2 L mas de
+# fuselaje) y con el aire liviano del sitio. Se necesitan DOS por topologia: el cruce
+# BLX entre dos padres iguales no explora nada.
+RAIZ = Path.cwd()
+if BATERIA:
+    _crudas = json.load(open(RAIZ / "evaluacion_bateria_350km" / "semillas_bateria.json"))
+elif VIENTO:
+    _gv = json.load(open(RAIZ / "optimizacion_avion" / "ganadores_viento.json"))
+    _gs = json.load(open(RAIZ / "optimizacion_avion" / "ganadores.json"))
+    _crudas = {t: [_gv[t]["params"], _gs[t]["params"]] for t in av.TOPOLOGIAS}
+else:
+    _crudas = None      # se usan las de semillas.json tal cual
+if _crudas is not None:
+    av.SEEDS_POR_TOPOLOGIA.update(
+        {t: [geo.clamp_to_bounds_avion(p, t) for p in ps] for t, ps in _crudas.items()})
+
+print(f"VIENTO_ACTIVO = {mis.VIENTO_ACTIVO}   BATERIA_ACTIVA = {mis.BATERIA_ACTIVA}   "
+      f"CORRIDA_RAPIDA = {CORRIDA_RAPIDA}")
+if mis.BATERIA_ACTIVA:
+    print(f"Bateria: {bat.ALCANCE_KM:.0f} km a {3.6*mis.V_CRUCERO:.0f} km/h, eta {bat.ETA_PROPULSIVA_TOTAL:.2f}, "
+          f"reserva {100*bat.RESERVA_ENERGIA:.0f}%, celda {bat.CELDA_POR_DEFECTO} "
+          f"({bat.energia_especifica_pack():.0f} Wh/kg a nivel pack)")
+print(f"Envergadura: penalizada por encima de {mis.ENVERGADURA_MANUFACTURA_MAX:.1f} m "
+      f"(tol {mis.ENVERGADURA_MANUFACTURA_TOL:.1f} m, peso {mis.PESO_ENVERGADURA})")
+for t in av.TOPOLOGIAS:
+    print(f"  semillas {t:<14}: {len(av.SEEDS_POR_TOPOLOGIA[t])}")
+""")
+
 # ---------------------------------------------------------------- 2
 md(r"""
 ## 1. Configuración: la misión y el criterio de parada
@@ -129,14 +198,16 @@ code(r"""
 # de ~20 parametros por topologia a 46-51, y con mas dimensiones el GA
 # necesita mas generaciones para explotar una direccion buena antes de que
 # la racha sin mejora lo corte.
-PACIENCIA = 10
-MAX_GENERACIONES = 60
+# CORRIDA_RAPIDA (seccion 0): 4 / 12 y solo v_tail + pod_boom; si no, 10 / 60 y las cinco.
+if CORRIDA_RAPIDA:
+    PACIENCIA, MAX_GENERACIONES = 4, 12
+    TOPOLOGIAS_A_CORRER = ["v_tail", "pod_boom"]
+else:
+    PACIENCIA, MAX_GENERACIONES = 10, 60
+    TOPOLOGIAS_A_CORRER = list(av.TOPOLOGIAS.keys())
 
 # --- Cuantos hijos por generacion, por topologia ---
 N_CROSSBRED, N_WILDCARD = 7, 3
-
-# --- Que topologias compiten ---
-TOPOLOGIAS_A_CORRER = list(av.TOPOLOGIAS.keys())
 
 print("MISION -- DOS PUNTOS DE VUELO")
 print(f"  crucero ............... {3.6*mis.V_CRUCERO:.0f} km/h ({mis.V_CRUCERO:.2f} m/s)")
@@ -146,7 +217,7 @@ print(f"  relacion de velocidades {mis.V_CRUCERO/mis.V_LENTO:.2f} : 1"
 print(f"  margen sobre perdida .. {mis.MARGEN_SOBRE_PERDIDA:.2f}"
       f"  -> v_stall objetivo <= {mis.V_STALL_OBJETIVO:.2f} m/s")
 print(f"  carga util ............ {mis.MASA_PAYLOAD:.1f} kg")
-print(f"  rafaga vertical ....... {mis.RAFAGA_VERTICAL:.1f} m/s (en crucero)")
+print(f"  rafaga vertical ....... {mis._rafaga_vertical():.2f} m/s (en crucero)")
 print()
 print("PESOS DEL SCORE")
 print(f"  eficiencia {mis.PESO_EFICIENCIA} | masa {mis.PESO_MASA} | estabilidad {mis.PESO_ESTABILIDAD}"
@@ -212,7 +283,7 @@ Para mirar de cerca qué está proponiendo el GA en una familia concreta. Cambi�
 """)
 
 code(r"""
-TOPOLOGIA_ACTIVA = "convencional"   # convencional | t_tail | v_tail | doble_boom | pod_boom
+TOPOLOGIA_ACTIVA = TOPOLOGIAS_A_CORRER[0]   # convencional | t_tail | v_tail | doble_boom | pod_boom (la que este en TOPOLOGIAS_A_CORRER)
 
 _est = estados[TOPOLOGIA_ACTIVA]
 
@@ -345,6 +416,31 @@ display(df)
 print("Referencia de volumen de cola para esta clase: V_H 0.5-0.7, V_V 0.02-0.05")
 print("(Scholz, INCAS Bulletin 13(3), 2021). No son restricciones: se reportan")
 print("para poder decir si el resultado cayo en territorio conocido.")
+""")
+
+code(r"""
+# Bateria de cada ganador (solo si BATERIA = True en la seccion 0)
+filas_b = []
+for t, est in estados.items():
+    a = av.analizar_mision_avion(est.mejor().params, t)
+    if a is None or not a.get("bateria"):
+        continue
+    b = a["bateria"]; pk = b["pack"]; d = b["despegue"]
+    filas_b.append({
+        "topologia": t, "masa_total_kg": a["masa_total"], "bateria_kg": a["masa_bateria"],
+        "bateria_%": 100*b["fraccion_masa_bateria"], "pack": f"{pk['S']}S{pk['P']}P",
+        "capacidad_Ah": pk["capacidad_Ah"], "energia_Wh": b["energia_requerida_wh"],
+        "volumen_L": b["volumen_bateria_l"], "alcance_km": b["alcance_logrado_km"],
+        "P_cruc_W": b["potencia_electrica_crucero_W"], "I_cruc_A": b["corriente_crucero_A"],
+        "empuje_despegue_kgf": d["empuje_kgf"], "I_despegue_A": d["corriente_A"],
+        "I_max_pack_A": pk["corriente_continua_max_A"],
+    })
+if filas_b:
+    display(pd.DataFrame(filas_b).sort_values("bateria_kg").round(2))
+    print("Alcance a velocidad de crucero TODO el vuelo; la reserva cubre despegue, ascenso y aterrizaje.")
+    print("Despegue: disco actuador con T/W = 0.45, helice de 15 pulgadas (informativo, no puntua).")
+else:
+    print("BATERIA = False: no hay modelo de bateria en este escenario.")
 """)
 
 # ---------------------------------------------------------------- 8
@@ -481,6 +577,11 @@ salida = {
                              "V_H", "V_V", "margen_perdida")},
 }
 
+if a.get("bateria"):
+    salida["bateria"] = json.loads(json.dumps(a["bateria"], default=float))
+    salida["_mision"]["alcance_km"] = a["bateria"]["alcance_objetivo_km"]
+    salida["_mision"]["viento_activo"] = bool(a.get("viento_activo"))
+
 ruta = Path(f"avion_design_params_{top_ganadora}.json")
 ruta.write_text(json.dumps(salida, indent=2, default=float))
 print(f"Guardado en {ruta.resolve()}")
@@ -500,7 +601,7 @@ Conviene tenerlo escrito para no confundir *"no está implementado"* con *"sali�
 - **Las superficies de cola no tienen larguero dimensionado**, solo masa de recubrimiento.
 - **Las derivadas de amortiguamiento no se convierten en modos dinámicos** (frecuencia y amortiguamiento de Dutch roll). Para eso harían falta los momentos de inercia: el modelo de masa sabe *cuánto* pesa cada pieza, no *cómo está distribuida*.
 - **No hay superficies de control más allá del flap.** Ni elevador, ni ruddervators, ni alerones: se evalúa la estabilidad de la configuración, no su controlabilidad ni la resistencia de trim con elevador deflectado.
-- **La potencia de crucero subió mucho al pasar a 120 km/h** (del orden de 200 W contra ~70 W a 60 km/h) y `MASA_SISTEMAS` sigue siendo una constante de 1.5 kg que incluye la batería. O sea que el modelo **no ve** que la autonomía cae: si la misión tiene un requisito de tiempo de vuelo, hace falta un modelo de energía que hoy no está.
+- **Batería (rama `bateria-350km`).** Con `BATERIA = True` hay un modelo de energía: la masa de batería sale del alcance pedido a velocidad de crucero constante. Lo que **no** modela: ascenso y descenso aparte, viento de frente, degradación de la celda ni la curva de descarga (la reserva del 20 % cubre todo eso de forma gruesa). El rendimiento propulsivo (0.65) es un supuesto, no un dato de hélice y motor. Con `BATERIA = False` vuelve el problema de antes: `MASA_SISTEMAS` es una constante de 1.5 kg que incluye la batería y el modelo no ve que la autonomía cae.
 """)
 
 nb = {

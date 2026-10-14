@@ -2,12 +2,18 @@
 Corre la competencia de topologías CON el viento de los sitios y la compara
 con la corrida sin viento del 18/09 (optimizacion_avion/ganadores.json).
 
-    python viento/optimizar_con_viento.py                 # corre todo y compara (~20 min)
-    python viento/optimizar_con_viento.py --solo-comparar # rearma tabla y gráficos
+    python viento/optimizar_con_viento.py                 # corre todo y compara (~1 h)
+    python viento/optimizar_con_viento.py --solo-comparar # rearma tablas, gráficos y vistas 3D
 
 Salidas:
     optimizacion_avion/ganadores_viento.json   ganadores con viento (mismo formato que ganadores.json)
-    viento/resultados_optimizacion/            tabla comparativa (CSV y Markdown) y gráficos
+    viento/resultados/                         todo lo demás, ordenado por tipo (ver su LEEME.md):
+        ganadores/                             ganador_viento_<topologia>.json (con historial)
+        tablas/                                comparacion_sin_vs_con_viento.csv y .md
+        graficos/comparacion/                  barras: score, superficie, pérdida, L/D; y performance
+        graficos/curvas_vuelo_nivelado/        empuje, potencia y L/D contra velocidad
+        graficos/convergencia/                 mejor score por generación
+        vistas_3d/                             un HTML interactivo por avión (sin y con viento)
 
 El viento entra por mision_avion.VIENTO_ACTIVO (ver Research Note 16).
 La semilla del azar es fija: correr dos veces da el mismo resultado.
@@ -28,7 +34,19 @@ from optimizacion_avion import mision_avion as ma          # noqa: E402
 from optimizacion_avion import competencia                  # noqa: E402
 from optimizacion_avion.geometria_avion import TOPOLOGIAS   # noqa: E402
 
-SALIDA = REPO / "viento" / "resultados_optimizacion"
+# Todo lo que produce este script, ordenado por tipo (ver viento/resultados/LEEME.md).
+SALIDA = REPO / "viento" / "resultados"
+DIR_GANADORES = SALIDA / "ganadores"
+DIR_TABLAS = SALIDA / "tablas"
+DIR_COMPARACION = SALIDA / "graficos" / "comparacion"
+DIR_CURVAS = SALIDA / "graficos" / "curvas_vuelo_nivelado"
+DIR_CONVERGENCIA = SALIDA / "graficos" / "convergencia"
+DIR_3D = SALIDA / "vistas_3d"
+
+
+def _crear_carpetas():
+    for d in (DIR_GANADORES, DIR_TABLAS, DIR_COMPARACION, DIR_CURVAS, DIR_CONVERGENCIA, DIR_3D):
+        d.mkdir(parents=True, exist_ok=True)
 RUTA_SIN_VIENTO = REPO / "optimizacion_avion" / "ganadores.json"
 RUTA_CON_VIENTO = REPO / "optimizacion_avion" / "ganadores_viento.json"
 TOPS = list(TOPOLOGIAS.keys())
@@ -40,7 +58,7 @@ def _json(obj) -> str:
 
 def optimizar(topologias, paciencia, max_gen, semilla):
     ma.VIENTO_ACTIVO = True
-    SALIDA.mkdir(parents=True, exist_ok=True)
+    _crear_carpetas()
     for top in topologias:
         random.seed(semilla + TOPS.index(top))        # misma secuencia de azar por topología
         est = competencia.optimizar_topologia(top, seed_population=competencia.SEEDS_POR_TOPOLOGIA[top],
@@ -48,7 +66,7 @@ def optimizar(topologias, paciencia, max_gen, semilla):
         mejor = est.mejor()
         res = {"score": mejor.score, "generaciones": est.generation, "params": mejor.params,
                "analisis": ma.analizar_mision_avion(mejor.params, top), "historial": est.historial}
-        (SALIDA / f"ganador_viento_{top}.json").write_text(_json(res), encoding="utf-8")
+        (DIR_GANADORES / f"ganador_viento_{top}.json").write_text(_json(res), encoding="utf-8")
         print(f"[{top}] listo: score con viento {mejor.score:.4f} en {est.generation} generaciones")
 
 
@@ -63,10 +81,11 @@ def _evaluar(params, top, viento: bool):
 
 
 def comparar():
+    _crear_carpetas()
     sin = json.loads(RUTA_SIN_VIENTO.read_text(encoding="utf-8"))
     con = {}
     for top in TOPS:
-        ruta = SALIDA / f"ganador_viento_{top}.json"
+        ruta = DIR_GANADORES / f"ganador_viento_{top}.json"
         if ruta.exists():
             con[top] = json.loads(ruta.read_text(encoding="utf-8"))
     RUTA_CON_VIENTO.write_text(_json({t: {k: v[k] for k in ("score", "generaciones", "params", "analisis")}
@@ -88,9 +107,11 @@ def comparar():
                 "v_perdida_ms": a["v_stall"], "margen_vuelo_lento_pct": 100 * a["margen_lento"],
                 "n_rafaga": a["n_con_rafaga"], "margen_perdida_rafaga_pct": 100 * a["margen_perdida"],
                 "margen_estatico_pct": 100 * a["SM"],
+                "potencia_crucero_W": a["potencia_W"], "D_vmax_N": a["D_vmax"],
+                "potencia_vmax_W": a["D_vmax"] * ma.V_MAX,
             })
 
-    with open(SALIDA / "comparacion_sin_vs_con_viento.csv", "w", newline="", encoding="utf-8") as f:
+    with open(DIR_TABLAS / "comparacion_sin_vs_con_viento.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(filas[0]))
         w.writeheader()
         w.writerows(filas)
@@ -106,9 +127,119 @@ def comparar():
     orden = sorted({fl["topologia"] for fl in filas},
                    key=lambda t: -max(fl["score_en_el_sitio"] for fl in filas if fl["topologia"] == t and fl["diseno"] == "con viento"))
     md += ["", "Ranking con viento: " + " > ".join(orden)]
-    (SALIDA / "comparacion_sin_vs_con_viento.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    (DIR_TABLAS / "comparacion_sin_vs_con_viento.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     print("\n".join(md))
     _graficos(filas, con)
+    _graficos_performance(filas, sin, con)
+    _vistas_3d(sin, con)
+
+
+def _vistas_3d(sin, con):
+    """Una página HTML interactiva (plotly) por avión: el diseño sin viento de
+    Felipe y el diseño con viento de cada topología. Se abren con doble clic
+    en el navegador (rotar arrastrando, zoom con la rueda)."""
+    from optimizacion_avion.geometria_avion import construir_avion
+
+    for top in TOPS:
+        if top not in con:
+            continue
+        for params, nombre in ((sin[top]["params"], "sin_viento_18-09"), (con[top]["params"], "con_viento")):
+            fig = construir_avion(params, top).draw(backend="plotly", show=False)
+            fig.update_layout(title=f"{top} — diseño {nombre.replace('_', ' ')}")
+            fig.write_html(DIR_3D / f"{top}_{nombre}.html", include_plotlyjs="cdn")
+    print(f"Vistas 3D en {DIR_3D}")
+
+
+def _curvas_vuelo_nivelado(params, top, a, n=18):
+    """Empuje requerido (= D), potencia requerida y L/D en vuelo nivelado,
+    con el viento del sitio, desde poco arriba de la pérdida LIMPIA hasta
+    V_MAX + 10 %. El ángulo de ataque de cada velocidad sale de la pendiente
+    CL_alpha que midió analizar_mision_avion (lineal, como hace la misión
+    para ubicar el punto de V_MAX)."""
+    import aerosandbox as asb
+    import numpy as np
+    from optimizacion_avion.geometria_avion import construir_avion, geometria_flap
+
+    ma.VIENTO_ACTIVO = True
+    atm = ma._atmosfera()
+    rho, S, W = a["rho"], a["S"], a["peso"]
+    avion = construir_avion(params, top)
+    fl = geometria_flap(params)
+    penal = 1.0 + ma.PENAL_CD_FLAP * fl["frac_superficie"] if fl["tiene_flap"] else 1.0
+
+    v_stall_limpio = np.sqrt(2 * W / (rho * S * a["CL_max_crucero"]))
+    V = np.linspace(1.1 * v_stall_limpio, 1.1 * ma.V_MAX, n)
+    D = []
+    for v in V:
+        CL_req = W / (0.5 * rho * v ** 2 * S)
+        alpha = a["alpha_crucero"] + (CL_req - a["CL_crucero"]) / a["CL_alpha_por_grado"]
+        r = asb.AeroBuildup(airplane=avion, op_point=asb.OperatingPoint(atmosphere=atm, velocity=v, alpha=alpha)).run()
+        D.append(0.5 * rho * v ** 2 * S * ma._escalar(r["CD"]) * penal)
+    D = np.array(D)
+    return {"V": V, "D": D, "P": D * V, "LD": W / D, "v_stall_limpio": v_stall_limpio}
+
+
+def _graficos_performance(filas, sin, con):
+    """Curvas de empuje/potencia/L-D contra velocidad y barras de performance:
+    diseño sin viento (Felipe, 18/09) contra diseño con viento, los dos
+    evaluados con el viento del sitio."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from optimizacion_ala.estructura import N_LIMITE
+
+    GRIS, AZUL = "#9aa5b1", "#2f6fb0"
+    tops = [t for t in TOPS if any(f["topologia"] == t for f in filas)]
+    get = lambda t, d, k: next(f[k] for f in filas if f["topologia"] == t and f["diseno"] == d)  # noqa: E731
+
+    # --- Curvas en vuelo nivelado: una columna por topología ---
+    fig, axs = plt.subplots(3, len(tops), figsize=(3.6 * len(tops), 9), sharex=True, squeeze=False)
+    for j, top in enumerate(tops):
+        for params, color, etiqueta in ((sin[top]["params"], GRIS, "sin viento (18/09)"),
+                                        (con[top]["params"], AZUL, "con viento")):
+            _, a = _evaluar(params, top, True)
+            c = _curvas_vuelo_nivelado(params, top, a)
+            axs[0, j].plot(c["V"] * 3.6, c["D"], color=color, lw=2, label=etiqueta)
+            axs[1, j].plot(c["V"] * 3.6, c["P"], color=color, lw=2)
+            axs[2, j].plot(c["V"] * 3.6, c["LD"], color=color, lw=2)
+        axs[0, j].set_title(top)
+        for i in range(3):
+            for v, ls in ((ma.V_CRUCERO, "-"), (ma.V_MAX, "--")):
+                axs[i, j].axvline(v * 3.6, color="#c0392b", lw=0.8, ls=ls, alpha=0.7)
+            axs[i, j].grid(alpha=0.3)
+        axs[2, j].set_xlabel("velocidad [km/h]")
+    axs[0, 0].set_ylabel("empuje requerido = D [N]")
+    axs[1, 0].set_ylabel("potencia requerida [W]")
+    axs[2, 0].set_ylabel("L/D")
+    axs[0, 0].legend(fontsize=8)
+    fig.suptitle("Vuelo nivelado con el viento del sitio — línea llena: crucero 80 km/h, punteada: máxima 120 km/h\n"
+                 "(potencia aerodinámica, sin rendimiento de hélice ni motor; desde 1.1 × pérdida sin flap)", fontsize=11)
+    fig.tight_layout()
+    fig.savefig(DIR_CURVAS / "curvas_empuje_potencia.png", dpi=150)
+    plt.close(fig)
+
+    # --- Barras de performance ---
+    paneles = [("D_crucero_N", "Resistencia en crucero [N]"), ("potencia_crucero_W", "Potencia en crucero [W]"),
+               ("D_vmax_N", "Resistencia a 120 km/h [N]"), ("potencia_vmax_W", "Potencia a 120 km/h [W]"),
+               ("masa_kg", "Masa [kg]"), ("carga_alar_N_m2", "Carga alar [N/m²]"),
+               ("n_rafaga", "Factor de carga con ráfaga [g]"), ("turbulencia_extra_pct", "Resistencia extra por turbulencia [%]")]
+    x = np.arange(len(tops))
+    fig, axs = plt.subplots(2, 4, figsize=(18, 8))
+    for ax, (k, titulo) in zip(axs.flat, paneles):
+        ax.bar(x - 0.2, [get(t, "sin viento (18/09)", k) for t in tops], 0.4, label="diseño sin viento (18/09)", color=GRIS)
+        ax.bar(x + 0.2, [get(t, "con viento", k) for t in tops], 0.4, label="diseño con viento", color=AZUL)
+        ax.set_xticks(x, tops, rotation=30, ha="right")
+        ax.set_title(titulo, fontsize=10)
+        if k == "n_rafaga":
+            ax.axhline(N_LIMITE, color="#c0392b", lw=1.2, ls="--", label=f"N_LIMITE = {N_LIMITE:.1f}")
+            ax.legend(fontsize=7, loc="lower right")
+    axs[0, 0].legend(fontsize=8, loc="lower left")
+    fig.suptitle("Performance: diseño sin viento vs con viento, ambos evaluados con el viento del sitio")
+    fig.tight_layout()
+    fig.savefig(DIR_COMPARACION / "comparacion_performance.png", dpi=150)
+    plt.close(fig)
+    print(f"Gráficos de performance en {SALIDA}")
 
 
 def _graficos(filas, con):
@@ -133,7 +264,7 @@ def _graficos(filas, con):
     axs[0].legend(fontsize=8, loc="lower left")
     fig.suptitle("Diseño sin viento vs con viento, ambos evaluados con el viento del sitio")
     fig.tight_layout()
-    fig.savefig(SALIDA / "comparacion_sin_vs_con_viento.png", dpi=150)
+    fig.savefig(DIR_COMPARACION / "comparacion_sin_vs_con_viento.png", dpi=150)
 
     fig, ax = plt.subplots(figsize=(7, 4))
     for t in tops:
@@ -144,7 +275,7 @@ def _graficos(filas, con):
     ax.set_title("Convergencia con viento")
     ax.legend(fontsize=8)
     fig.tight_layout()
-    fig.savefig(SALIDA / "convergencia_con_viento.png", dpi=150)
+    fig.savefig(DIR_CONVERGENCIA / "convergencia_con_viento.png", dpi=150)
     print(f"\nGráficos en {SALIDA}")
 
 

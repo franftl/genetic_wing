@@ -55,7 +55,7 @@ Con el aire del sitio, esas 10 semillas entran en pérdida a 10.1–10.6 m/s y s
 
 ## 3. Resultados (corrida del 2026-10-02)
 
-`python viento/optimizar_con_viento.py`: paciencia 8, máximo 35 generaciones (igual que la corrida del 18/09), semilla de azar fija. Ganadores en `optimizacion_avion/ganadores_viento.json`; tabla y gráficos en `viento/resultados_optimizacion/`. Los dos diseños se evalúan **con el viento del sitio**:
+`python viento/optimizar_con_viento.py`: paciencia 8, máximo 35 generaciones (igual que la corrida del 18/09), semilla de azar fija. Ganadores en `optimizacion_avion/ganadores_viento.json`; tablas, gráficos y vistas 3D en `viento/resultados/`. Los dos diseños se evalúan **con el viento del sitio**:
 
 | Topología | Diseño | Score | S [m²] | b [m] | W/S [N/m²] | Masa [kg] | L/D | V pérdida [m/s] | n ráfaga |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|

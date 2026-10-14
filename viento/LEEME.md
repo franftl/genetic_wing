@@ -23,7 +23,7 @@ Datos de viento/
 │   └── procesar_viento.py          ← genera fichas, tablas y figuras a partir de datos/
 ├── codigo_viento/                  ← implementación: paquete viento_uav, tests y evaluación de los ganadores
 ├── optimizar_con_viento.py         ← corre la competencia de topologías CON viento y la compara con la del 18/09
-├── resultados_optimizacion/        ← tabla y gráficos de esa comparación
+├── resultados/                     ← resultados de esa comparación: ganadores, tablas, gráficos y vistas 3D (ver su LEEME.md)
 └── caracterizacion_viento.pdf/.tex ← informe completo
 ```
 

@@ -19,3 +19,11 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Salidas de correr el notebook 02 (se regeneran en cada corrida)
+checkpoint_avion_*.json
+avion_design_params_*.json
+
+# Vistas 3D de la comparación con viento (~11 MB, se regeneran con
+# python viento/optimizar_con_viento.py --solo-comparar)
+viento/resultados/vistas_3d/

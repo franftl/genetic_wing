@@ -14,7 +14,7 @@ El detalle técnico está en la [Research Note 16](<../documentos_de_decision/Re
 - Fichas de los dos sitios con datos ERA5 (`fichas/*.yaml`), tablas, figuras e informe (`caracterizacion_viento.pdf`).
 - Paquete `codigo_viento/viento_uav`: campos de viento, VLM con viento, respuesta dinámica a ráfagas, operabilidad.
 - `optimizar_con_viento.py`: corre la competencia con viento y la compara con la del 18/09.
-- `resultados_optimizacion/`: tabla y gráficos "sin viento vs con viento".
+- `resultados/`: ganadores, tablas, gráficos (comparación, curvas de empuje y potencia, convergencia) y vistas 3D "sin viento vs con viento", ordenados por tipo.
 
 ### Viento dentro del optimizador (`optimizacion_avion/`)
 

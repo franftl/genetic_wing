@@ -146,6 +146,7 @@ from optimizacion_ala.geometria import (
     _proyectar_no_decreciente,
     camino_winglet,
 )
+from . import manufactura
 from .perfiles_avion import (
     N_CATALOGO_AVION,
     cargar_perfil_avion,
@@ -225,10 +226,14 @@ TOPOLOGIAS = {
         "cola": "doble_boom",
     },
     "pod_boom": {
-        "nombre": "Motovelero: góndola corta + viga de cola + cola convencional",
-        "referencia_real": "Arquitectura de planeador/motovelero (ej. Stemme S10, ASK 21)",
+        # 2026-10-13: ya NO es góndola + viga fina. Se pidió un fuselaje
+        # continuo (diámetro casi constante, afinado solo hacia la cola). Se
+        # conserva el nombre de la topología para no romper semillas, notebook
+        # ni resultados guardados; el constructor es el del fuselaje "completo".
+        "nombre": "Fuselaje continuo (diámetro casi constante, afinado en la cola) + cola convencional",
+        "referencia_real": "Fuselaje tubular de largo alcance; sin góndola ni viga fina",
         "sm_band": (0.10, 0.20),
-        "fuselaje": "pod_boom",
+        "fuselaje": "completo",
         "cola": "convencional",
     },
 }
@@ -383,14 +388,16 @@ BOUNDS_DOBLE_BOOM = {
 
 BOUNDS_POD_BOOM = {
     **BOUNDS_ALA, **BOUNDS_FLAP, **BOUNDS_FUSELAJE, **_BOUNDS_COLA_HV,
-    # Acá `fuselaje_largo` es la GÓNDOLA (pod), no el fuselaje entero: lleva
-    # carga útil, batería y motor, y nada más. La cola la sostiene la viga.
-    "fuselaje_largo": (0.35, 0.90),
-    "boom_largo": (0.40, 1.30),
-    "boom_diametro": (0.03, 0.08),
-    # Mismo argumento que en doble_boom: la góndola es corta por diseño, así
-    # que necesita poder engordar para alcanzar el volumen útil mínimo.
-    "fuselaje_diametro": (0.10, 0.32),
+    # Fuselaje CONTINUO (2026-10-13): un solo cuerpo de diámetro casi
+    # constante de morro a cola, con el afinado solo cerca de la cola.
+    #   * sección recta >= 1 - 0.30 - 0.25 = 45 % del largo,
+    #   * diámetro final >= 35 % del máximo (no se cierra a punta ni a viga fina).
+    # El largo cubre lo que antes eran góndola + viga (hasta ~2.2 m).
+    "fuselaje_largo": (0.90, 2.20),
+    "fuselaje_diametro": (0.10, 0.24),
+    "morro_largo_frac": (0.10, 0.30),
+    "boattail_largo_frac": (0.12, 0.25),
+    "boattail_radio_frac": (0.35, 0.60),
 }
 
 BOUNDS_POR_TOPOLOGIA = {
@@ -571,6 +578,15 @@ def referencias_ala(params: dict):
 # =====================================================================
 # FUSELAJE
 # =====================================================================
+def _xsecs_morro(R: float, L_morro: float, exp_m: float) -> list:
+    """Secciones del morro: arranca con una cara plana de radio
+    `manufactura.NARIZ_RADIO_PUNTA_M` (no en punta), ver `manufactura.py`."""
+    sk = manufactura.fracciones_morro()
+    rk = manufactura.radio_morro(R, sk, exp_m)
+    return [asb.FuselageXSec(xyz_c=[float(s * L_morro), 0, 0], radius=float(r))
+            for s, r in zip(sk, rk)]
+
+
 def _fuselaje_completo(params: dict, largo: float) -> asb.Fuselage:
     """Morro de ley potencial + sección recta + boat-tail contraído.
 
@@ -588,11 +604,7 @@ def _fuselaje_completo(params: dict, largo: float) -> asb.Fuselage:
     exp_m = float(params["morro_exp"])
     f_end = float(params["boattail_radio_frac"])
 
-    xsecs = []
-    for k in range(9):                                  # morro
-        s = k / 8.0
-        xsecs.append(asb.FuselageXSec(xyz_c=[float(s * L_morro), 0, 0],
-                                      radius=float(R * s ** exp_m)))
+    xsecs = _xsecs_morro(R, L_morro, exp_m)             # morro (cara plana, sin punta)
     xsecs.append(asb.FuselageXSec(xyz_c=[float(L_morro + L_recto), 0, 0], radius=float(R)))
     for k in range(1, 8):                               # boat-tail
         s = k / 7.0
@@ -616,11 +628,7 @@ def _fuselaje_pod_boom(params: dict) -> asb.Fuselage:
     L_recto = max(L_pod - L_morro - L_trans, 0.05 * L_pod)
     exp_m = float(params["morro_exp"])
 
-    xsecs = []
-    for k in range(9):
-        s = k / 8.0
-        xsecs.append(asb.FuselageXSec(xyz_c=[float(s * L_morro), 0, 0],
-                                      radius=float(R * s ** exp_m)))
+    xsecs = _xsecs_morro(R, L_morro, exp_m)
     xsecs.append(asb.FuselageXSec(xyz_c=[float(L_morro + L_recto), 0, 0], radius=float(R)))
     for k in range(1, 8):                               # transición a la viga
         s = k / 7.0
@@ -782,6 +790,10 @@ def construir_avion(params: dict, topologia: str) -> asb.Airplane:
             alas += _cola_convencional(params, x_cola, 0.0, en_t=True)
         else:
             alas += _cola_convencional(params, x_cola, 0.0, en_t=False)
+
+    # Restricción de manufacturabilidad: borde de fuga de 2 mm absolutos en
+    # TODAS las superficies (ver manufactura.py).
+    manufactura.aplicar_borde_de_fuga(alas)
 
     return asb.Airplane(
         name=f"Candidate_{topologia}", xyz_ref=[x_cg, 0, 0],

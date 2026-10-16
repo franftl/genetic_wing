@@ -1,9 +1,15 @@
-"""Genera 02_Optimizacion_Avion.ipynb. Se versiona este script además del
+"""Genera Optimizador_<VERSION>.ipynb (la version sale de optimizacion_avion/__init__.py). Se versiona este script además del
 .ipynb para poder regenerar el notebook limpio (sin outputs viejos) cuando
 haga falta, y para que el contenido de las celdas tenga historial de cambios
 legible en git (un .ipynb no lo tiene)."""
 import json
+import re
 from pathlib import Path
+
+# Una sola fuente de verdad: VERSION en optimizacion_avion/__init__.py.
+VERSION = re.search(r'^VERSION\s*=\s*"([^"]+)"',
+                    (Path(__file__).parent / "optimizacion_avion" / "__init__.py").read_text(encoding="utf-8"),
+                    re.M).group(1)
 
 cells = []
 
@@ -16,7 +22,7 @@ def _lineas(texto):
 
 
 def md(texto):
-    cells.append({"cell_type": "markdown", "metadata": {}, "source": _lineas(texto)})
+    cells.append({"cell_type": "markdown", "metadata": {}, "source": _lineas(texto.replace("@@VERSION@@", VERSION))})
 
 
 def code(texto):
@@ -26,7 +32,9 @@ def code(texto):
 
 # ---------------------------------------------------------------- 0
 md(r"""
-# UAV FP — Competencia entre topologías de avión de ala fija
+# UAV FP — Optimizador @@VERSION@@: competencia entre topologías de avión de ala fija
+
+> **Versión @@VERSION@@.** Cambios sobre esta versión: `@@VERSION@@.1`, `@@VERSION@@.2`… Si se agrega o modifica un módulo, pasa a la versión siguiente. Ver `VERSIONES.md`.
 
 Hermano de **`01_Optimizacion_Ala.ipynb`**. Aquel optimiza **una sola** topología (el ala volante); este hace **competir cinco topologías de avión completo** bajo la **misma misión**, para responder una pregunta que el notebook 01 no puede: *¿es el ala volante la mejor configuración para esta misión, o lo era solamente porque era la única que estábamos evaluando?*
 
@@ -55,7 +63,7 @@ Para calibrar cuán exigente es: el **RQ-7B Shadow** tiene máxima/crucero = 1.5
 | `t_tail` | fuselaje + cola en T | planeadores; horizontal fuera del downwash |
 | `v_tail` | fuselaje + cola en V | familia MQ-1 Predator |
 | `doble_boom` | dos vigas + doble deriva | familia RQ-7 Shadow / ScanEagle |
-| `pod_boom` | góndola + viga de cola (motovelero) | Stemme S10, ASK 21 |
+| `pod_boom` | fuselaje continuo: diámetro casi constante, afinado solo cerca de la cola (sin góndola ni viga fina) | fuselaje tubular de largo alcance |
 
 **Un resultado teórico que conviene tener a la vista al leer los resultados:** McGeer & Kroo ([J. Aircraft 20(11), 1983](https://ntrs.nasa.gov/citations/19840028263)) muestran que a envergadura dada, y con las restricciones de trimado y estabilidad puestas, la configuración convencional con cola trasera está **muy cerca del óptimo**, y ni el canard ni el tándem la superan salvo casos marginales. O sea: no hay que esperar que una topología exótica gane por goleada. Lo que separa a los candidatos es resistencia parásita, peso estructural y CL_max. Por eso **no** se incluyeron canard ni box-wing: el canard limita el CL_max del ala principal justo cuando es el recurso más escaso, y el box-wing necesita una separación vertical que a 7 kg de construcción artesanal no paga.
 
@@ -99,6 +107,7 @@ import matplotlib.pyplot as plt
 import json
 import time
 
+print(f"Optimizador {av.VERSION}")
 print("Topologias en competencia:")
 for nombre, info in av.TOPOLOGIAS.items():
     n_par = len(av.BOUNDS_POR_TOPOLOGIA[nombre])
@@ -594,9 +603,9 @@ md(r"""
 
 Conviene tenerlo escrito para no confundir *"no está implementado"* con *"salió que no importa"*:
 
-- **No exporta a CAD.** `exportar_cad.py` y `fusion_generar_ala.py` están escritos para la geometría del ala volante. Llevar un V-tail o un doble boom a Fusion necesita el exportador equivalente — es trabajo pendiente, no un problema del modelo.
+- **Exportación a CAD, con un límite.** `exportar_cad_avion.py` y `fusion_generar_avion.py` llevan el avión completo (ala, fuselaje, cola) a Fusion: el primero escribe las secciones 3D en `avion_geometry_cad.json` y el segundo las dibuja dentro de Fusion (ver también `exportar_cfd_avion.py`, que escribe el caso de cálculo y compara el drag con un CFD). Lo que **no** hay: el script de Fusion se escribió sin poder ejecutarlo en Fusion, así que la parte de la API (revolución del fuselaje, espejado, unión de cuerpos) está sin probar hasta que se corra; no hay hélice ni spinner; y `exportar_cad.py` / `fusion_generar_ala.py` siguen siendo solo para el ala volante.
 - **El flap es solo plain.** Sin flap ranurado ni Fowler (ver sección 9).
-- **La masa de las vigas es declarada**, no dimensionada por flexión. `boom_diametro` ya existe como variable geométrica y afecta la resistencia, pero no se usa para dimensionar: sería el próximo paso natural.
+- **La masa de las vigas es declarada**, no dimensionada por flexión. Aplica al `doble_boom` (el `pod_boom` ya no tiene viga: es un fuselaje continuo). `boom_diametro` ya existe como variable geométrica y afecta la resistencia, pero no se usa para dimensionar: sería el próximo paso natural.
 - **Torsión y flutter del ala no se ven.** Con la envergadura ahora **libre** esto importa más que antes: el criterio de rigidez en flexión frena el alargamiento, pero un ala muy esbelta puede ser inviable por torsión mucho antes.
 - **Las superficies de cola no tienen larguero dimensionado**, solo masa de recubrimiento.
 - **Las derivadas de amortiguamiento no se convierten en modos dinámicos** (frecuencia y amortiguamiento de Dutch roll). Para eso harían falta los momentos de inercia: el modelo de masa sabe *cuánto* pesa cada pieza, no *cómo está distribuida*.
@@ -614,6 +623,6 @@ nb = {
     "nbformat_minor": 5,
 }
 
-destino = Path(__file__).parent / "02_Optimizacion_Avion.ipynb"
+destino = Path(__file__).parent / f"Optimizador_{VERSION}.ipynb"
 destino.write_text(json.dumps(nb, indent=1, ensure_ascii=False))
 print(f"Escrito: {destino}  ({destino.stat().st_size/1024:.1f} KB, {len(cells)} celdas)")

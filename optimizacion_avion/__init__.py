@@ -40,8 +40,14 @@ Estructura del paquete:
 - semillas.json        : las semillas, generadas por gen_semillas.py
 - gen_semillas.py      : script que regenera las semillas (reproducibilidad)
 
-Ver el notebook 02_Optimizacion_Avion.ipynb para el flujo de trabajo.
+Ver el notebook Optimizador_V51.ipynb para el flujo de trabajo (el nombre lleva la
+version; ver VERSIONES.md).
 """
+
+# Version del optimizador. Regla (VERSIONES.md): una modificacion sobre la version
+# existente sube el decimal (V50 -> V50.1, V50.2 ...); agregar o modificar un
+# MODULO sube el numero (V50 -> V51). El notebook y su nombre salen de aca.
+VERSION = "V51"
 
 from .perfiles_avion import (
     ALTA_SUSTENTACION,

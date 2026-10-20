@@ -118,7 +118,7 @@ ESPESOR_TE_MM = 2.0   # = manufactura.ESPESOR_BORDE_FUGA_M del modelo (el JSON y
 # Radio de los dos vertices del borde de fuga romo [mm]. Redondea las esquinas del
 # espesor de 2 mm (extrados-cara y cara-intrados) con arcos tangentes, asi el
 # contorno del perfil no tiene aristas vivas en el borde de fuga. None = sin redondear.
-RADIO_BORDE_FUGA_MM = 0.5
+RADIO_BORDE_FUGA_MM = 1.0
 LOFT_POR_TRAMOS = False   # False = UN loft por superficie (pedido de Felipe); True = un loft por tramo
 
 # Tramos mas cortos que esto (mm, distancia entre bordes de ataque de dos secciones
@@ -442,7 +442,7 @@ def _redondeo_borde_de_fuga(pts, radio):
     cara = _norma(_sub(P0, P1))
     if cara < 1e-6:
         return None
-    r = min(radio, 0.45 * cara)                               # cabe en la cara
+    r = min(radio, 0.40 * cara)                               # deja >= 20 % de cara plana (sin aristas diminutas)
     resultado = []
     for extremo_sup in (True, False):
         P = P0 if extremo_sup else P1

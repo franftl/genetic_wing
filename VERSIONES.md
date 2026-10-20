@@ -104,3 +104,15 @@ Fusion (`herramientas/fusion_generar_avion.py`, mismo V52.1): un loft por superf
 1 mm (tope: 0.4 del espesor, o sea 0.8 mm con 2 mm) en los dos vértices del borde de fuga (`RADIO_BORDE_FUGA_MM`; `None` lo desactiva).
 
 V52.1: el redondeo del borde de fuga quedo desactivado por defecto (RADIO_BORDE_FUGA_MM = None): borde plano de 2 mm.
+
+## V53 (2026-10-20) — borde de fuga corregido (módulo `manufactura.py`)
+
+`asb.Airfoil.set_TE_thickness` dejaba la apertura del borde de fuga INVERTIDA en varios perfiles
+repanelados de la base UIUC (sd7062, mh80, rg15, e423, s1223, clarkys, ...): el extradós terminaba
+por debajo del intradós y el contorno se cruzaba cerca del borde de fuga. Efecto: el CAD salía con
+la punta afilada en las primeras secciones del ala (las de sd7062) y el análisis veía un perfil con
+espesor negativo en esa zona. Ahora `manufactura.perfil_con_te` abre el borde de fuga a mano
+(verifica el orden extradós → borde de ataque → intradós y desplaza ±0.5·Δ·x). Verificado en todo
+el catálogo con cuerdas de 520, 150 y 60 mm: apertura de 2.00 mm y 0 cruces. El modelo aerodinámico
+cambia levemente (CD +1.3 % en el v_tail de prueba), así que hay que volver a correr el optimizador:
+los puntajes de V52.x no son comparables.

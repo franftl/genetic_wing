@@ -75,13 +75,36 @@ def radio_morro(R: float, s: np.ndarray, exponente: float) -> np.ndarray:
     return r0 + (R - r0) * np.asarray(s, float) ** float(exponente)
 
 
+def _perfil_abierto(airfoil, frac: float):
+    """Copia del perfil con el borde de fuga abierto a `frac` (fraccion de cuerda).
+
+    NO se usa `asb.Airfoil.set_TE_thickness`: sobre los perfiles repanelados de la
+    base UIUC deja la apertura INVERTIDA en varios de ellos (sd7062, mh80, rg15,
+    e423, ... ; el extrados termina POR DEBAJO del intrados y el contorno se cruza
+    cerca del borde de fuga, asi que el CAD sale con la punta afilada y el
+    analisis ve un perfil de espesor negativo). Aca se abre a mano: se verifica que
+    el perfil vaya extrados -> borde de ataque -> intrados (si no, se invierte) y
+    se desplaza cada punto en y, +/- 0.5*delta*x (nulo en el borde de ataque, maximo
+    en el de fuga), con delta = apertura pedida - apertura actual."""
+    import aerosandbox as asb
+    c = np.asarray(airfoil.coordinates, dtype=float).copy()
+    i_le = int(np.argmin(c[:, 0]))
+    if c[:i_le + 1, 1].mean() < c[i_le:, 1].mean():          # va intrados -> extrados: invertir
+        c = c[::-1].copy()
+        i_le = len(c) - 1 - i_le
+    delta = float(frac) - float(c[0, 1] - c[-1, 1])
+    signo = np.where(np.arange(len(c)) <= i_le, 1.0, -1.0)
+    c[:, 1] += signo * 0.5 * delta * c[:, 0]
+    return asb.Airfoil(name=airfoil.name, coordinates=c)
+
+
 def perfil_con_te(airfoil, cuerda: float):
     """Copia del perfil con el borde de fuga exactamente de
     `ESPESOR_BORDE_FUGA_M` (absoluto) sobre una cuerda dada."""
     frac = ESPESOR_BORDE_FUGA_M / max(float(cuerda), 1e-6)
     clave = (airfoil.name, hash(np.asarray(airfoil.coordinates).tobytes()), round(frac, 6))
     if clave not in _cache_te:
-        _cache_te[clave] = airfoil.set_TE_thickness(frac)
+        _cache_te[clave] = _perfil_abierto(airfoil, frac)
     return _cache_te[clave]
 
 

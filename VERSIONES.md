@@ -1,8 +1,8 @@
 # Versiones del optimizador de avión
 
-El nombre del notebook lleva la versión: `Optimizador_V51.ipynb`. La versión se define
+El nombre del notebook lleva la versión: `Optimizador_V52.ipynb`. La versión se define
 en un solo lugar, `VERSION` en `optimizacion_avion/__init__.py`; el notebook y su nombre
-de archivo salen de ahí (`construir_notebook_avion.py` lo lee al regenerar).
+de archivo salen de ahí (`herramientas/construir_notebook_avion.py` lo lee al regenerar).
 
 ## Regla
 
@@ -11,7 +11,7 @@ de archivo salen de ahí (`construir_notebook_avion.py` lo lee al regenerar).
 | Una modificación sobre la versión existente (parámetros, supuestos, ajustes, correcciones) | sube el decimal | V50 → V50.1 → V50.2 |
 | Se agrega o se modifica un **módulo** | sube el número | V50 → V51 |
 
-Al subir de versión: cambiar `VERSION`, regenerar el notebook (`python construir_notebook_avion.py`),
+Al subir de versión: cambiar `VERSION`, regenerar el notebook (`python herramientas/construir_notebook_avion.py`),
 y agregar una entrada abajo con qué cambió. El notebook de la versión anterior se conserva
 solo si hace falta comparar; si no, se reemplaza.
 
@@ -66,3 +66,27 @@ el optimizador, el export CAD/CFD y Fusion con la misma geometría.
   4.91 → 4.85 (~1 %).
 - **Hay que volver a correr el GA**: los ganadores anteriores se optimizaron con filo exacto y
   nariz en punta.
+
+## V52 (2026-10-20) — gráficos de vuelo lento, tabla única y repo ordenado
+
+Módulo nuevo `optimizacion_avion/graficos_avion.py` (por eso sube el número).
+
+- **Sustentación vs ángulo de ataque, con y sin flap superpuestos**, y velocidades de pérdida y de
+  despegue (1.2·Vp) del ganador (sección 7 del notebook). Usa el mismo modelo que puntúa a los
+  candidatos: recta de sustentación de AeroBuildup, CL a alfa = 0 del flap medido con NeuralFoil,
+  CL máximo del optimizador.
+- **Tabla única de la geometría ganadora** (sección 6): reemplaza a la tabla comparativa, el desglose
+  de misión y la tabla de batería, que repetían información. El score por topología queda en una línea.
+- Se sacó del notebook el catálogo de perfiles a los dos Reynolds y los plots de CL máx por perfil con
+  flap (el resumen del catálogo sigue en la tabla de perfiles de `perfiles_avion.py`).
+- Caso CFD: se agregó la tabla L, D, CL, CD vs alfa del modelo para comparar contra corridas de Fluent
+  a cualquier ángulo (`exportar_cfd_avion.py`).
+- Script de Fusion: funciona en documentos Part Design (trabaja en el componente raíz si no puede
+  crear uno nuevo).
+- **Orden del repo:** exportadores y generador del notebook en `herramientas/`; resultados vigentes
+  (checkpoints, diseños ganadores, geometría CAD, casos CFD) en `resultados/`; se eliminaron
+  `codigo_obsoleto/`, `Scripts_Fusion/` (duplicado del script de Fusion), `02_Optimizacion_Avion.ipynb`,
+  los notebooks V50/V51 y la corrida corta vieja de `pod_boom`. Todo queda en el historial de git.
+  Los paquetes `optimizacion_avion`, `optimizacion_ala` y `viento` no se movieron: el código de `viento`
+  apunta a esas rutas.
+- Se quitaron `resumen_catalogo_avion` y `CONSTRUCTORES`, que ya no usaba nadie.

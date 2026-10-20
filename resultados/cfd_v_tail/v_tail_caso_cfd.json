@@ -1,0 +1,187 @@
+{
+  "topologia": "v_tail",
+  "nombre_topologia": "Ala + fuselaje + cola en V",
+  "escenario_modelo": {
+    "viento_activo": true,
+    "bateria_activa": true
+  },
+  "condiciones": {
+    "V_m_s": 22.22222222222222,
+    "V_km_h": 80.0,
+    "rho_kg_m3": 1.0560000000000016,
+    "mu_Pa_s": 1.743326631421369e-05,
+    "nu_m2_s": 1.650877491876294e-05,
+    "T_K": 278.6811830905683,
+    "p_Pa": 84476.08195261832,
+    "a_m_s": 334.6562499326755,
+    "Mach": 0.06640312926082444,
+    "q_Pa": 260.7407407407411,
+    "Re_MAC": 556889.941962985,
+    "intensidad_turbulencia_sugerida_%": 0.1
+  },
+  "referencias": {
+    "S_ref_m2": 1.331618486435108,
+    "c_ref_MAC_m": 0.4137106817875444,
+    "b_ref_m": 3.5150758608415917,
+    "AR": 9.278752460510674,
+    "punto_de_momentos_xyz_m": [
+      0.6388678570442122,
+      0.0,
+      0.0
+    ],
+    "masa_kg": 12.14694181916445,
+    "peso_N": 119.16149924600326,
+    "ejes": "x hacia atras (del morro a la cola), y a la derecha, z hacia arriba"
+  },
+  "punto_de_calculo_crucero": {
+    "alpha_deg": 0.4044339410277117,
+    "CL_objetivo_L_igual_W": 0.34319997538545166,
+    "nota": "El CFD debe sostener el peso: ajustar alpha hasta CL = CL_objetivo y recien ahi comparar CD. El alpha de arriba es el que da el modelo."
+  },
+  "modelo_AeroBuildup_en_ese_punto": {
+    "CL": 0.34289508644097977,
+    "CD": 0.016881718363539095,
+    "L_N": 119.05563961216734,
+    "D_N": 5.861454004443899,
+    "L_sobre_D": 20.311622256509143,
+    "D_perfil_N": 4.134321030011223,
+    "D_inducido_N": 1.7271329744326762,
+    "CM_respecto_punto_de_momentos": -0.0028892858336133317,
+    "D_por_cuerpo_N": {},
+    "CD_del_optimizador_con_recargo_de_flap": 0.017512522127381025,
+    "nota": "CD / D_N de esta seccion son AeroBuildup puro (lo comparable con CFD). CD_del_optimizador incluye un recargo por flap que es un termino de puntaje."
+  },
+  "barrido_alpha": [
+    {
+      "alpha_deg": -4.0,
+      "CL": -0.08747917853832533,
+      "CD": 0.016274210484120647,
+      "L_N": -30.373399810790083,
+      "D_N": 5.650522900401835,
+      "L_sobre_D": -5.375325495739534,
+      "Cm": 0.026284064883868426,
+      "crucero": false
+    },
+    {
+      "alpha_deg": -2.0,
+      "CL": 0.10545758879539947,
+      "CD": 0.013289425879085973,
+      "L_N": 36.615633126473156,
+      "D_N": 4.614184223329196,
+      "L_sobre_D": 7.935451068759991,
+      "Cm": 0.01518774503491598,
+      "crucero": false
+    },
+    {
+      "alpha_deg": 0.0,
+      "CL": 0.3033458958283038,
+      "CD": 0.0158311055762767,
+      "L_N": 105.3238762515217,
+      "D_N": 5.496673690236115,
+      "L_sobre_D": 19.16138417287009,
+      "Cm": 0.0003653294526517455,
+      "crucero": false
+    },
+    {
+      "alpha_deg": 0.404,
+      "CL": 0.34285277988768986,
+      "CD": 0.01688050537401017,
+      "L_N": 119.04095047265824,
+      "D_N": 5.861032845757411,
+      "L_sobre_D": 20.310575559873833,
+      "Cm": -0.0028857681352535505,
+      "crucero": true
+    },
+    {
+      "alpha_deg": 2.0,
+      "CL": 0.49769996006533296,
+      "CD": 0.022519271628495693,
+      "L_N": 172.80500486473827,
+      "D_N": 7.818853035073043,
+      "L_sobre_D": 22.101068288352085,
+      "Cm": -0.01678302927048418,
+      "crucero": false
+    },
+    {
+      "alpha_deg": 4.0,
+      "CL": 0.6910155174248321,
+      "CD": 0.03276123899656756,
+      "L_N": 239.92555642265413,
+      "D_N": 11.37493775051449,
+      "L_sobre_D": 21.09247203676365,
+      "Cm": -0.0361899806252247,
+      "crucero": false
+    },
+    {
+      "alpha_deg": 6.0,
+      "CL": 0.8826535995588134,
+      "CD": 0.0466161933519184,
+      "L_N": 306.4636765203222,
+      "D_N": 16.185477527256367,
+      "L_sobre_D": 18.934484694951813,
+      "Cm": -0.05457002675742813,
+      "crucero": false
+    },
+    {
+      "alpha_deg": 8.0,
+      "CL": 1.0676520024029295,
+      "CD": 0.06354917745016161,
+      "L_N": 370.69645222568846,
+      "D_N": 22.064731363417707,
+      "L_sobre_D": 16.800406319031186,
+      "Cm": -0.06982123639329543,
+      "crucero": false
+    },
+    {
+      "alpha_deg": 10.0,
+      "CL": 1.2463121100523984,
+      "CD": 0.08340778442340864,
+      "L_N": 432.7285262637262,
+      "D_N": 28.959782498580353,
+      "L_sobre_D": 14.942395588949577,
+      "Cm": -0.08357650136178695,
+      "crucero": false
+    },
+    {
+      "alpha_deg": 12.0,
+      "CL": 1.413113776475451,
+      "CD": 0.10542172854030728,
+      "L_N": 490.6432642393899,
+      "D_N": 36.60318218805065,
+      "L_sobre_D": 13.40438822282407,
+      "Cm": -0.09694914439105212,
+      "crucero": false
+    }
+  ],
+  "geometria_stl": [
+    {
+      "cuerpo": "Ala principal",
+      "tipo": "ala",
+      "triangulos": 4648,
+      "area_mojada_m2": 2.7955944197086184,
+      "volumen_L": 44.60923583646965,
+      "aristas_abiertas": 0,
+      "cerrado": true
+    },
+    {
+      "cuerpo": "Cola en V",
+      "tipo": "ala",
+      "triangulos": 768,
+      "area_mojada_m2": 0.32751708331035934,
+      "volumen_L": 1.9630745299303314,
+      "aristas_abiertas": 0,
+      "cerrado": true
+    },
+    {
+      "cuerpo": "Fuselaje",
+      "tipo": "fuselaje",
+      "triangulos": 1824,
+      "area_mojada_m2": 0.6200097676917313,
+      "volumen_L": 18.495783561808395,
+      "aristas_abiertas": 0,
+      "cerrado": true
+    }
+  ],
+  "volumen_fuselaje_modelo_L": 18.548709385406966,
+  "unidades_stl": "n/a (solo se exporta el caso; la geometria va en avion_geometry_cad.json)"
+}

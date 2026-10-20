@@ -1,0 +1,94 @@
+{
+  "topologia": "pod_boom",
+  "nombre_topologia": "Fuselaje continuo (diámetro casi constante, afinado en la cola) + cola convencional",
+  "escenario_modelo": {
+    "viento_activo": true,
+    "bateria_activa": true
+  },
+  "condiciones": {
+    "V_m_s": 22.22222222222222,
+    "V_km_h": 80.0,
+    "rho_kg_m3": 1.0560000000000016,
+    "mu_Pa_s": 1.743326631421369e-05,
+    "nu_m2_s": 1.650877491876294e-05,
+    "T_K": 278.6811830905683,
+    "p_Pa": 84476.08195261832,
+    "a_m_s": 334.6562499326755,
+    "Mach": 0.06640312926082444,
+    "q_Pa": 260.7407407407411,
+    "Re_MAC": 582220.5957858132,
+    "intensidad_turbulencia_sugerida_%": 0.1
+  },
+  "referencias": {
+    "S_ref_m2": 1.289564871599871,
+    "c_ref_MAC_m": 0.43252869460032217,
+    "b_ref_m": 3.242222156570203,
+    "AR": 8.151590310856749,
+    "punto_de_momentos_xyz_m": [
+      0.397536632890632,
+      0.0,
+      0.0
+    ],
+    "masa_kg": 12.144515276283038,
+    "peso_N": 119.13769486033661,
+    "ejes": "x hacia atras (del morro a la cola), y a la derecha, z hacia arriba"
+  },
+  "punto_de_calculo_crucero": {
+    "alpha_deg": 1.157967249466463,
+    "CL_objetivo_L_igual_W": 0.3543211718937055,
+    "nota": "El CFD debe sostener el peso: ajustar alpha hasta CL = CL_objetivo y recien ahi comparar CD. El alpha de arriba es el que da el modelo."
+  },
+  "modelo_AeroBuildup_en_ese_punto": {
+    "CL": 0.3535090112256873,
+    "CD": 0.01763557352348613,
+    "L_N": 118.8646122519032,
+    "D_N": 5.929822273669917,
+    "L_sobre_D": 20.0452234090886,
+    "D_perfil_N": 4.060560243423783,
+    "D_inducido_N": 1.8692620302461338,
+    "CM_respecto_punto_de_momentos": 0.012101761998198853,
+    "D_por_cuerpo_N": {},
+    "CD_del_optimizador_con_recargo_de_flap": 0.018301163290776936,
+    "nota": "CD / D_N de esta seccion son AeroBuildup puro (lo comparable con CFD). CD_del_optimizador incluye un recargo por flap que es un termino de puntaje."
+  },
+  "geometria_stl": [
+    {
+      "cuerpo": "Ala principal",
+      "tipo": "ala",
+      "triangulos": 4600,
+      "area_mojada_m2": 2.7422460862130693,
+      "volumen_L": 45.94717355908256,
+      "aristas_abiertas": 0,
+      "cerrado": true
+    },
+    {
+      "cuerpo": "Estabilizador horizontal",
+      "tipo": "ala",
+      "triangulos": 768,
+      "area_mojada_m2": 0.18445881848012727,
+      "volumen_L": 0.7511681139926845,
+      "aristas_abiertas": 0,
+      "cerrado": true
+    },
+    {
+      "cuerpo": "Deriva",
+      "tipo": "ala",
+      "triangulos": 384,
+      "area_mojada_m2": 0.10707617680682653,
+      "volumen_L": 0.4681286955109322,
+      "aristas_abiertas": 0,
+      "cerrado": true
+    },
+    {
+      "cuerpo": "Fuselaje",
+      "tipo": "fuselaje",
+      "triangulos": 1536,
+      "area_mojada_m2": 0.630785087604977,
+      "volumen_L": 24.14750531610525,
+      "aristas_abiertas": 0,
+      "cerrado": true
+    }
+  ],
+  "volumen_fuselaje_modelo_L": 24.216603583958292,
+  "unidades_stl": "n/a (solo se exporta el caso; la geometria va en avion_geometry_cad.json)"
+}

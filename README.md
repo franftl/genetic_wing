@@ -4,6 +4,21 @@ Proyecto Final de Ingeniería Mecánica, ITBA — Felipe.
 
 Este README es la versión Markdown del informe de arquitectura del proyecto (también disponible en LaTeX/PDF en [`documentos_de_decision/informe_desarrollo.pdf`](documentos_de_decision/informe_desarrollo.pdf) / [`.tex`](documentos_de_decision/informe_desarrollo.tex)): qué hace cada módulo del paquete `optimizacion_avion`, cómo se traducen los requisitos de vuelo y estabilidad en restricciones y términos de puntaje, por qué se tomaron las decisiones de parametrización (winglets, volumen mínimo de fuselaje, misión de tres puntos de vuelo), dónde se cambia cada parámetro, y los resultados de la última corrida de la competencia entre cinco topologías (18 de septiembre de 2026), con las curvas de convergencia del algoritmo genético.
 
+## Estructura del repositorio
+
+```
+Optimizador_V52.ipynb     notebook principal del avión (se genera con herramientas/construir_notebook_avion.py)
+optimizacion_avion/       paquete del optimizador del avión (misión, geometría, masa, batería, GA, gráficos)
+optimizacion_ala/         paquete del ala volante (el avión reutiliza partes: estructura, perfiles, evolución)
+herramientas/             exportación a CAD y CFD, script de Fusion y generador del notebook
+resultados/               resultados vigentes: checkpoints, diseños ganadores, geometría CAD, casos CFD
+evaluacion_bateria_350km/ evaluación de la rama de batería (scripts, semillas y corridas cortas)
+viento/                   análisis de viento de los sitios (paquete independiente)
+documentos_de_decision/   notas de investigación, informe y figuras
+01_Optimizacion_Ala.ipynb, fusion_generar_ala.py, wing_*.json   ala volante (proyecto anterior)
+VERSIONES.md              historial de versiones y regla de numeración
+```
+
 ## Tabla de contenidos
 
 1. [La misión de diseño](#1-la-misión-de-diseño)
@@ -47,6 +62,9 @@ La misión bajó de crucero a 120 km/h a 80 km/h el 18/09/2026 tras un análisis
 | `evolucion_avion.py` | Bucle evolutivo de *una* topología: mantiene el estado (2 padres elite, generación, racha sin mejora), corre generaciones, guarda/carga checkpoints, decide cuándo parar. |
 | `competencia.py` | Orquesta la competencia entre las 5 topologías: corre cada una con su propia subpoblación (nunca se cruzan entre sí, ver §5.3), y compara los puntajes finales. Contiene las semillas (`SEEDS_POR_TOPOLOGIA`, cargadas de `semillas.json`). |
 | `gen_semillas.py` | Script standalone que *genera* `semillas.json`: define una base de diseño razonable a mano por topología y afina numéricamente por bisección el CG (margen estático objetivo) y la incidencia de cola (trim). Se corre una sola vez por revisión de misión/geometría, no en cada optimización. |
+| `manufactura.py` | Restricciones de manufacturabilidad: borde de fuga de 2 mm en todas las superficies y nariz sin punta (cara plana de 5 mm). Se aplican en `construir_avion`, así que las ven el optimizador, el CAD y el CFD. |
+| `bateria.py` | Dimensionamiento de la batería por alcance (350 km), pack y consumo de despegue. |
+| `graficos_avion.py` | Gráficos de vuelo lento (sustentación vs ángulo de ataque con y sin flap, velocidades de pérdida y de despegue) y la tabla única de la geometría ganadora. |
 | `__init__.py` | Re-exporta la API pública del paquete; es lo único que el notebook necesita importar. |
 
 ### 2.2 Flujo de datos

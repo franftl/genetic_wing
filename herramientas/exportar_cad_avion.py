@@ -14,8 +14,8 @@ pide a AeroSandbox el marco de cada seccion de cada ala
 USO (desde la raiz del repo, con el kernel/venv que tiene aerosandbox):
 
     # lo que exporta el notebook (seccion 11) o un ganadores_*.json
-    python exportar_cad_avion.py --params evaluacion_bateria_350km/resultados/ganadores_viento-on_bateria-oncorta_pod_continuo.json --topologia pod_boom
-    python exportar_cad_avion.py --params avion_design_params_v_tail.json --viento off --bateria off
+    python herramientas/exportar_cad_avion.py --params evaluacion_bateria_350km/resultados/ganadores_viento-on_bateria-oncorta_pod_continuo.json --topologia pod_boom
+    python herramientas/exportar_cad_avion.py --params resultados/avion_design_params_v_tail.json --viento off --bateria off
 
 SALIDA
     avion_geometry_cad.json            lo que lee fusion_generar_avion.py
@@ -47,7 +47,7 @@ from pathlib import Path
 
 import numpy as np
 
-RAIZ = Path(__file__).resolve().parent
+RAIZ = Path(__file__).resolve().parents[1]      # raiz del repo
 sys.path.insert(0, str(RAIZ))
 
 import aerosandbox as asb                                           # noqa: E402
@@ -191,7 +191,7 @@ def main() -> None:
     ap.add_argument("--params", required=True, type=Path,
                     help="avion_design_params_<top>.json, ganadores_*.json o un dict de parametros")
     ap.add_argument("--topologia", choices=list(TOPOLOGIAS))
-    ap.add_argument("--salida", type=Path, default=RAIZ / "avion_geometry_cad.json")
+    ap.add_argument("--salida", type=Path, default=RAIZ / "resultados" / "avion_geometry_cad.json")
     ap.add_argument("--puntos", type=int, default=N_PUNTOS_CAD, help="puntos por perfil")
     ap.add_argument("--espesor-te-mm", type=float, default=ESPESOR_BORDE_FUGA_MM)
     ap.add_argument("--viento", choices=("on", "off"), default=None)
@@ -220,8 +220,8 @@ def main() -> None:
     cuerpos = ecfd.mallar_cuerpos(avion, ecfd.RESOLUCIONES["media"])
     caso = ecfd.caso_de_calculo(params, top, avion, cuerpos)
     caso["unidades_stl"] = "n/a (solo se exporta el caso; la geometria va en avion_geometry_cad.json)"
-    carpeta_cfd = RAIZ / f"cfd_{top}"
-    carpeta_cfd.mkdir(exist_ok=True)
+    carpeta_cfd = RAIZ / "resultados" / f"cfd_{top}"
+    carpeta_cfd.mkdir(parents=True, exist_ok=True)
     (carpeta_cfd / f"{top}_caso_cfd.json").write_text(
         json.dumps(caso, indent=2, ensure_ascii=False), encoding="utf-8")
     ecfd.escribir_md(caso, carpeta_cfd / f"{top}_caso_cfd.md", "n/a")

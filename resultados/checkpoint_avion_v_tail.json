@@ -1,0 +1,191 @@
+{
+  "topologia": "v_tail",
+  "generation": 7,
+  "non_improving_streak": 4,
+  "parents": [
+    {
+      "topologia": "v_tail",
+      "params": {
+        "envergadura": 3.3352642973558932,
+        "root_chord": 0.43014027468153315,
+        "chord_1": 0.43014027468153315,
+        "chord_2": 0.41522908392843866,
+        "chord_3": 0.30215172399378004,
+        "chord_4": 0.16024540894461975,
+        "le_offset_1": 0.0035670732024854737,
+        "le_offset_2": 0.007891400597251576,
+        "le_offset_3": 0.007891400597251576,
+        "le_offset_4": 0.11615321021772929,
+        "twist_0": 1.5322185191247824,
+        "twist_1": -2.216540447641314,
+        "twist_2": 2.6556523347119345,
+        "twist_3": -3.554413533011502,
+        "twist_4": -3.8554031662130814,
+        "elev_1": -0.06,
+        "elev_2": 0.017078239497010685,
+        "elev_3": 0.048707045146830996,
+        "elev_4": 0.08112268380965586,
+        "perfil_raiz": 14.0,
+        "perfil_medio": 11.0,
+        "perfil_punta": 14.0,
+        "perfil_pos_medio": 0.5434512656383776,
+        "winglet_height": 0.006511183622809551,
+        "winglet_cant_deg": 22.270355283273066,
+        "winglet_taper": 0.5757215068944317,
+        "winglet_sweep_deg": 10.755837393326123,
+        "flap_cuerda_frac": 0.21371220660391146,
+        "flap_inicio_frac": 0.019358561237118453,
+        "flap_fin_frac": 0.8790032560635618,
+        "flap_defl_deg": 39.20969369842499,
+        "fuselaje_largo": 1.7405320040994923,
+        "fuselaje_diametro": 0.1646890950077608,
+        "morro_largo_frac": 0.26643215109496005,
+        "morro_exp": 0.5824399793123618,
+        "boattail_largo_frac": 0.31210320802712865,
+        "boattail_radio_frac": 0.13341834566346075,
+        "ala_x_frac_fuselaje": 0.24198157273014984,
+        "cg_frac_mac": 0.2676216603113436,
+        "v_tail_span": 0.9492968394354693,
+        "v_tail_root_chord": 0.20932480373468473,
+        "v_tail_taper": 0.5385869132384826,
+        "v_dihedral_deg": 42.58251813837719,
+        "v_tail_sweep_deg": 21.162503237993416,
+        "v_tail_incidencia_deg": -1.8497312755620756,
+        "v_tail_arm_frac": 0.8413214059720114
+      },
+      "score": 4.653049931847519
+    },
+    {
+      "topologia": "v_tail",
+      "params": {
+        "envergadura": 3.3352642973558932,
+        "root_chord": 0.4399133386322035,
+        "chord_1": 0.4399133386322035,
+        "chord_2": 0.42478312767547627,
+        "chord_3": 0.30163213846697223,
+        "chord_4": 0.15654553089005135,
+        "le_offset_1": 0.0028852729804036657,
+        "le_offset_2": 0.0028852729804036657,
+        "le_offset_3": 0.0028852729804036657,
+        "le_offset_4": 0.12863238718224349,
+        "twist_0": 1.5322185191247824,
+        "twist_1": -2.004854573609294,
+        "twist_2": 3.281879360952361,
+        "twist_3": -3.554413533011502,
+        "twist_4": -3.884942712873359,
+        "elev_1": -0.010902152059289832,
+        "elev_2": 0.012844192400168363,
+        "elev_3": 0.04130938179863984,
+        "elev_4": 0.08112268380965586,
+        "perfil_raiz": 14.0,
+        "perfil_medio": 9.0,
+        "perfil_punta": 14.0,
+        "perfil_pos_medio": 0.5434512656383776,
+        "winglet_height": 0.006511183622809551,
+        "winglet_cant_deg": 22.270355283273066,
+        "winglet_taper": 0.5757215068944317,
+        "winglet_sweep_deg": 10.755837393326123,
+        "flap_cuerda_frac": 0.254723484823578,
+        "flap_inicio_frac": 0.019358561237118453,
+        "flap_fin_frac": 0.8790032560635618,
+        "flap_defl_deg": 38.497465981913344,
+        "fuselaje_largo": 1.740828791030206,
+        "fuselaje_diametro": 0.15817410003369123,
+        "morro_largo_frac": 0.2739652136779547,
+        "morro_exp": 0.5838412275757767,
+        "boattail_largo_frac": 0.30616913027460474,
+        "boattail_radio_frac": 0.13341834566346075,
+        "ala_x_frac_fuselaje": 0.2892747096161118,
+        "cg_frac_mac": 0.29951135211705265,
+        "v_tail_span": 0.9446900791692001,
+        "v_tail_root_chord": 0.20932480373468473,
+        "v_tail_taper": 0.5868553481416869,
+        "v_dihedral_deg": 42.29517955867137,
+        "v_tail_sweep_deg": 21.162503237993416,
+        "v_tail_incidencia_deg": -0.6849366778758763,
+        "v_tail_arm_frac": 0.8413214059720114
+      },
+      "score": 4.57537684930198
+    }
+  ],
+  "historial": [
+    {
+      "generation": 0,
+      "status": "seeded",
+      "parent_scores": [
+        4.45309786256587,
+        3.5204703576861855
+      ]
+    },
+    {
+      "generation": 1,
+      "status": "in_progress",
+      "parent_scores": [
+        4.57537684930198,
+        4.45309786256587
+      ],
+      "best_child_score": 4.57537684930198,
+      "mejoro": true
+    },
+    {
+      "generation": 2,
+      "status": "in_progress",
+      "parent_scores": [
+        4.57537684930198,
+        4.45309786256587
+      ],
+      "best_child_score": 4.439177174547353,
+      "mejoro": false
+    },
+    {
+      "generation": 3,
+      "status": "in_progress",
+      "parent_scores": [
+        4.653049931847519,
+        4.57537684930198
+      ],
+      "best_child_score": 4.653049931847519,
+      "mejoro": true
+    },
+    {
+      "generation": 4,
+      "status": "in_progress",
+      "parent_scores": [
+        4.653049931847519,
+        4.57537684930198
+      ],
+      "best_child_score": 4.539941700867883,
+      "mejoro": false
+    },
+    {
+      "generation": 5,
+      "status": "in_progress",
+      "parent_scores": [
+        4.653049931847519,
+        4.57537684930198
+      ],
+      "best_child_score": 4.290290790100822,
+      "mejoro": false
+    },
+    {
+      "generation": 6,
+      "status": "in_progress",
+      "parent_scores": [
+        4.653049931847519,
+        4.57537684930198
+      ],
+      "best_child_score": 4.438157272725521,
+      "mejoro": false
+    },
+    {
+      "generation": 7,
+      "status": "in_progress",
+      "parent_scores": [
+        4.653049931847519,
+        4.57537684930198
+      ],
+      "best_child_score": 4.531624652475565,
+      "mejoro": false
+    }
+  ]
+}

@@ -180,21 +180,3 @@ def perfil_con_flap(base: asb.Airfoil, deflexion_deg: float, cuerda_flap_frac: f
     if clave not in _cache_flap:
         _cache_flap[clave] = base.add_control_surface(deflection=d, hinge_point_x=hinge)
     return _cache_flap[clave]
-
-
-def resumen_catalogo_avion(re_lento: float = 2.0e5, re_crucero: float = 6.7e5) -> str:
-    """Tabla del catálogo medida a los DOS Reynolds de la misión -- para
-    imprimir en el notebook y poder discutir el compromiso crucero/lento."""
-    alphas = np.linspace(-2, 22, 49)
-    lineas = [f"idx  perfil     Cm0       espesor  CLmax@{re_crucero/1e3:.0f}k  CLmax@{re_lento/1e3:.0f}k"]
-    for i, n in enumerate(CATALOGO_AVION):
-        af = cargar_perfil_avion(n)
-        r1 = af.get_aero_from_neuralfoil(alpha=alphas, Re=re_crucero, mach=0.1)
-        r2 = af.get_aero_from_neuralfoil(alpha=alphas, Re=re_lento, mach=0.03)
-        cl, cm = np.array(r1["CL"]), np.array(r1["CM"])
-        cm0 = float(np.interp(0.0, cl, cm))
-        marca = "  <- alta sustentacion" if n in ALTA_SUSTENTACION else ""
-        lineas.append("%3d  %-9s %+8.4f   %5.1f%%    %7.3f     %7.3f%s" % (
-            i, n, cm0, 100 * af.max_thickness(),
-            float(np.max(cl)), float(np.max(np.array(r2["CL"]))), marca))
-    return "\n".join(lineas)

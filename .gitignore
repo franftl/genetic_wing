@@ -19,3 +19,11 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Archivos de prueba de CAD/CFD (geometría exportada para Ansys/Fusion; se regeneran)
+*.stl
+*.step
+*.stp
+
+# Checkpoints de corridas locales (los vigentes están en resultados/)
+resultados/cfd_*/*.stl

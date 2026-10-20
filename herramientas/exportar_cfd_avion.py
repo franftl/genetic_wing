@@ -11,15 +11,15 @@ se analizo, no uno parecido.
 USO (desde la raiz del repo, con el kernel/venv que tiene aerosandbox):
 
     # Lo que exporto el notebook (seccion 11), o un ganadores_*.json:
-    python exportar_cfd_avion.py --params avion_design_params_v_tail.json
-    python exportar_cfd_avion.py --params evaluacion_bateria_350km/resultados/ganadores_viento-on_bateria-oncorta_pod_continuo.json --topologia pod_boom
+    python herramientas/exportar_cfd_avion.py --params resultados/avion_design_params_v_tail.json
+    python herramientas/exportar_cfd_avion.py --params evaluacion_bateria_350km/resultados/ganadores_viento-on_bateria-oncorta_pod_continuo.json --topologia pod_boom
 
     # Mas fino / en metros / otro escenario:
-    python exportar_cfd_avion.py --params X.json --topologia v_tail --resolucion alta --unidades m --viento off --bateria off
+    python herramientas/exportar_cfd_avion.py --params X.json --topologia v_tail --resolucion alta --unidades m --viento off --bateria off
 
     # Despues de correr el CFD, comparar el drag (pasar CD, o la fuerza en N):
-    python exportar_cfd_avion.py --params X.json --topologia v_tail --cd-cfd 0.0185 --cl-cfd 0.352
-    python exportar_cfd_avion.py --params X.json --topologia v_tail --d-cfd 3.1 --medio-modelo
+    python herramientas/exportar_cfd_avion.py --params X.json --topologia v_tail --cd-cfd 0.0185 --cl-cfd 0.352
+    python herramientas/exportar_cfd_avion.py --params X.json --topologia v_tail --d-cfd 3.1 --medio-modelo
 
 SALIDA, en `cfd_<topologia>/`:
     <top>_completo.stl         todos los cuerpos, un "solid" por cuerpo (ASCII)
@@ -67,7 +67,7 @@ from pathlib import Path
 
 import numpy as np
 
-RAIZ = Path(__file__).resolve().parent
+RAIZ = Path(__file__).resolve().parents[1]      # raiz del repo
 sys.path.insert(0, str(RAIZ))
 
 import aerosandbox as asb                                           # noqa: E402
@@ -306,6 +306,27 @@ def _f(x) -> float:
     return float(np.atleast_1d(x)[0])
 
 
+# Barrido de angulo de ataque que se tabula en el caso de calculo, para comparar
+# contra CFD a cualquier alpha (no solo el de crucero). [deg]
+ALPHAS_BARRIDO = [-4, -2, 0, 2, 4, 6, 8, 10, 12]
+
+
+def barrido_alpha(avion: asb.Airplane, atm, V: float, alpha_crucero: float) -> list[dict]:
+    """Sustentacion y resistencia del modelo (AeroBuildup) en funcion de alpha,
+    en las condiciones de crucero. Incluye el alpha de crucero. Fuerzas del avion
+    COMPLETO; si el CFD se corre en medio modelo (y >= 0), comparar con la mitad."""
+    alphas = sorted(set(float(a) for a in ALPHAS_BARRIDO) | {round(alpha_crucero, 3)})
+    filas = []
+    for al in alphas:
+        r = asb.AeroBuildup(airplane=avion,
+                            op_point=asb.OperatingPoint(atmosphere=atm, velocity=V, alpha=al)).run()
+        CL, CD = _f(r["CL"]), _f(r["CD"])
+        filas.append({"alpha_deg": al, "CL": CL, "CD": CD, "L_N": _f(r["L"]), "D_N": _f(r["D"]),
+                      "L_sobre_D": CL / CD if CD else float("nan"), "Cm": _f(r["Cm"]),
+                      "crucero": abs(al - alpha_crucero) < 1e-3})
+    return filas
+
+
 def _componentes(res: dict, avion: asb.Airplane, q: float, S: float) -> dict:
     """Drag por cuerpo, si AeroBuildup lo entrega."""
     out = {}
@@ -372,6 +393,7 @@ def caso_de_calculo(params: dict, top: str, avion: asb.Airplane, cuerpos: list[d
             "nota": "CD / D_N de esta seccion son AeroBuildup puro (lo comparable con CFD). "
                     "CD_del_optimizador incluye un recargo por flap que es un termino de puntaje.",
         },
+        "barrido_alpha": barrido_alpha(avion, atm, V, alpha),
         "geometria_stl": [
             {"cuerpo": c["nombre"], "tipo": c["tipo"], "triangulos": int(len(c["F"])),
              "area_mojada_m2": c["area_mojada_m2"], "volumen_L": c["volumen_m3"] * 1000.0,
@@ -408,6 +430,14 @@ def escribir_md(caso: dict, ruta: Path, unidades: str) -> None:
          f"- D = {m['D_N']:.3f} N  (perfil {m['D_perfil_N']:.3f} N + inducido {m['D_inducido_N']:.3f} N)"]
     if m["D_por_cuerpo_N"]:
         L.append("- Por cuerpo: " + ", ".join(f"{k} {v:.3f} N" for k, v in m["D_por_cuerpo_N"].items()))
+    L += ["", "## Sustentacion y resistencia del modelo en funcion del angulo de ataque",
+          f"AeroBuildup a {c['V_m_s']:.2f} m/s, mismas condiciones. Fuerzas del avion COMPLETO "
+          "(si el CFD es medio modelo, comparar contra la mitad).", "",
+          "| alpha [deg] | CL | CD | L [N] | D [N] | L/D | Cm |", "|---|---|---|---|---|---|---|"]
+    for f in caso.get("barrido_alpha", []):
+        marca = "  <- crucero" if f["crucero"] else ""
+        L.append(f"| {f['alpha_deg']:.2f} | {f['CL']:.4f} | {f['CD']:.5f} | {f['L_N']:.1f} | "
+                 f"{f['D_N']:.2f} | {f['L_sobre_D']:.1f} | {f['Cm']:.4f} |{marca}")
     L += ["", "## Geometria exportada",
           "| Cuerpo | Triangulos | Area mojada [m2] | Volumen [L] | Cerrado |", "|---|---|---|---|---|"]
     for g in caso["geometria_stl"]:
@@ -470,7 +500,7 @@ def main() -> None:
     ap.add_argument("--resolucion", choices=list(RESOLUCIONES), default="media",
                     help="finura de la malla superficial del STL (baja/media/alta)")
     ap.add_argument("--unidades", choices=("mm", "m"), default="mm", help="unidades del STL (default mm)")
-    ap.add_argument("--salida", type=Path, help="carpeta de salida (default cfd_<topologia>/)")
+    ap.add_argument("--salida", type=Path, help="carpeta de salida (default resultados/cfd_<topologia>/)")
     ap.add_argument("--viento", choices=("on", "off"), default=None,
                     help="escenario del modelo (default: el que dejo mision_avion.py)")
     ap.add_argument("--bateria", choices=("on", "off"), default=None)
@@ -488,7 +518,7 @@ def main() -> None:
 
     params, top = cargar_params(args.params, args.topologia)
     params = clamp_to_bounds_avion(params, top)   # mismo set que evalua el optimizador
-    out = args.salida or (RAIZ / f"cfd_{top}")
+    out = args.salida or (RAIZ / "resultados" / f"cfd_{top}")
     out.mkdir(parents=True, exist_ok=True)
 
     if args.cd_cfd is not None or args.d_cfd is not None:

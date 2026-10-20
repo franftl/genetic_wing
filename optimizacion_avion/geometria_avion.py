@@ -878,6 +878,3 @@ def geometria_flap(params: dict) -> dict:
     s_flap = float(trapz(np.where(dentro, c, 0.0), fr * b2))
     return {"tiene_flap": True, "frac_superficie": s_flap / max(s_total, 1e-9),
             "deflexion": defl, "cuerda_frac": float(params["flap_cuerda_frac"])}
-
-
-CONSTRUCTORES = {t: (lambda p, _t=t: construir_avion(p, _t)) for t in TOPOLOGIAS}

@@ -8,7 +8,7 @@ from pathlib import Path
 
 # Una sola fuente de verdad: VERSION en optimizacion_avion/__init__.py.
 VERSION = re.search(r'^VERSION\s*=\s*"([^"]+)"',
-                    (Path(__file__).parent / "optimizacion_avion" / "__init__.py").read_text(encoding="utf-8"),
+                    (Path(__file__).resolve().parents[1] / "optimizacion_avion" / "__init__.py").read_text(encoding="utf-8"),
                     re.M).group(1)
 
 cells = []
@@ -71,13 +71,13 @@ Para calibrar cuán exigente es: el **RQ-7B Shadow** tiene máxima/crucero = 1.5
 
 1. **Parametrización mucho más fina:** ala de 5 estaciones (cuerda, borde de ataque, torsión y diedro estación por estación) **con winglets**, **envergadura variable** (2.0–3.5 m), y fuselaje con morro de forma libre y boat-tail en vez del cono truncado que había. De ~20 a **46–51 parámetros** según la topología.
 2. **Incidencia de cola.** Antes iba con `twist = 0` fijo, y eso no era una simplificación sino un error: sin incidencia el avión no tiene con qué trimarse, y el desvío de trim llegaba al 113%. Ahora los candidatos salen con **Cm de crucero = 0.0000**.
-3. **Flaps**, modelados deflectando la geometría del perfil y evaluándola con NeuralFoil al Reynolds real del vuelo lento — no con un ΔCL de tabla (ver sección 9).
+3. **Flaps**, modelados deflectando la geometría del perfil y evaluándola con NeuralFoil al Reynolds real del vuelo lento — no con un ΔCL de tabla (ver sección 7).
 4. **CL_max a su propio Reynolds.** Antes se estimaba al Re de crucero y se usaba para todo; el CL_max cae ~6% (hasta 11%) al pasar de Re 6.7e5 a 2e5, justo donde el diseño está más apretado.
 5. **Catálogo de 19 perfiles** (los 12 del ala volante con los mismos índices, más 7 de alta sustentación).
 
 ## Cómo correrlo
 
-Secciones **1 y 2** para configurar y sembrar; después **3** (una generación por vez) o **4** (automático). Las secciones **5 a 11** analizan el resultado. Costo: ~0.8 s por candidato evaluado; una corrida completa de las cinco topologías está en el orden de **25–45 min**.
+Secciones **1 y 2** para configurar y sembrar; después **3** (una generación por vez) o **4** (automático). Las secciones **5 a 9** analizan el resultado. Costo: ~0.8 s por candidato evaluado; una corrida completa de las cinco topologías está en el orden de **25–45 min**.
 """)
 
 # ---------------------------------------------------------------- 1
@@ -364,7 +364,8 @@ for t in TOPOLOGIAS_A_CORRER:
               f"racha {est.non_improving_streak}/{PACIENCIA}{marca}")
 
     estados[t] = est
-    av.guardar_checkpoint(est, Path(f"checkpoint_avion_{t}.json"))
+    Path("resultados").mkdir(exist_ok=True)
+    av.guardar_checkpoint(est, Path("resultados") / f"checkpoint_avion_{t}.json")
     motivo = (f"no mejoro en {PACIENCIA} generaciones seguidas"
               if est.non_improving_streak >= PACIENCIA else "se alcanzo MAX_GENERACIONES")
     print(f"  detenido en la generacion {est.generation} porque {motivo} "
@@ -399,72 +400,42 @@ plt.show()
 
 # ---------------------------------------------------------------- 7
 md(r"""
-## 6. Tabla comparativa de los ganadores
+## 6. El diseño ganador, en una sola tabla
 
-Una fila por topología, con las magnitudes que de verdad separan a los candidatos. Vale la pena mirar sobre todo tres cosas: la **superficie de ala** que eligió cada una (que es el compromiso central de esta misión), el **margen de vuelo lento**, y el **volumen de cola** $V_H$ — si alguna cayó muy fuera del rango de referencia (0.5–0.7), conviene revisar los bounds de esa topología antes de creerle el resultado.
+Una única tabla con la geometría del ganador y lo que el modelo dice de él: ala, fuselaje y cola, masa, crucero, vuelo lento, estabilidad y batería. Reemplaza a las tablas sueltas de misión, comparación y batería, que mostraban casi lo mismo.
+
+Para leerla: el **margen de vuelo lento** (100 % = justo en el objetivo de pérdida) y el volumen de cola $V_H$ (referencia 0.5–0.7 para esta clase, Scholz, INCAS Bulletin 13(3), 2021) son los dos números que más conviene mirar. Ninguno es una restricción dura; sirven para decidir si el resultado cayó en territorio conocido.
+
+Las **derivadas de amortiguamiento** ($C_{n_r}$ y compañía) se calculan y se reportan pero **no se puntúan ni se restringen**: no hay una banda bibliográfica para esta clase de avión y poner un umbral inventado sería peor que no ponerlo. Lo esperable es $C_{n_r} < 0$; un valor chico en módulo es la señal de alarma para Dutch roll.
 """)
 
 code(r"""
-filas = []
-for t, est in estados.items():
-    a = av.analizar_mision_avion(est.mejor().params, t)
-    if a is None:
-        continue
-    filas.append({
-        "topologia": t, "score": est.mejor().score,
-        "b_m": a["envergadura"], "S_m2": a["S"], "AR": a["AR"],
-        "masa_kg": a["masa_total"], "%estr": 100*a["fraccion_estructural"],
-        "L/D_cru": a["LD_crucero"], "D_N": a["D_crucero"], "P_W": a["potencia_W"],
-        "v_stall": a["v_stall"], "margen_lento_%": 100*a["margen_lento"],
-        "SM_%": 100*a["SM"], "Cm_cru": a["Cm_crucero"],
-        "V_H": a["V_H"], "V_V": a["V_V"],
-        "Cn_r": a["Cn_r"],
-    })
-df = pd.DataFrame(filas).sort_values("score", ascending=False).round(3)
-display(df)
-print("Referencia de volumen de cola para esta clase: V_H 0.5-0.7, V_V 0.02-0.05")
-print("(Scholz, INCAS Bulletin 13(3), 2021). No son restricciones: se reportan")
-print("para poder decir si el resultado cayo en territorio conocido.")
-""")
+from optimizacion_avion.graficos_avion import tabla_ganador, graficar_vuelo_lento
 
-code(r"""
-# Bateria de cada ganador (solo si BATERIA = True en la seccion 0)
-filas_b = []
-for t, est in estados.items():
-    a = av.analizar_mision_avion(est.mejor().params, t)
-    if a is None or not a.get("bateria"):
-        continue
-    b = a["bateria"]; pk = b["pack"]; d = b["despegue"]
-    filas_b.append({
-        "topologia": t, "masa_total_kg": a["masa_total"], "bateria_kg": a["masa_bateria"],
-        "bateria_%": 100*b["fraccion_masa_bateria"], "pack": f"{pk['S']}S{pk['P']}P",
-        "capacidad_Ah": pk["capacidad_Ah"], "energia_Wh": b["energia_requerida_wh"],
-        "volumen_L": b["volumen_bateria_l"], "alcance_km": b["alcance_logrado_km"],
-        "P_cruc_W": b["potencia_electrica_crucero_W"], "I_cruc_A": b["corriente_crucero_A"],
-        "empuje_despegue_kgf": d["empuje_kgf"], "I_despegue_A": d["corriente_A"],
-        "I_max_pack_A": pk["corriente_continua_max_A"],
-    })
-if filas_b:
-    display(pd.DataFrame(filas_b).sort_values("bateria_kg").round(2))
-    print("Alcance a velocidad de crucero TODO el vuelo; la reserva cubre despegue, ascenso y aterrizaje.")
-    print("Despegue: disco actuador con T/W = 0.45, helice de 15 pulgadas (informativo, no puntua).")
-else:
-    print("BATERIA = False: no hay modelo de bateria en este escenario.")
+ranking = sorted(estados.items(), key=lambda kv: -kv[1].mejor().score)
+top_ganadora, est_ganador = ranking[0]
+mejor = est_ganador.mejor()
+
+print("Score por topología: " + "  |  ".join(f"{t} {e.mejor().score:.3f}" for t, e in ranking))
+print(f"\nGanador: {top_ganadora}  (referencia real: {av.TOPOLOGIAS[top_ganadora]['referencia_real']})\n")
+display(tabla_ganador(mejor.params, top_ganadora, mejor.score).style.hide(axis="index"))
 """)
 
 # ---------------------------------------------------------------- 8
 md(r"""
-## 7. Análisis de misión completo de cada ganador
+## 7. Vuelo lento: sustentación vs ángulo de ataque, con y sin flap
 
-Desglose término por término: masa calculada pieza por pieza, los dos puntos de vuelo, las tres reglas de oro de estabilidad estática, las derivadas de amortiguamiento y el aporte de cada término al score.
+A la izquierda, el CL del avión en función del ángulo de ataque a 10 m/s, **con el flap retraído y con el flap desplegado, superpuestos**. A la derecha, el CL que hace falta para sostener el peso en función de la velocidad: donde esa curva corta al CL máximo de cada configuración están la **velocidad de pérdida** y, a $1.2\,V_p$, la **velocidad de despegue**.
 
-Sobre las **derivadas de amortiguamiento** ($C_{l_p}$, $C_{n_r}$, $C_{n_p}$, $C_{l_r}$): se calculan y se reportan, pero **no se puntúan ni se restringen**. La razón es honesta — no tenemos una banda de referencia bibliográfica para ellas en esta clase de avión, y poner un umbral inventado sería peor que no ponerlo. Lo esperable es $C_{l_p} < 0$ y $C_{n_r} < 0$ (los dos amortiguan); un $C_{n_r}$ chico en valor absoluto es la señal de alarma para Dutch roll.
+Es el mismo modelo que puntúa a los candidatos. La recta de sustentación sale de AeroBuildup; el flap suma el CL a $\alpha = 0$ medido con NeuralFoil en una sección con flap (escalado por la fracción de superficie que lleva flap); y el CL máximo de cada curva es el que usa el optimizador. La transición a la pérdida es solo la forma de la curva: el modelo **no** predice lo que pasa después de ella.
+
+> **Limitación honesta:** el flap es plain (sin ranura ni Fowler), el único que el modelo puede sostener. Ver sección 10.
 """)
 
 code(r"""
-for t, est in sorted(estados.items(), key=lambda kv: -kv[1].mejor().score):
-    print(av.desglose_mision_avion(est.mejor().params, t))
-    print("\n" + "="*78 + "\n")
+fig, resumen_vl = graficar_vuelo_lento(mejor.params, top_ganadora, titulo=f"Vuelo lento — {top_ganadora}")
+plt.show()
+display(pd.DataFrame(resumen_vl))
 """)
 
 # ---------------------------------------------------------------- 9
@@ -473,82 +444,14 @@ md(r"""
 """)
 
 code(r"""
-top_ganadora, est_ganador = max(estados.items(), key=lambda kv: kv[1].mejor().score)
-mejor = est_ganador.mejor()
-
-print(f"Ganador: {top_ganadora}  (score {mejor.score:.4f})")
-print(f"  {av.TOPOLOGIAS[top_ganadora]['nombre']}")
-print(f"  referencia real: {av.TOPOLOGIAS[top_ganadora]['referencia_real']}")
-
 avion = av.construir_avion(mejor.params, top_ganadora)
 avion.draw(backend="plotly")
 """)
 
-# ---------------------------------------------------------------- 10
-md(r"""
-## 9. El modelo de flap, y el compromiso que descubre
-
-Lo habitual en diseño preliminar es sumar un $\Delta CL_{max}$ de tabla según el tipo de flap (Raymer/Roskam: plain ~0.9, ranurado ~1.3, Fowler ~1.9). Esas tablas están medidas a Reynolds de avión grande ($10^6$–$10^7$) y este avión vuela lento a Re ≈ $2\times10^5$. La bibliografía ([ICAS 2010, paper 246](https://icas.org/icas_archive/ICAS2010/PAPERS/246.PDF)) dice que a Re bajo la curva con flap se vuelve no lineal y el $CL_{max}$ cae, pero **no publica un factor de corrección**.
-
-En vez de inventarlo, acá el incremento se **mide**: se deflecta la geometría del perfil y se la evalúa con NeuralFoil al Reynolds real del vuelo lento — el mismo modelo que se usa en todo el resto del pipeline.
-
-La celda de abajo muestra el resultado, que tiene una consecuencia de diseño que no es obvia: **el perfil de alta sustentación y el flap compiten, no se suman.** Sobre un perfil ya muy cambado, deflectar mucho un flap grande lo separa antes en vez de darle más sustentación — el e423 a 40° da *menos* CL_max que limpio. Es física real del modelo, no un artefacto, y es uno de los compromisos que el optimizador tiene que resolver.
-
-> **Limitación honesta:** deflectar el contorno modela bien un flap **plain** (sin ranura). Un flap ranurado o Fowler tiene física que esto no captura (la ranura reenergiza la capa límite; el Fowler además agranda la superficie), así que ofrecerlos sería prometer un $CL_{max}$ que el modelo no puede sostener. El flap plain es además el realista para construcción artesanal.
-""")
-
-code(r"""
-from optimizacion_avion.perfiles_avion import cargar_perfil_avion, perfil_con_flap
-
-alphas = np.linspace(0, 24, 49)
-Re_lento = 1.8e5
-deflexiones = [0, 10, 20, 30, 40]
-perfiles = ["naca2412", "naca4412", "fx63137", "e423", "s1223"]
-
-fig, ax = plt.subplots(figsize=(7.5, 4.5))
-tabla = []
-for n in perfiles:
-    af = cargar_perfil_avion(n)
-    fila = {"perfil": n}
-    ys = []
-    for d in deflexiones:
-        a2 = perfil_con_flap(af, d, 0.28)
-        cl = float(np.max(a2.get_aero_from_neuralfoil(alpha=alphas, Re=Re_lento, mach=0.03)["CL"]))
-        fila[f"{d}deg"] = round(cl, 3)
-        ys.append(cl)
-    tabla.append(fila)
-    ax.plot(deflexiones, ys, marker="o", label=n)
-
-ax.set_xlabel("Deflexión de flap [grados]")
-ax.set_ylabel("CL máx de la sección")
-ax.set_title(f"Flap del 28% de cuerda a Re = {Re_lento:,.0f}")
-ax.legend(); ax.grid(alpha=0.3)
-plt.show()
-
-display(pd.DataFrame(tabla))
-print("Los perfiles muy cambados (e423, s1223) PIERDEN CL_max si se los deflecta")
-print("mucho: ya estan al borde de la separacion. El optimo de deflexion baja")
-print("a medida que sube el camber del perfil base.")
-""")
-
-# ---------------------------------------------------------------- 11
-md(r"""
-## 10. El catálogo de perfiles a los dos Reynolds
-
-Los índices 0 a 11 son **los mismos** que en el ala volante (no se pueden reordenar sin cambiarle el significado a todos los diseños ya guardados de aquel notebook); del 12 al 18 son los de alta sustentación agregados para esta misión.
-
-El orden sigue siendo por $C_{m0}$ y eso no es cosmético: el GA cruza índices con BLX-alfa, o sea que **interpola**, y para que interpolar tenga sentido los índices vecinos tienen que ser diseños vecinos. En el tramo nuevo ese orden coincide además con $CL_{max}$ creciente, que es lo que uno quiere que recorra una mutación cuando el binding constraint es el vuelo lento.
-
-**Lo que la tabla no dice:** el $L/D$ máximo de los perfiles nuevos es altísimo, pero ocurre a CL alto. En crucero a 120 km/h el CL del ala es ~0.1–0.3, y ahí un perfil muy cambado es un mal negocio. No hay que leer la tabla como "los de abajo son mejores": son mejores **para volar lento** y peores para crucero.
-""")
-
-code(r"""
-print(av.resumen_catalogo_avion(re_lento=2.0e5, re_crucero=6.7e5))
-""")
 
 # ---------------------------------------------------------------- 12
 md(r"""
-## 11. Exportar el diseño ganador
+## 9. Exportar el diseño ganador
 """)
 
 code(r"""
@@ -591,7 +494,8 @@ if a.get("bateria"):
     salida["_mision"]["alcance_km"] = a["bateria"]["alcance_objetivo_km"]
     salida["_mision"]["viento_activo"] = bool(a.get("viento_activo"))
 
-ruta = Path(f"avion_design_params_{top_ganadora}.json")
+Path("resultados").mkdir(exist_ok=True)
+ruta = Path("resultados") / f"avion_design_params_{top_ganadora}.json"
 ruta.write_text(json.dumps(salida, indent=2, default=float))
 print(f"Guardado en {ruta.resolve()}")
 print(json.dumps(salida, indent=2, default=float)[:2500])
@@ -599,12 +503,12 @@ print(json.dumps(salida, indent=2, default=float)[:2500])
 
 # ---------------------------------------------------------------- 13
 md(r"""
-## 12. Lo que este modelo TODAVÍA no hace
+## 10. Lo que este modelo TODAVÍA no hace
 
 Conviene tenerlo escrito para no confundir *"no está implementado"* con *"salió que no importa"*:
 
 - **Exportación a CAD, con un límite.** `exportar_cad_avion.py` y `fusion_generar_avion.py` llevan el avión completo (ala, fuselaje, cola) a Fusion: el primero escribe las secciones 3D en `avion_geometry_cad.json` y el segundo las dibuja dentro de Fusion (ver también `exportar_cfd_avion.py`, que escribe el caso de cálculo y compara el drag con un CFD). Lo que **no** hay: el script de Fusion se escribió sin poder ejecutarlo en Fusion, así que la parte de la API (revolución del fuselaje, espejado, unión de cuerpos) está sin probar hasta que se corra; no hay hélice ni spinner; y `exportar_cad.py` / `fusion_generar_ala.py` siguen siendo solo para el ala volante.
-- **El flap es solo plain.** Sin flap ranurado ni Fowler (ver sección 9).
+- **El flap es solo plain.** Sin flap ranurado ni Fowler (ver sección 7).
 - **La masa de las vigas es declarada**, no dimensionada por flexión. Aplica al `doble_boom` (el `pod_boom` ya no tiene viga: es un fuselaje continuo). `boom_diametro` ya existe como variable geométrica y afecta la resistencia, pero no se usa para dimensionar: sería el próximo paso natural.
 - **Torsión y flutter del ala no se ven.** Con la envergadura ahora **libre** esto importa más que antes: el criterio de rigidez en flexión frena el alargamiento, pero un ala muy esbelta puede ser inviable por torsión mucho antes.
 - **Las superficies de cola no tienen larguero dimensionado**, solo masa de recubrimiento.
@@ -623,6 +527,6 @@ nb = {
     "nbformat_minor": 5,
 }
 
-destino = Path(__file__).parent / f"Optimizador_{VERSION}.ipynb"
+destino = Path(__file__).resolve().parents[1] / f"Optimizador_{VERSION}.ipynb"
 destino.write_text(json.dumps(nb, indent=1, ensure_ascii=False))
 print(f"Escrito: {destino}  ({destino.stat().st_size/1024:.1f} KB, {len(cells)} celdas)")

@@ -98,3 +98,7 @@ chico frente a lo que ganaba en eficiencia. Ahora `PESO_ENVERGADURA = 1.5` y
 `ENVERGADURA_MANUFACTURA_TOL = 0.2 m` (antes 0.3 y 0.4 m). Costo en puntaje: 2.1 m → 0.33,
 2.2 m → 0.95, 2.4 m → 1.47, 3.0 m → 1.5. Sigue siendo una penalización suave, no una restricción dura.
 Cambian los puntajes absolutos: no son comparables con corridas de V52.
+
+Fusion (`herramientas/fusion_generar_avion.py`, mismo V52.1): un loft por superficie
+(`LOFT_POR_TRAMOS = False`), espejo robusto con chequeo de envergadura del CAD y radio de
+0.5 mm en los dos vértices del borde de fuga (`RADIO_BORDE_FUGA_MM`; `None` lo desactiva).

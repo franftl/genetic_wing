@@ -115,6 +115,10 @@ ESPESOR_TE_MM = 2.0   # = manufactura.ESPESOR_BORDE_FUGA_M del modelo (el JSON y
 
 # Un loft por tramo entre secciones vecinas (recomendado). False = un solo loft
 # por todas las secciones (lo que hacia la version anterior).
+# Radio de los dos vertices del borde de fuga romo [mm]. Redondea las esquinas del
+# espesor de 2 mm (extrados-cara y cara-intrados) con arcos tangentes, asi el
+# contorno del perfil no tiene aristas vivas en el borde de fuga. None = sin redondear.
+RADIO_BORDE_FUGA_MM = 0.5
 LOFT_POR_TRAMOS = False   # False = UN loft por superficie (pedido de Felipe); True = un loft por tramo
 
 # Tramos mas cortos que esto (mm, distancia entre bordes de ataque de dos secciones
@@ -406,6 +410,69 @@ def _preparar_ala(ala, avisos):
 # =============================================================================
 # SUPERFICIES SUSTENTADORAS (ala, estabilizadores, deriva)
 # =============================================================================
+def _punto_a_distancia(pts, desde_fin, dist):
+    """Recorre la polilinea desde un extremo (`desde_fin` = True: desde el ultimo punto;
+    False: desde el primero) y devuelve (indice_primer_punto_que_se_conserva, punto A)
+    donde A esta a `dist` mm del extremo medido sobre la polilinea."""
+    n = len(pts)
+    idx = range(n - 1, 0, -1) if desde_fin else range(0, n - 1)
+    acum = 0.0
+    for i in idx:
+        j = i - 1 if desde_fin else i + 1
+        seg = _norma(_sub(pts[j], pts[i]))
+        if acum + seg >= dist and seg > 1e-12:
+            t = (dist - acum) / seg
+            A = _add(pts[i], _mul(_sub(pts[j], pts[i]), t))
+            return j, A
+        acum += seg
+    return None, None
+
+
+def _redondeo_borde_de_fuga(pts, radio):
+    """Redondea las dos esquinas del borde de fuga romo con arcos tangentes.
+
+    Devuelve (nucleo, arco_sup, arco_inf) o None si no se puede:
+      nucleo   : puntos del spline, de A_sup (sobre el extrados) a A_inf (sobre el intrados)
+      arco_sup : (A_sup, medio, B_sup)   B_sup = punto de tangencia sobre la cara del borde de fuga
+      arco_inf : (A_inf, medio, B_inf)
+    La cara del borde de fuga es el segmento recto entre B_sup y B_inf."""
+    if radio is None or radio <= 0 or len(pts) < 8:
+        return None
+    P0, P1 = pts[0], pts[-1]
+    cara = _norma(_sub(P0, P1))
+    if cara < 1e-6:
+        return None
+    r = min(radio, 0.45 * cara)                               # cabe en la cara
+    resultado = []
+    for extremo_sup in (True, False):
+        P = P0 if extremo_sup else P1
+        Q = P1 if extremo_sup else P0                         # el otro vertice de la cara
+        vecino = pts[1] if extremo_sup else pts[-2]
+        u = _unit(_sub(vecino, P))                            # sobre la superficie, hacia el interior
+        f = _unit(_sub(Q, P))                                 # a lo largo de la cara
+        cos_t = max(-1.0, min(1.0, _dot(u, f)))
+        theta = math.acos(cos_t)
+        if theta < 0.2 or theta > math.pi - 0.2:
+            return None
+        d = r / math.tan(theta / 2.0)
+        if d > 3.0 * r:
+            return None
+        biseccion = _unit(_add(u, f))
+        centro = _add(P, _mul(biseccion, r / math.sin(theta / 2.0)))
+        medio = _add(centro, _mul(_unit(_sub(P, centro)), r))
+        B = _add(P, _mul(f, d))
+        j, A = _punto_a_distancia(pts, not extremo_sup, d)
+        if A is None:
+            return None
+        resultado.append((j, A, medio, B))
+    (js, As, ms, Bs), (ji, Ai, mi, Bi) = resultado
+    if ji < js + 3:
+        return None
+    # js / ji: primer punto del lado del borde de ataque que se conserva en cada extremo
+    nucleo = _limpiar_puntos([As] + list(pts[js:ji + 1]) + [Ai])
+    return nucleo, (As, ms, Bs), (Ai, mi, Bi)
+
+
 def _crear_sketch_seccion(comp, seccion, prefijo):
     """Un sketch con el perfil de una seccion, en su plano real del espacio.
     El plano se arma con `_plano_por_tres_puntos` (planos desplazados +
@@ -421,12 +488,30 @@ def _crear_sketch_seccion(comp, seccion, prefijo):
     sketch.name = "perfil_%s" % nombre_base
     sketch.isComputeDeferred = True
 
+    d = sum((a - b) ** 2 for a, b in zip(pts[0], pts[-1])) ** 0.5
+    redondeo = _redondeo_borde_de_fuga(pts, RADIO_BORDE_FUGA_MM) if d > TOL_CIERRE_MM else None
+
+    if redondeo is not None:
+        nucleo, arco_sup, arco_inf = redondeo
+        coleccion = adsk.core.ObjectCollection.create()
+        for p in nucleo:
+            coleccion.add(sketch.modelToSketchSpace(_punto(p)))
+        spline = sketch.sketchCurves.sketchFittedSplines.add(coleccion)
+        espacio = sketch.modelToSketchSpace
+        a_sup = sketch.sketchCurves.sketchArcs.addByThreePoints(
+            spline.startSketchPoint, espacio(_punto(arco_sup[1])), espacio(_punto(arco_sup[2])))
+        a_inf = sketch.sketchCurves.sketchArcs.addByThreePoints(
+            spline.endSketchPoint, espacio(_punto(arco_inf[1])), espacio(_punto(arco_inf[2])))
+        sketch.sketchCurves.sketchLines.addByTwoPoints(a_sup.endSketchPoint, a_inf.endSketchPoint)
+        sketch.isComputeDeferred = False
+        sketch.isLightBulbOn = False
+        return sketch
+
     coleccion = adsk.core.ObjectCollection.create()
     for p in pts:
         coleccion.add(sketch.modelToSketchSpace(_punto(p)))
     sketch.sketchCurves.sketchFittedSplines.add(coleccion)
 
-    d = sum((a - b) ** 2 for a, b in zip(pts[0], pts[-1])) ** 0.5
     if d > TOL_CIERRE_MM:
         sketch.sketchCurves.sketchLines.addByTwoPoints(
             sketch.modelToSketchSpace(_punto(pts[-1])),
@@ -847,7 +932,8 @@ def run(context):
         resumen_prep = ("Preparacion: " +
                         ("borde de fuga a %.2f mm; " % ESPESOR_TE_MM if ESPESOR_TE_MM is not None else
                          "borde de fuga sin tocar; ") +
-                        ("lofts por tramo" if LOFT_POR_TRAMOS else "un loft por superficie") + ".\n" +
+                        ("lofts por tramo" if LOFT_POR_TRAMOS else "un loft por superficie") +
+                        ("; bordes de fuga con radio %.2f mm" % RADIO_BORDE_FUGA_MM if RADIO_BORDE_FUGA_MM else "") + ".\n" +
                         ("".join("  AVISO: %s\n" % a for a in avisos)))
         ui.messageBox(
             ("Entorno ajustado: " + "; ".join(cambios_entorno) + "\n\n" if cambios_entorno else "") +

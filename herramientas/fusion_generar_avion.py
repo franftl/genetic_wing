@@ -599,6 +599,19 @@ def _crear_ala(comp, ala, avisos):
     secciones = ala["secciones"]
     sketches = [_crear_sketch_seccion(comp, s, nombre) for s in secciones]
 
+    # Diagnostico: espesor del borde de fuga MEDIDO en cada sketch (distancia entre los
+    # dos extremos del spline), en mm. Si alguno no da ~ESPESOR_TE_MM, el problema esta
+    # en la seccion y no en el loft.
+    try:
+        esp = []
+        for sk in sketches:
+            spl = sk.sketchCurves.sketchFittedSplines.item(0)
+            esp.append(10.0 * spl.startSketchPoint.worldGeometry.distanceTo(spl.endSketchPoint.worldGeometry))
+        avisos.append("INFO %s: espesor del borde de fuga en cada seccion [mm]: %s"
+                      % (ala["nombre"], ", ".join("%.2f" % e for e in esp)))
+    except Exception:  # noqa: BLE001
+        pass
+
     if LOFT_POR_TRAMOS and len(sketches) > 2:
         tramos = []
         for k in range(len(sketches) - 1):

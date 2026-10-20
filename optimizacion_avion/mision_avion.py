@@ -287,10 +287,12 @@ FACTOR_UTILIZACION_VOLUMEN = 0.55
 ENVERGADURA_MANUFACTURA_MAX = 2.0     # [m]
 # Ancho de la caída gaussiana (ver _meseta): a envergadura = MAX + TOL el
 # término vale exp(-1) = 0.37. 0.4 m es un compromiso deliberado: bastante
-# ancho para no castigar de forma abrupta 2.0-2.3 m (siguen siendo diseños
+# V52.1: bajado a 0.2 m junto con PESO_ENVERGADURA = 1.5. Costo en puntaje:
+# 2.1 m -> 0.33, 2.2 m -> 0.95, 2.4 m -> 1.47, 3.0 m -> 1.5 (casi todo el peso).
+# (Texto original, con TOL = 0.4:) ancho para no castigar de forma abrupta 2.0-2.3 m (siguen siendo diseños
 # razonables si el resto de la misión los favorece), pero angosto para que
 # 3.0-3.5 m (el otro extremo de BOUNDS_ALA) quede claramente desfavorecido.
-ENVERGADURA_MANUFACTURA_TOL = 0.4     # [m]
+ENVERGADURA_MANUFACTURA_TOL = 0.2     # [m]  (V52.1: antes 0.4)
 
 # =====================================================================
 # PESOS
@@ -320,7 +322,7 @@ PESO_VELMAX = 0.5
 # (¿entra en el taller?), no de misión (¿vuela lo que tiene que volar?), así
 # que no debería poder tapar a los términos de performance si el resto del
 # candidato es claramente mejor.
-PESO_ENVERGADURA = 0.3
+PESO_ENVERGADURA = 1.5   # V52.1: antes 0.3; con 0.3 el GA seguia eligiendo ~3 m
 # Turbulencia (solo con VIENTO_ACTIVO): el término es 1 / (1 + resistencia
 # extra por turbulencia). El peso NO es una preferencia: se elige para que un
 # 1 % de resistencia por turbulencia cueste en el puntaje lo mismo que un 1 %

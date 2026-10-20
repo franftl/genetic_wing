@@ -1,6 +1,6 @@
 # Versiones del optimizador de avión
 
-El nombre del notebook lleva la versión: `Optimizador_V52.ipynb`. La versión se define
+El nombre del notebook lleva la versión: `Optimizador_V52.1.ipynb`. La versión se define
 en un solo lugar, `VERSION` en `optimizacion_avion/__init__.py`; el notebook y su nombre
 de archivo salen de ahí (`herramientas/construir_notebook_avion.py` lo lee al regenerar).
 
@@ -90,3 +90,11 @@ Módulo nuevo `optimizacion_avion/graficos_avion.py` (por eso sube el número).
   Los paquetes `optimizacion_avion`, `optimizacion_ala` y `viento` no se movieron: el código de `viento`
   apunta a esas rutas.
 - Se quitaron `resumen_catalogo_avion` y `CONSTRUCTORES`, que ya no usaba nadie.
+
+## V52.1 (2026-10-20) — penalización de envergadura más fuerte
+
+El GA seguía devolviendo ~3 m de envergadura: con `PESO_ENVERGADURA = 0.3` el castigo máximo era
+chico frente a lo que ganaba en eficiencia. Ahora `PESO_ENVERGADURA = 1.5` y
+`ENVERGADURA_MANUFACTURA_TOL = 0.2 m` (antes 0.3 y 0.4 m). Costo en puntaje: 2.1 m → 0.33,
+2.2 m → 0.95, 2.4 m → 1.47, 3.0 m → 1.5. Sigue siendo una penalización suave, no una restricción dura.
+Cambian los puntajes absolutos: no son comparables con corridas de V52.

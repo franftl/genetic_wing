@@ -742,6 +742,13 @@ def run(context):
             datos = json.load(f)
 
         meta = datos.get("meta", {})
+        if "meta" not in datos or "alas" not in datos:
+            ui.messageBox("Este JSON no es el de geometria para CAD (le faltan 'meta' y 'alas'). "
+                          "Probablemente elegiste los parametros de diseno (avion_design_params_*.json) "
+                          "o un caso CFD.\n\nEl archivo que va aca es 'avion_geometry_cad.json' y se genera afuera de Fusion con:\n"
+                          "    python herramientas/exportar_cad_avion.py --params resultados/avion_design_params_<top>.json --topologia <top>\n\n"
+                          "Archivo elegido:\n%s" % ruta)
+            return
         if meta.get("unidades") != "mm":
             ui.messageBox("El JSON dice unidades '%s' y este script espera 'mm'. Aborto antes de "
                           "generar un avion de la escala equivocada." % meta.get("unidades"))

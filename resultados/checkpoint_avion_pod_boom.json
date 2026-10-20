@@ -1,117 +1,117 @@
 {
   "topologia": "pod_boom",
   "generation": 12,
-  "non_improving_streak": 2,
+  "non_improving_streak": 3,
   "parents": [
     {
       "topologia": "pod_boom",
       "params": {
-        "envergadura": 3.47427450269405,
-        "root_chord": 0.55,
-        "chord_1": 0.44186450490279633,
-        "chord_2": 0.44186450490279633,
-        "chord_3": 0.29884740012116034,
-        "chord_4": 0.2426659237095806,
-        "le_offset_1": -0.007709246611054728,
-        "le_offset_2": -0.007709246611054728,
-        "le_offset_3": -0.0035080766864692076,
-        "le_offset_4": 0.14,
-        "twist_0": 3.3556768600744618,
-        "twist_1": -1.6813423719292182,
-        "twist_2": -1.1344918529650825,
+        "envergadura": 3.1623665077287044,
+        "root_chord": 0.5493102353966139,
+        "chord_1": 0.5233779103736735,
+        "chord_2": 0.4022946914345128,
+        "chord_3": 0.3457345928480113,
+        "chord_4": 0.183684629483312,
+        "le_offset_1": -0.0011690148095711895,
+        "le_offset_2": 0.013410418875886974,
+        "le_offset_3": 0.013410418875886974,
+        "le_offset_4": 0.09980671901858805,
+        "twist_0": 2.3621242578301227,
+        "twist_1": -1.8740030507096597,
+        "twist_2": 1.0759614972577864,
         "twist_3": 4.0,
-        "twist_4": -4.1167175946765155,
-        "elev_1": -0.005176426772704821,
-        "elev_2": -0.005176426772704821,
-        "elev_3": -0.005176426772704821,
-        "elev_4": 0.08230267832996171,
+        "twist_4": -2.876246573472487,
+        "elev_1": -0.006919233010952247,
+        "elev_2": -0.006056974174136478,
+        "elev_3": -0.005426376527685952,
+        "elev_4": 0.11595771358489257,
         "perfil_raiz": 14.0,
         "perfil_medio": 14.0,
         "perfil_punta": 14.0,
-        "perfil_pos_medio": 0.4639156718576032,
-        "winglet_height": 0.0670045209506066,
-        "winglet_cant_deg": 19.075038617826475,
-        "winglet_taper": 0.6996728083370054,
-        "winglet_sweep_deg": 17.828488051057246,
-        "flap_cuerda_frac": 0.33369354701226034,
-        "flap_inicio_frac": 0.0,
-        "flap_fin_frac": 0.8917494557364853,
-        "flap_defl_deg": 31.461025992149445,
-        "fuselaje_largo": 1.720895383427782,
-        "fuselaje_diametro": 0.13310625770716158,
-        "morro_largo_frac": 0.2928468321417158,
-        "morro_exp": 0.5213127345114331,
-        "boattail_largo_frac": 0.23253978717870297,
+        "perfil_pos_medio": 0.48813913677829424,
+        "winglet_height": 0.04284644327827433,
+        "winglet_cant_deg": 24.369724702737283,
+        "winglet_taper": 0.7871597049113089,
+        "winglet_sweep_deg": 13.468216137992105,
+        "flap_cuerda_frac": 0.33024775345491664,
+        "flap_inicio_frac": 0.0068580127277008155,
+        "flap_fin_frac": 0.95,
+        "flap_defl_deg": 30.837619036934942,
+        "fuselaje_largo": 1.7022124053823524,
+        "fuselaje_diametro": 0.14834408463930923,
+        "morro_largo_frac": 0.25788796374357587,
+        "morro_exp": 0.66753292914929,
+        "boattail_largo_frac": 0.25,
         "boattail_radio_frac": 0.35,
         "ala_x_frac_fuselaje": 0.18,
-        "cg_frac_mac": 0.27839900938510515,
-        "htail_span": 0.7366242156231345,
-        "htail_root_chord": 0.13809533272099095,
-        "htail_taper": 0.6331857248007708,
-        "htail_sweep_deg": 0.0,
-        "htail_incidencia_deg": -2.5661016138636144,
-        "vstab_altura": 0.4,
-        "vstab_root_chord": 0.20005167767652046,
-        "vstab_taper": 0.49533328615409267,
-        "vstab_sweep_deg": 20.900447792528492,
-        "cola_arm_frac": 0.9425626563491869
+        "cg_frac_mac": 0.3132598600041427,
+        "htail_span": 0.7229378654247649,
+        "htail_root_chord": 0.16192420695801174,
+        "htail_taper": 0.6512514465513144,
+        "htail_sweep_deg": 1.4933418125792806,
+        "htail_incidencia_deg": -1.1400960445482886,
+        "vstab_altura": 0.3998173377271537,
+        "vstab_root_chord": 0.20487000989560905,
+        "vstab_taper": 0.6205761691615497,
+        "vstab_sweep_deg": 22.159753477246056,
+        "cola_arm_frac": 0.9200156606293639
       },
-      "score": 4.656499055020226
+      "score": 4.514191578668444
     },
     {
       "topologia": "pod_boom",
       "params": {
-        "envergadura": 3.5,
-        "root_chord": 0.55,
-        "chord_1": 0.48642825881684004,
-        "chord_2": 0.451275052705537,
-        "chord_3": 0.2989711082618755,
-        "chord_4": 0.24629971351345564,
-        "le_offset_1": -0.012919425964034923,
-        "le_offset_2": -0.012919425964034923,
-        "le_offset_3": -0.005262779304345402,
-        "le_offset_4": 0.1276907748622487,
-        "twist_0": 3.5059866398099073,
-        "twist_1": -1.6830306000309199,
-        "twist_2": 0.3582630003655143,
+        "envergadura": 3.1623665077287044,
+        "root_chord": 0.5492788805730924,
+        "chord_1": 0.5231014122425897,
+        "chord_2": 0.3830310359463665,
+        "chord_3": 0.3253073510930261,
+        "chord_4": 0.20085524416904235,
+        "le_offset_1": -0.0017252510498868365,
+        "le_offset_2": 0.012900998575136626,
+        "le_offset_3": 0.03446339773766601,
+        "le_offset_4": 0.09980671901858805,
+        "twist_0": 2.315394766170479,
+        "twist_1": -2.2233942029318703,
+        "twist_2": -1.1869611611906288,
         "twist_3": 4.0,
-        "twist_4": -3.348143990428972,
-        "elev_1": -0.008715972597807303,
-        "elev_2": -0.006155328663022968,
-        "elev_3": -0.006026925693786565,
-        "elev_4": 0.08823100799531833,
+        "twist_4": -3.163162931896889,
+        "elev_1": -0.006649998183632035,
+        "elev_2": -0.006009629240826151,
+        "elev_3": -0.005428104917095165,
+        "elev_4": 0.11624312125192789,
         "perfil_raiz": 14.0,
         "perfil_medio": 14.0,
         "perfil_punta": 14.0,
-        "perfil_pos_medio": 0.4683696522742276,
-        "winglet_height": 0.059361001390769885,
-        "winglet_cant_deg": 23.011919668021633,
-        "winglet_taper": 0.6805510104353621,
-        "winglet_sweep_deg": 17.826072176606903,
-        "flap_cuerda_frac": 0.3356107354540909,
-        "flap_inicio_frac": 0.0,
-        "flap_fin_frac": 0.8910352408187389,
-        "flap_defl_deg": 31.594583729963055,
-        "fuselaje_largo": 1.7143268992207972,
-        "fuselaje_diametro": 0.1508983847834984,
-        "morro_largo_frac": 0.3,
-        "morro_exp": 0.5125528557639014,
-        "boattail_largo_frac": 0.24224309485409518,
-        "boattail_radio_frac": 0.35,
+        "perfil_pos_medio": 0.4438808486222281,
+        "winglet_height": 0.05782455160467116,
+        "winglet_cant_deg": 23.581386614519904,
+        "winglet_taper": 0.7871025805110485,
+        "winglet_sweep_deg": 17.309334077970714,
+        "flap_cuerda_frac": 0.33024775345491664,
+        "flap_inicio_frac": 0.008573976348550562,
+        "flap_fin_frac": 0.8989511124572035,
+        "flap_defl_deg": 31.109960858961802,
+        "fuselaje_largo": 1.6538516762310544,
+        "fuselaje_diametro": 0.15230512032770302,
+        "morro_largo_frac": 0.25788796374357587,
+        "morro_exp": 0.6462119722858564,
+        "boattail_largo_frac": 0.25,
+        "boattail_radio_frac": 0.356986063719149,
         "ala_x_frac_fuselaje": 0.18,
-        "cg_frac_mac": 0.2988570468241898,
-        "htail_span": 0.7373010878966799,
-        "htail_root_chord": 0.13807047954536794,
-        "htail_taper": 0.6328584601308589,
-        "htail_sweep_deg": 0.0,
-        "htail_incidencia_deg": -2.5661016138636144,
-        "vstab_altura": 0.4,
-        "vstab_root_chord": 0.20005167767652046,
-        "vstab_taper": 0.5505416565457815,
-        "vstab_sweep_deg": 20.930895043547526,
-        "cola_arm_frac": 0.9428358205471825
+        "cg_frac_mac": 0.3113616702984502,
+        "htail_span": 0.7217834879339723,
+        "htail_root_chord": 0.15851591197435283,
+        "htail_taper": 0.6512406097009089,
+        "htail_sweep_deg": 1.5231635208400367,
+        "htail_incidencia_deg": -2.3872124869554345,
+        "vstab_altura": 0.39905704961441163,
+        "vstab_root_chord": 0.19450813797576796,
+        "vstab_taper": 0.6658675801487917,
+        "vstab_sweep_deg": 26.90399270025191,
+        "cola_arm_frac": 0.9313515002932722
       },
-      "score": 4.640577658333905
+      "score": 4.451068955659202
     }
   ],
   "historial": [
@@ -127,120 +127,120 @@
       "generation": 1,
       "status": "in_progress",
       "parent_scores": [
-        4.405539999827625,
-        4.360674383763865
+        4.360674383763865,
+        3.5938572446912365
       ],
-      "best_child_score": 4.405539999827625,
-      "mejoro": true
+      "best_child_score": 2.7802861510070094,
+      "mejoro": false
     },
     {
       "generation": 2,
       "status": "in_progress",
       "parent_scores": [
-        4.423537166277337,
-        4.405539999827625
+        4.360674383763865,
+        4.340364567516403
       ],
-      "best_child_score": 4.423537166277337,
-      "mejoro": true
+      "best_child_score": 4.340364567516403,
+      "mejoro": false
     },
     {
       "generation": 3,
       "status": "in_progress",
       "parent_scores": [
-        4.605056589433087,
-        4.43851224839067
+        4.360674383763865,
+        4.340364567516403
       ],
-      "best_child_score": 4.605056589433087,
-      "mejoro": true
+      "best_child_score": 4.3248207517711315,
+      "mejoro": false
     },
     {
       "generation": 4,
       "status": "in_progress",
       "parent_scores": [
-        4.605056589433087,
-        4.43851224839067
+        4.388934814671382,
+        4.360674383763865
       ],
-      "best_child_score": 4.428939498159943,
-      "mejoro": false
+      "best_child_score": 4.388934814671382,
+      "mejoro": true
     },
     {
       "generation": 5,
       "status": "in_progress",
       "parent_scores": [
-        4.605056589433087,
-        4.4510786716015245
+        4.388934814671382,
+        4.360674383763865
       ],
-      "best_child_score": 4.4510786716015245,
+      "best_child_score": 4.3369309160723635,
       "mejoro": false
     },
     {
       "generation": 6,
       "status": "in_progress",
       "parent_scores": [
-        4.622838820064929,
-        4.605056589433087
+        4.388934814671382,
+        4.360674383763865
       ],
-      "best_child_score": 4.622838820064929,
-      "mejoro": true
+      "best_child_score": 4.156376971236387,
+      "mejoro": false
     },
     {
       "generation": 7,
       "status": "in_progress",
       "parent_scores": [
-        4.622838820064929,
-        4.605056589433087
+        4.388934814671382,
+        4.387431792940193
       ],
-      "best_child_score": 4.49162256392744,
+      "best_child_score": 4.387431792940193,
       "mejoro": false
     },
     {
       "generation": 8,
       "status": "in_progress",
       "parent_scores": [
-        4.640577658333905,
-        4.622838820064929
+        4.451068955659202,
+        4.447294848043297
       ],
-      "best_child_score": 4.640577658333905,
+      "best_child_score": 4.451068955659202,
       "mejoro": true
     },
     {
       "generation": 9,
       "status": "in_progress",
       "parent_scores": [
-        4.640577658333905,
-        4.622838820064929
+        4.514191578668444,
+        4.451068955659202
       ],
-      "best_child_score": 4.564345583488078,
-      "mejoro": false
+      "best_child_score": 4.514191578668444,
+      "mejoro": true
     },
     {
       "generation": 10,
       "status": "in_progress",
       "parent_scores": [
-        4.656499055020226,
-        4.640577658333905
+        4.514191578668444,
+        4.451068955659202
       ],
-      "best_child_score": 4.656499055020226,
-      "mejoro": true
+      "best_child_score": 4.319266540450917,
+      "mejoro": false
     },
     {
       "generation": 11,
       "status": "in_progress",
       "parent_scores": [
-        4.656499055020226,
-        4.640577658333905
+        4.514191578668444,
+        4.451068955659202
       ],
-      "best_child_score": 4.627260328224436,
+      "best_child_score": 4.442147134802082,
       "mejoro": false
     },
     {
       "generation": 12,
       "status": "in_progress",
       "parent_scores": [
-        4.656499055020226,
-        4.640577658333905
+        4.514191578668444,
+        4.451068955659202
       ],
-      "best_child_score": 4.6377007678344535,
+      "best_child_score": 4.445398340680158,
       "mejoro": false
     }
   ]

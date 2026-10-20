@@ -102,3 +102,5 @@ Cambian los puntajes absolutos: no son comparables con corridas de V52.
 Fusion (`herramientas/fusion_generar_avion.py`, mismo V52.1): un loft por superficie
 (`LOFT_POR_TRAMOS = False`), espejo robusto con chequeo de envergadura del CAD y radio de
 1 mm (tope: 0.4 del espesor, o sea 0.8 mm con 2 mm) en los dos vértices del borde de fuga (`RADIO_BORDE_FUGA_MM`; `None` lo desactiva).
+
+V52.1: el redondeo del borde de fuga quedo desactivado por defecto (RADIO_BORDE_FUGA_MM = None): borde plano de 2 mm.

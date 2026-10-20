@@ -115,7 +115,7 @@ ESPESOR_TE_MM = 2.0   # = manufactura.ESPESOR_BORDE_FUGA_M del modelo (el JSON y
 
 # Un loft por tramo entre secciones vecinas (recomendado). False = un solo loft
 # por todas las secciones (lo que hacia la version anterior).
-LOFT_POR_TRAMOS = True
+LOFT_POR_TRAMOS = False   # False = UN loft por superficie (pedido de Felipe); True = un loft por tramo
 
 # Tramos mas cortos que esto (mm, distancia entre bordes de ataque de dos secciones
 # consecutivas) se consideran degenerados: la ultima seccion se descarta si el
@@ -492,13 +492,19 @@ def _espejar(comp, cuerpo, nombre):
     al final: unirlas aca obliga a Fusion a resolver superficies casi coincidentes
     sobre el plano de simetria (el ala tiene un diedro en la raiz y la cola en V
     tiene sus raices inclinadas), que es una fuente tipica de autointersecciones."""
+    antes = set(comp.bRepBodies.item(i).entityToken for i in range(comp.bRepBodies.count))
     cuerpos = adsk.core.ObjectCollection.create()
     cuerpos.add(cuerpo)
     entrada = comp.features.mirrorFeatures.createInput(cuerpos, comp.xZConstructionPlane)
     entrada.isCombine = False
     feature = comp.features.mirrorFeatures.add(entrada)
-    for i in range(feature.bodies.count):
-        feature.bodies.item(i).name = nombre + "_espejo"
+    # Los cuerpos nuevos se buscan por diferencia contra los que habia antes: no
+    # depender de feature.bodies, que en algunos documentos viene vacio.
+    nuevos = [comp.bRepBodies.item(i) for i in range(comp.bRepBodies.count)
+              if comp.bRepBodies.item(i).entityToken not in antes]
+    for c in nuevos:
+        c.name = nombre + "_espejo"
+    return len(nuevos)
 
 
 def _crear_ala(comp, ala, avisos):
@@ -530,7 +536,8 @@ def _crear_ala(comp, ala, avisos):
 
     if ala.get("simetrica", False):
         if cuerpo is not None:
-            _espejar(comp, cuerpo, nombre)
+            if _espejar(comp, cuerpo, nombre) == 0:
+                avisos.append("%s: el espejo NO creo ningun cuerpo; el CAD tiene solo medio ala." % ala["nombre"])
         else:
             sueltos = [comp.bRepBodies.item(i) for i in range(comp.bRepBodies.count)
                        if comp.bRepBodies.item(i).name.startswith(nombre + "_t")]
@@ -639,8 +646,9 @@ def _comparar_con_esperado(comp, nombres_cad, esperado):
         area_m2 = sum(c.area for c in cuerpos) * 1e-4          # cm2 -> m2
         dv = 100.0 * (vol_L - e["volumen_L"]) / max(e["volumen_L"], 1e-9)
         da = 100.0 * (area_m2 - e["area_mojada_m2"]) / max(e["area_mojada_m2"], 1e-9)
-        filas.append("  %-26s vol %7.2f L (esp. %7.2f, %+.1f%%)   area %.4f m2 (esp. %.4f, %+.1f%%)"
-                     % (nom_json, vol_L, e["volumen_L"], dv, area_m2, e["area_mojada_m2"], da))
+        filas.append("  %-26s vol %7.2f L (esp. %7.2f, %+.1f%%)   area %.4f m2 (esp. %.4f, %+.1f%%)   [%d cuerpo/s: %s]"
+                     % (nom_json, vol_L, e["volumen_L"], dv, area_m2, e["area_mojada_m2"], da,
+                        len(cuerpos), ", ".join(c.name for c in cuerpos)))
     return "\n".join(filas)
 
 
@@ -805,6 +813,17 @@ def run(context):
         # Volumen y area de cada cuerpo ANTES de unirlos.
         esperado = meta.get("verificacion_en_fusion", {})
         comparacion = _comparar_con_esperado(comp, nombres_cad, esperado)
+
+        # Envergadura real del CAD (caja que contiene todos los cuerpos, en Y).
+        try:
+            ys = []
+            for i in range(comp.bRepBodies.count):
+                bb = comp.bRepBodies.item(i).boundingBox
+                ys += [bb.minPoint.y, bb.maxPoint.y]
+            span_cad = 10.0 * (max(ys) - min(ys))                # cm -> mm
+            comparacion += "\n  Envergadura en CAD: %.0f mm (esperada %.0f mm)" % (span_cad, meta.get("envergadura_mm", 0.0))
+        except Exception:  # noqa: BLE001
+            pass
 
         # CG de diseno.
         if "cg_x_mm" in meta:

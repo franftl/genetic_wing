@@ -61,10 +61,9 @@ import exportar_cfd_avion as ecfd                                   # noqa: E402
 # un spline de Fusion no hace falta). Mismo valor que el exportador del ala.
 N_PUNTOS_CAD = 120
 
-# Espesor de BORDE DE FUGA que se le da al CAD, en mm. Mismas razones que en
-# optimizacion_ala/exportar_cad.py (ESPESOR_BORDE_FUGA_MM): el perfil analizado
-# cierra en filo exacto, que no se puede fabricar y que Fusion puede interpretar
-# como spline cerrada y redondear. 0.0 desactiva la apertura.
+# Espesor de BORDE DE FUGA que se le da al CAD, en mm. Originalmente (como en
+# optimizacion_ala/exportar_cad.py) servia para abrir un perfil que cerraba en
+# filo exacto; 0.0 desactiva la apertura.
 # Desde V51 es una restriccion de manufacturabilidad del MODELO
 # (optimizacion_avion/manufactura.py): el borde de fuga de 2 mm ya viene en los
 # perfiles de `construir_avion`, asi que aca solo se completa lo que falte.
@@ -205,6 +204,7 @@ def main() -> None:
 
     params, top = ecfd.cargar_params(args.params, args.topologia)
     params = clamp_to_bounds_avion(params, top)
+    params = ma.params_trimados(params, top)      # con la incidencia de cola que trima (TRIM_RESUELTO)
     avion = construir_avion(params, top)
 
     alas = []
@@ -240,8 +240,9 @@ def main() -> None:
         "masa_kg": caso["referencias"]["masa_kg"],
         "n_puntos_por_perfil": args.puntos,
         "espesor_borde_fuga_mm": args.espesor_te_mm,
-        "_nota_borde_fuga": ("el borde de fuga se abrio a este espesor: el perfil analizado cierra "
-                             "en filo exacto, que no es fabricable ni loftea sin ambiguedad."),
+        "_nota_borde_fuga": ("espesor de borde de fuga del CAD. Desde V51 el modelo ya lo trae "
+                             "(manufactura.ESPESOR_BORDE_FUGA_M = 2 mm); aca solo se completa la "
+                             "diferencia si se pide un espesor mayor."),
         "_nota_simetria": ("las alas con `simetrica: true` se exportan solo del lado derecho (y >= 0); "
                            "el script de Fusion las espeja respecto del plano XZ."),
         "verificacion_en_fusion": {

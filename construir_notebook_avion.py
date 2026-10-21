@@ -40,20 +40,15 @@ Hermano de **`01_Optimizacion_Ala.ipynb`**. Aquel optimiza **una sola** topolog�
 
 La lógica estable vive en **`optimizacion_avion/`**; este notebook es el panel de control.
 
-## La misión tiene DOS puntos de vuelo
+## La misión tiene TRES puntos de vuelo
 
-> **crucero a 120 km/h** con 3 kg de carga útil, **y además poder volar a 10 m/s** (36 km/h) para reconocimiento, despegue y aterrizaje.
+> **crucero de diseño a 80 km/h** con 3 kg de carga útil, **velocidad máxima de 120 km/h** (restricción dura y término de puntaje), y **poder volar a 10 m/s** (36 km/h) para reconocimiento, despegue y aterrizaje.
 
-Eso es una relación de velocidades de **3.33 : 1**, o sea un **factor 11 en coeficiente de sustentación**. Los dos puntos entran juntos a la función objetivo, y no es un capricho: piden alas **opuestas**. Con el peso de este avión (~72 N):
+El crucero bajó de 120 a 80 km/h el 18/09/2026 (Research Note 15): el alcance eléctrico se maximiza a resistencia mínima, que para este avión cae cerca de 70–80 km/h. Entre la máxima y el vuelo lento hay una relación de velocidades de **3.33 : 1**, o sea un **factor 11 en coeficiente de sustentación**, y por eso los puntos entran juntos a la función objetivo: piden alas **opuestas**. Si se optimizara solo la velocidad, el optimizador convergería a un ala de cuerda mínima que no puede volar lento — un óptimo perfectamente válido del problema equivocado.
 
-| optimizando… | superficie de ala que pide | cuerda media |
-|---|---|---|
-| solo crucero a 120 km/h | 0.21 – 0.35 m² | 10 – 16 cm |
-| poder volar a 10 m/s | 0.77 – 1.63 m² | 35 – 74 cm |
+Para calibrar cuán exigente es: el **RQ-7B Shadow** tiene máxima/crucero = 1.54:1 y el **Bayraktar TB2**, 1.71:1 — y despegan de pista o catapulta, no en vuelo lento sostenido.
 
-Un factor 2 a 8 en superficie. Si se cambiara la velocidad **sin** meter el vuelo lento, el optimizador convergería a un ala de cuerda mínima que no puede cumplir la misión — un óptimo perfectamente válido del problema equivocado.
-
-Para calibrar cuán exigente es: el **RQ-7B Shadow** tiene máxima/crucero = 1.54:1 y el **Bayraktar TB2**, 1.71:1 — y despegan de pista o catapulta, no en vuelo lento sostenido. Nuestro 3.33:1 es ambicioso, aunque el déficit real de CL es chico.
+Con los interruptores de la sección 0 se suman el **viento de los sitios** (aire de 1.056 kg/m³, ráfaga de 4.63 m/s, turbulencia) y la **batería dimensionada por alcance** (350 km).
 
 ## Las cinco topologías
 
@@ -77,7 +72,7 @@ Para calibrar cuán exigente es: el **RQ-7B Shadow** tiene máxima/crucero = 1.5
 
 ## Cómo correrlo
 
-Secciones **1 y 2** para configurar y sembrar; después **3** (una generación por vez) o **4** (automático). Las secciones **5 a 11** analizan el resultado. Costo: ~0.8 s por candidato evaluado; una corrida completa de las cinco topologías está en el orden de **25–45 min**.
+Sección **0** (interruptores), **1 y 2** para configurar y sembrar; después **3** (una generación por vez) o **4** (automático). Las secciones **5 a 11** analizan el resultado. Costo: varios segundos por candidato con batería (cada candidato se analiza 2–3 veces para cerrar el lazo masa de batería ↔ resistencia); la competencia completa lleva **horas**.
 """)
 
 # ---------------------------------------------------------------- 1
@@ -127,7 +122,10 @@ Todo lo que se puede querer mover está en esta celda; hay que correrla **antes*
 |---|---|
 | `VIENTO` | `True`: la misión se evalúa con el aire y la ráfaga reales de los sitios (lo de imarzeniuk, `viento.py`). `False`: aire estándar y ráfaga de 3 m/s. |
 | `BATERIA` | `True`: la batería se dimensiona para el `ALCANCE_KM` a velocidad de crucero **todo el vuelo**, y su masa entra al peso del avión (`bateria.py`). `False`: vuelve el modelo viejo, con la batería dentro de `MASA_SISTEMAS = 1.5 kg`. |
-| `CORRIDA_RAPIDA` | `True`: 4 generaciones de paciencia, máximo 12, y solo v_tail y pod_boom (~15 min por topología). `False`: la competencia completa (10 / 60 / cinco topologías) y puede tardar **horas**, porque con batería cada candidato cuesta el doble. |
+| `FAMILIAS` | Qué familias (topologías) se corren: una lista, por ejemplo `["pod_boom"]` o `["v_tail", "pod_boom"]`, o `"todas"`. Opciones: `convencional`, `t_tail`, `v_tail`, `doble_boom`, `pod_boom`. |
+| `CORRIDA_RAPIDA` | `True`: 8 generaciones de paciencia y máximo 20 (~15–30 min por familia). `False`: 10 / 60, puede tardar **horas** por familia, porque con batería cada candidato cuesta el doble. |
+| `GUARDAR_RESULTADOS` | `True`: al final (sección 11b) guarda tablas, gráficos, vistas 3D, líneas de flujo y desgloses en `<CARPETA_RESULTADOS>/<fecha>_<escenario>_<familias>/`. |
+| `CARPETA_RESULTADOS` | Dónde se guardan, **fuera del repositorio**. `None` = `Proyecto final/resultados_optimizador/` (al lado de `genetic_wing`); o cualquier ruta de la computadora. |
 
 Los supuestos de la batería (eficiencia propulsiva, reserva, celda, aviónica) son los de abajo; **ninguno está medido**, en particular `ETA_PROPULSIVA_TOTAL`.
 """)
@@ -138,7 +136,13 @@ import optimizacion_avion.bateria as bat
 # ------------------------------ INTERRUPTORES ------------------------------
 VIENTO = True            # lo de imarzeniuk (viento de los sitios)
 BATERIA = True           # bateria dimensionada por alcance
-CORRIDA_RAPIDA = True    # False = competencia completa (horas)
+# Familias a correr: lista con cualquiera de convencional, t_tail, v_tail, doble_boom, pod_boom; o "todas"
+FAMILIAS = ["v_tail", "pod_boom"]
+CORRIDA_RAPIDA = True    # True: paciencia 8 / max 20 generaciones. False: 10 / 60 (horas)
+GUARDAR_RESULTADOS = True   # carpeta <CARPETA_RESULTADOS>/<fecha>_<escenario>_<familias>/ al final (seccion 11b)
+CARPETA_RESULTADOS = None   # None = av.CARPETA_RESULTADOS (fuera del repo); o p. ej. r"C:\Users\...\Resultados UAV"
+SET_SEMILLAS = None      # None = las del escenario; o un set de la carpeta semillas/ (p. ej. "bateria_350km")
+SEMILLA_AZAR = 2026      # fija el azar del GA: misma corrida, mismo resultado
 
 # ------------------- SUPUESTOS DE LA BATERIA (bateria.py) -------------------
 bat.ALCANCE_KM = 350.0               # [km] a velocidad de crucero constante
@@ -148,57 +152,65 @@ bat.RESERVA_ENERGIA = 0.20           # [-] sobre la energia de crucero
 bat.CELDA_POR_DEFECTO = "molicel_m65a"   # molicel_m65a | lg_m58t | samsung_50g | molicel_p42a
 bat.CELDAS_EN_SERIE = 12             # 12S (solo informativo: la masa sale de la energia)
 
-# ------------------- PENALIZACION DE ENVERGADURA (fabricacion) -------------------
-mis.ENVERGADURA_MANUFACTURA_MAX = 2.0   # [m] por encima de esto se penaliza
-mis.ENVERGADURA_MANUFACTURA_TOL = 0.4   # [m] ancho de la caida gaussiana
-mis.PESO_ENVERGADURA = 0.3
+# ------------------- ENVERGADURA MAXIMA (requisito) -------------------
+# Envergadura TOTAL (con winglets) <= esto, por la evaluacion de riesgo SORA que pide la
+# operacion BVLOS en Argentina (mas de 3 m sube un escalon el riesgo en tierra).
+mis.ENVERGADURA_MAX_M = 3.0             # [m]
 
 # ------------------------------ APLICAR ------------------------------
 mis.VIENTO_ACTIVO = VIENTO
 mis.BATERIA_ACTIVA = BATERIA
+mis.PUNTAJE_MODO = "mision"      # "mision" (energia para el alcance + requisitos) | "legado" (11 terminos de antes)
+mis.TRIM_RESUELTO = True         # la incidencia de cola se calcula para Cm = 0 en crucero
 
 # ---- Semillas validas para el escenario elegido ----
 # Las de semillas.json (7 kg, 8.2 L) quedan INVALIDAS con batería (~12 kg, ~2 L mas de
-# fuselaje) y con el aire liviano del sitio. Se necesitan DOS por topologia: el cruce
-# BLX entre dos padres iguales no explora nada.
-RAIZ = Path.cwd()
-if BATERIA:
-    _crudas = json.load(open(RAIZ / "evaluacion_bateria_350km" / "semillas_bateria.json"))
-elif VIENTO:
-    _gv = json.load(open(RAIZ / "optimizacion_avion" / "ganadores_viento.json"))
-    _gs = json.load(open(RAIZ / "optimizacion_avion" / "ganadores.json"))
-    _crudas = {t: [_gv[t]["params"], _gs[t]["params"]] for t in av.TOPOLOGIAS}
+# fuselaje) y con el aire liviano del sitio. La regla para elegirlas vive en un solo
+# lugar (competencia.semillas_para_escenario), la misma que usan los scripts. Se
+# necesitan DOS por topologia: el cruce BLX entre dos padres iguales no explora nada.
+import random
+if SET_SEMILLAS is None:
+    SEMILLAS = av.semillas_para_escenario()
 else:
-    _crudas = None      # se usan las de semillas.json tal cual
-if _crudas is not None:
-    av.SEEDS_POR_TOPOLOGIA.update(
-        {t: [geo.clamp_to_bounds_avion(p, t) for p in ps] for t, ps in _crudas.items()})
+    import semillas as biblioteca_semillas
+    SEMILLAS = biblioteca_semillas.cargar(SET_SEMILLAS)
+
+TOPOLOGIAS_A_CORRER = list(av.TOPOLOGIAS) if FAMILIAS == "todas" else list(FAMILIAS)
+_desconocidas = [t for t in TOPOLOGIAS_A_CORRER if t not in av.TOPOLOGIAS]
+if _desconocidas or not TOPOLOGIAS_A_CORRER:
+    raise ValueError(f"FAMILIAS invalidas: {_desconocidas or 'lista vacia'}. Opciones: {list(av.TOPOLOGIAS)} o 'todas'")
 
 print(f"VIENTO_ACTIVO = {mis.VIENTO_ACTIVO}   BATERIA_ACTIVA = {mis.BATERIA_ACTIVA}   "
       f"CORRIDA_RAPIDA = {CORRIDA_RAPIDA}")
+print(f"Familias a correr: {', '.join(TOPOLOGIAS_A_CORRER)}")
+print(f"Resultados en: {CARPETA_RESULTADOS or av.CARPETA_RESULTADOS}")
 if mis.BATERIA_ACTIVA:
     print(f"Bateria: {bat.ALCANCE_KM:.0f} km a {3.6*mis.V_CRUCERO:.0f} km/h, eta {bat.ETA_PROPULSIVA_TOTAL:.2f}, "
           f"reserva {100*bat.RESERVA_ENERGIA:.0f}%, celda {bat.CELDA_POR_DEFECTO} "
           f"({bat.energia_especifica_pack():.0f} Wh/kg a nivel pack)")
-print(f"Envergadura: penalizada por encima de {mis.ENVERGADURA_MANUFACTURA_MAX:.1f} m "
-      f"(tol {mis.ENVERGADURA_MANUFACTURA_TOL:.1f} m, peso {mis.PESO_ENVERGADURA})")
+print(f"Envergadura total maxima: {mis.ENVERGADURA_MAX_M:.1f} m (requisito, SORA)")
+print(f"Semillas: {'las del escenario' if SET_SEMILLAS is None else SET_SEMILLAS}   azar fijo: {SEMILLA_AZAR}")
 for t in av.TOPOLOGIAS:
-    print(f"  semillas {t:<14}: {len(av.SEEDS_POR_TOPOLOGIA[t])}")
+    print(f"  semillas {t:<14}: {len(SEMILLAS.get(t, []))}")
 """)
 
 # ---------------------------------------------------------------- 2
 md(r"""
 ## 1. Configuración: la misión y el criterio de parada
 
-El **score** son nueve términos pesados y normalizados:
+El puntaje tiene dos modos (`mis.PUNTAJE_MODO`, sección 0). El de trabajo es **`"mision"`** (desde V51.2):
 
-$$\text{score} = 1.0\,f_{ef} + 0.3\,f_{masa} + 1.5\,f_{estab} + 0.4\,f_{ráfaga} + 0.4\,f_{margen} + 0.3\,f_{trim} + 0.3\,f_{direcc} + 0.3\,f_{lat} + 1.0\,f_{lento}$$
+$$\text{score} = 1.0\,\frac{E_{ref}}{E_{alcance}} \;+\; \underbrace{1.0\,f_{lento} + 0.5\,f_{vmax}}_{\text{pendientes de decisión}}$$
 
-El último es nuevo y pesa como la estabilidad, porque el vuelo lento es un **requisito de misión**, no un lujo. Por debajo de 10 m/s el candidato ya se descarta por restricción dura; el término premia el margen **por encima** de eso, para que el optimizador no se quede pegado al borde de la restricción.
+- **Objetivo:** $E_{alcance}$ es la energía de batería (con reserva) para volar `bat.ALCANCE_KM` a 80 km/h con la resistencia de la misión (la turbulenta, con viento). Con batería activa ya incluye el peso de la propia batería, así que la masa entra sola. Reemplaza a los términos de eficiencia, masa y turbulencia, que contaban lo mismo varias veces.
+- **Pendientes** (misma forma y peso que antes, hasta decidirlos con Quintana y Felipe): margen de vuelo lento hasta el objetivo de 20 % ($v_{stall} \le 8.33$ m/s) y resistencia a 120 km/h. Tasa de cambio actual: 0.1 m/s menos de pérdida vale ~6 % de energía.
+- **Trim resuelto** (`mis.TRIM_RESUELTO`): la incidencia de la cola se calcula para que el avión vuele en crucero con $C_m = 0$; el valor del candidato es solo el punto de partida. Para exportar o dibujar se usa `av.params_trimados(...)`.
 
-**Restricciones duras** (descartan el candidato, no le bajan el puntaje): que la estructura no cierre, que no se sostenga a 120 km/h, **que no pueda volar a 10 m/s ni con el flap abajo**, margen estático negativo, $C_{n\beta} \le 0$, $C_{l\beta} \ge 0$, o que la ráfaga de diseño lo ponga en pérdida en crucero.
+**Requisitos pasa / no pasa** (si falla alguno el candidato queda infactible, rankeado por cuánto viola): estructura que cierre, volumen útil en el fuselaje, sostenerse a 120 km/h, **volar a 10 m/s con el flap abajo**, margen estático **dentro de la banda** de la topología, $C_{n\beta} \ge$ `CN_BETA_MIN` y $C_{l\beta} \le -$`CL_BETA_MIN` (0.0005 /grado, supuesto), margen de pérdida con la ráfaga ≥ 20 %, incidencia de trim dentro del rango de diseño, **envergadura total ≤ 3.0 m** (`mis.ENVERGADURA_MAX_M`, winglets incluidos: por la evaluación de riesgo SORA que pide el vuelo BVLOS en Argentina), y con viento ráfaga del sitio ≤ carga límite (3.0 g).
 
-> Un cambio menor pero que importa: el término de **trim** ahora se mide sobre el $C_m$ **en crucero**, no sobre $|CL_{trim} - CL_{crucero}|/CL_{crucero}$ como antes. A 120 km/h el CL de crucero es ~0.1, así que dividir por él convertía diferencias chicas en desvíos enormes y el término se saturaba en cero para todos los candidatos, sin discriminar entre ellos.
+**Infactibles rankeados** (V51.3, reglas de Deb): un avión que no cumple no vale −inf sino un número por debajo de −1000 que ordena por cuánto viola; así el GA puede llegar a la zona factible aunque las semillas no lo sean, y la paciencia no corre mientras no haya ningún padre factible. Los prints lo muestran como "infactible: etapa (violación)".
+
+El modo **`"legado"`** es la suma de 11 términos de antes (12 con viento), para comparar contra corridas viejas (con `TRIM_RESUELTO = False` reproduce el modelo anterior).
 """)
 
 code(r"""
@@ -207,35 +219,44 @@ code(r"""
 # de ~20 parametros por topologia a 46-51, y con mas dimensiones el GA
 # necesita mas generaciones para explotar una direccion buena antes de que
 # la racha sin mejora lo corte.
-# CORRIDA_RAPIDA (seccion 0): 4 / 12 y solo v_tail + pod_boom; si no, 10 / 60 y las cinco.
+# CORRIDA_RAPIDA (seccion 0): 8 / 20; si no, 10 / 60. Las familias salen de FAMILIAS (seccion 0).
 if CORRIDA_RAPIDA:
-    PACIENCIA, MAX_GENERACIONES = 4, 12
-    TOPOLOGIAS_A_CORRER = ["v_tail", "pod_boom"]
+    # 8 y no 4: con requisitos pasa/no pasa, ~1 de cada 10 hijos es factible y
+    # 4 generaciones sin mejora cortaban antes de tiempo (corrida del 19/10).
+    PACIENCIA, MAX_GENERACIONES = 8, 20
 else:
     PACIENCIA, MAX_GENERACIONES = 10, 60
-    TOPOLOGIAS_A_CORRER = list(av.TOPOLOGIAS.keys())
 
 # --- Cuantos hijos por generacion, por topologia ---
 N_CROSSBRED, N_WILDCARD = 7, 3
 
-print("MISION -- DOS PUNTOS DE VUELO")
-print(f"  crucero ............... {3.6*mis.V_CRUCERO:.0f} km/h ({mis.V_CRUCERO:.2f} m/s)")
+print("MISION -- TRES PUNTOS DE VUELO")
+print(f"  crucero (diseno) ...... {3.6*mis.V_CRUCERO:.0f} km/h ({mis.V_CRUCERO:.2f} m/s)")
+print(f"  velocidad maxima ...... {3.6*mis.V_MAX:.0f} km/h ({mis.V_MAX:.2f} m/s)")
 print(f"  vuelo lento ........... {mis.V_LENTO:.0f} m/s ({3.6*mis.V_LENTO:.0f} km/h)")
-print(f"  relacion de velocidades {mis.V_CRUCERO/mis.V_LENTO:.2f} : 1"
-      f"   -> factor {(mis.V_CRUCERO/mis.V_LENTO)**2:.1f} en CL")
+print(f"  relacion maxima/lento . {mis.V_MAX/mis.V_LENTO:.2f} : 1"
+      f"   -> factor {(mis.V_MAX/mis.V_LENTO)**2:.1f} en CL")
 print(f"  margen sobre perdida .. {mis.MARGEN_SOBRE_PERDIDA:.2f}"
       f"  -> v_stall objetivo <= {mis.V_STALL_OBJETIVO:.2f} m/s")
 print(f"  carga util ............ {mis.MASA_PAYLOAD:.1f} kg")
 print(f"  rafaga vertical ....... {mis._rafaga_vertical():.2f} m/s (en crucero)")
 print()
-print("PESOS DEL SCORE")
-print(f"  eficiencia {mis.PESO_EFICIENCIA} | masa {mis.PESO_MASA} | estabilidad {mis.PESO_ESTABILIDAD}"
-      f" | rafaga {mis.PESO_RAFAGA} | margen {mis.PESO_MARGEN}")
-print(f"  trim {mis.PESO_TRIM} | direccional {mis.PESO_DIRECCIONAL} | lateral {mis.PESO_LATERAL}"
-      f" | VUELO LENTO {mis.PESO_LENTO}")
+print(f"PUNTAJE (modo '{mis.PUNTAJE_MODO}', trim resuelto: {mis.TRIM_RESUELTO})")
+if mis.PUNTAJE_MODO == "mision":
+    print(f"  alcance {mis.PESO_ALCANCE} x E_ref/E  (E_ref = {mis.ENERGIA_REFERENCIA_WH:.0f} Wh)")
+    print(f"  pendientes: vuelo lento {mis.PESO_LENTO} | velocidad maxima {mis.PESO_VELMAX}")
+    print(f"  requisitos: SM en banda, margen de perdida >= {100*mis.MARGEN_PERDIDA_OK:.0f}%, "
+          f"Cn_beta >= {mis.CN_BETA_MIN}, Cl_beta <= -{mis.CL_BETA_MIN} [/grado]")
+else:
+    print(f"  eficiencia {mis.PESO_EFICIENCIA} | masa {mis.PESO_MASA} | estabilidad {mis.PESO_ESTABILIDAD}"
+          f" | rafaga {mis.PESO_RAFAGA} | margen {mis.PESO_MARGEN}")
+    print(f"  trim {mis.PESO_TRIM} | direccional {mis.PESO_DIRECCIONAL} | lateral {mis.PESO_LATERAL}"
+          f" | VUELO LENTO {mis.PESO_LENTO}")
+    print(f"  velocidad maxima {mis.PESO_VELMAX} | envergadura {mis.PESO_ENVERGADURA}"
+          + (f" | turbulencia {mis.PESO_TURBULENCIA}" if mis.VIENTO_ACTIVO else ""))
 print()
-print(f"Envergadura: VARIABLE en [{av.BOUNDS_ALA['envergadura'][0]:.1f}, "
-      f"{av.BOUNDS_ALA['envergadura'][1]:.1f}] m  (antes estaba fija en 2.2 m)")
+print(f"Envergadura TOTAL (con winglets): variable en [{av.BOUNDS_ALA['envergadura'][0]:.1f}, "
+      f"{av.BOUNDS_ALA['envergadura'][1]:.1f}] m; el ala se achica lo que ocupen los winglets")
 print(f"Parar tras {PACIENCIA} generaciones sin mejora, o al llegar a {MAX_GENERACIONES}.")
 """)
 
@@ -243,14 +264,14 @@ print(f"Parar tras {PACIENCIA} generaciones sin mejora, o al llegar a {MAX_GENER
 md(r"""
 ## 2. Población semilla
 
-Las semillas viven en `optimizacion_avion/semillas.json` y las genera `gen_semillas.py`, que también está en el paquete para que el proceso sea reproducible y no un número mágico. El procedimiento: se define a mano una base de ala, fuselaje y flap (con criterio de diseño, sin pretensión de optimalidad) y después se **afinan numéricamente por bisección** solo dos parámetros — `cg_frac_mac` hasta que el margen estático caiga en el medio de la banda, y la **incidencia del estabilizador** hasta que el $C_m$ de crucero sea ~0, o sea hasta que el avión quede trimado sin elevador. El resto es trabajo del GA.
+Las semillas salen de `av.semillas_para_escenario()` según los interruptores de la sección 0: con batería, `evaluacion_bateria_350km/semillas_bateria.json`; con viento y sin batería, los ganadores con y sin viento; sin ninguno, las de Felipe en `optimizacion_avion/semillas.json`. Con `SET_SEMILLAS` se puede usar cualquier set de la carpeta `semillas/`. Lo que sigue describe las semillas de Felipe, que genera `gen_semillas.py` (también en el paquete, para que el proceso sea reproducible y no un número mágico). El procedimiento: se define a mano una base de ala, fuselaje y flap (con criterio de diseño, sin pretensión de optimalidad) y después se **afinan numéricamente por bisección** solo dos parámetros — `cg_frac_mac` hasta que el margen estático caiga en el medio de la banda, y la **incidencia del estabilizador** hasta que el $C_m$ de crucero sea ~0, o sea hasta que el avión quede trimado sin elevador. El resto es trabajo del GA.
 
 Hay **dos semillas por topología**, a propósito en lados opuestos del compromiso central de esta misión:
 
-- **A**: ala grande (b ≈ 3.1 m, S ≈ 1.02 m²) con perfiles de **alta sustentación** (fx63137 / naca6412). Vuela lento con holgura, pero en crucero anda por L/D ≈ 7.3.
-- **B**: ala más chica (b ≈ 2.85 m, S ≈ 0.82 m²) con camber **moderado** (naca6412 / naca4412) y un flap que sí rinde. **L/D ≈ 10.4** — bastante mejor — y todavía vuela a 10 m/s.
+- **A**: ala grande (b ≈ 3.1 m, S ≈ 1.02 m²) con perfiles de **alta sustentación** (fx63137 / naca6412). Vuela lento con holgura, pero con la misión original (crucero a 120 km/h) andaba por L/D ≈ 7.3.
+- **B**: ala más chica (b ≈ 2.85 m, S ≈ 0.82 m²) con camber **moderado** (naca6412 / naca4412) y un flap que sí rinde. **L/D ≈ 10.4** en ese crucero — bastante mejor — y todavía vuela a 10 m/s.
 
-Que la B le gane a la A en L/D por ~40% ya dice algo antes de optimizar: a 120 km/h el ala grande se paga caro y el perfil de alta sustentación no es gratis. Esa es la pelea que el GA tiene que resolver.
+Que la B le gane a la A en L/D ya dice algo antes de optimizar: el ala grande se paga caro en crucero y el perfil de alta sustentación no es gratis. Esa es la pelea que el GA tiene que resolver.
 
 Sembrar variado no es cosmético: BLX-alfa entre dos padres con el **mismo** valor en una dimensión devuelve siempre ese valor, así que una dimensión donde las dos semillas coinciden queda sin explorar.
 """)
@@ -261,7 +282,7 @@ code(r"""
 estados, filas = {}, []
 
 for t in TOPOLOGIAS_A_CORRER:
-    seeds = av.SEEDS_POR_TOPOLOGIA[t]
+    seeds = SEMILLAS[t]
 
     def objetivo(params, _t=t):
         return av.evaluar_mision_avion(params, _t)
@@ -269,17 +290,20 @@ for t in TOPOLOGIAS_A_CORRER:
     estados[t] = av.iniciar_evolucion_avion(seeds, t, objetivo)
 
     for i, c in enumerate(estados[t].parents):
-        a = av.analizar_mision_avion(c.params, t)
-        if a is None:
-            filas.append({"topologia": t, "semilla": i, "score": c.score}); continue
+        # Un score por debajo de -1000 es un avion INFACTIBLE: -1000 menos lo que
+        # viola (ver "estado" y "falla"). Los factibles valen mas de 0.
+        a = av.analizar_con_motivo(c.params, t)
+        base = {"topologia": t, "semilla": i, "score": c.score, "estado": av.describir_puntaje(c.score)}
+        if not isinstance(a, dict):
+            filas.append({**base, "falla": str(a)}); continue
         filas.append({
-            "topologia": t, "semilla": i, "score": c.score,
-            "b_m": a["envergadura"], "S_m2": a["S"], "AR": a["AR"],
+            **base, "falla": "; ".join(mis.requisitos_incumplidos(a)) or "-",
+            "b_m": a.get("envergadura_total", a["envergadura"]), "S_m2": a["S"], "AR": a["AR"],
             "masa_kg": a["masa_total"], "L/D": a["LD_crucero"],
             "v_stall": a["v_stall"], "SM_%": 100*a["SM"],
             "Cm_cru": a["Cm_crucero"], "V_H": a["V_H"],
         })
-    print(f"[{t}] {len(seeds)} semillas -> padres: {[round(c.score, 4) for c in estados[t].parents]}")
+    print(f"[{t}] {len(seeds)} semillas -> padres: {[av.describir_puntaje(c.score) for c in estados[t].parents]}")
 
 pd.DataFrame(filas).round(3)
 """)
@@ -309,7 +333,7 @@ else:
     estados[TOPOLOGIA_ACTIVA] = _est
 
     print(f"=== [{TOPOLOGIA_ACTIVA}] Generacion {_est.generation} ===")
-    print(f"Mejor score: {_est.mejor().score:.4f}   racha {_est.non_improving_streak}/{PACIENCIA}")
+    print(f"Mejor score: {av.describir_puntaje(_est.mejor().score)}   racha {_est.non_improving_streak}/{PACIENCIA}")
 
     # Solo unas pocas columnas: con ~50 parametros la tabla completa es
     # ilegible. El candidato entero esta en h["candidate"].params.
@@ -348,6 +372,7 @@ for t in TOPOLOGIAS_A_CORRER:
 
     est = estados[t]
     gen_inicial = est.generation
+    random.seed(SEMILLA_AZAR + list(av.TOPOLOGIAS).index(t) + gen_inicial)   # reproducible
 
     if av.deberia_parar(est, paciencia=PACIENCIA, max_generaciones=MAX_GENERACIONES):
         print(f"[{t}] ya estaba detenido en la generacion {est.generation}. "
@@ -359,8 +384,10 @@ for t in TOPOLOGIAS_A_CORRER:
         est, hijos = av.correr_generacion_avion(
             est, av.generar_hijos_avion, _obj,
             n_crossbred=N_CROSSBRED, n_wildcard=N_WILDCARD)
-        marca = "  <-- mejoro" if est.non_improving_streak == 0 else ""
-        print(f"  gen {est.generation:3d}   mejor score = {est.mejor().score:10.4f}   "
+        # Se lee del historial: la racha queda en 0 tambien mientras no hay ningun padre
+        # factible (la paciencia no corre), y eso no es una mejora.
+        marca = "  <-- mejoro" if est.historial[-1].get("mejoro") else ""
+        print(f"  gen {est.generation:3d}   mejor score = {av.describir_puntaje(est.mejor().score):>10}   "
               f"racha {est.non_improving_streak}/{PACIENCIA}{marca}")
 
     estados[t] = est
@@ -371,6 +398,8 @@ for t in TOPOLOGIAS_A_CORRER:
           f"({est.generation - gen_inicial} generaciones en esta corrida).")
 
 print(f"\nTiempo total: {time.time()-_t0:.0f} s")
+if mis.FALLAS_ANALISIS:
+    print(f"Candidatos descartados por errores numericos (por tipo): {dict(mis.FALLAS_ANALISIS)}")
 print()
 print(av.tabla_resultados(estados))
 """)
@@ -414,9 +443,10 @@ for t, est in estados.items():
         "topologia": t, "score": est.mejor().score,
         "b_m": a["envergadura"], "S_m2": a["S"], "AR": a["AR"],
         "masa_kg": a["masa_total"], "%estr": 100*a["fraccion_estructural"],
+        "E_Wh": av.energia_mision_wh(a),
         "L/D_cru": a["LD_crucero"], "D_N": a["D_crucero"], "P_W": a["potencia_W"],
         "v_stall": a["v_stall"], "margen_lento_%": 100*a["margen_lento"],
-        "SM_%": 100*a["SM"], "Cm_cru": a["Cm_crucero"],
+        "SM_%": 100*a["SM"], "Cm_cru": a["Cm_crucero"], "inc_trim": a["incidencia_trim_deg"],
         "V_H": a["V_H"], "V_V": a["V_V"],
         "Cn_r": a["Cn_r"],
     })
@@ -480,8 +510,31 @@ print(f"Ganador: {top_ganadora}  (score {mejor.score:.4f})")
 print(f"  {av.TOPOLOGIAS[top_ganadora]['nombre']}")
 print(f"  referencia real: {av.TOPOLOGIAS[top_ganadora]['referencia_real']}")
 
-avion = av.construir_avion(mejor.params, top_ganadora)
-avion.draw(backend="plotly")
+# Vista propia: un color por componente (ala, cola, fuselaje), escala 1:1 y los datos
+# del avion. (avion.draw(backend="plotly") de AeroSandbox pone una barra de colores
+# que no representa nada.)
+_a = av.analizar_mision_avion(mejor.params, top_ganadora)
+avion = av.construir_avion(av.params_trimados(mejor.params, top_ganadora), top_ganadora)   # con la incidencia de trim
+av.figura_3d(avion, f"{top_ganadora} (ganador)", av.lineas_info(_a, mejor.score)).show()
+""")
+
+# ---------------------------------------------------------------- 9b
+md(r"""
+## 8b. Líneas de flujo del ganador (VLM)
+
+El avión **trimado** en el punto de **crucero** de la misión (su alpha, 80 km/h, la densidad del escenario), resuelto con el método de red de vórtices (VLM) de AeroSandbox. Los paneles se pintan con la **circulación Γ** de cada vórtice [m²/s]: dónde el ala genera más sustentación. Las líneas violetas son líneas de flujo: se ven la estela y el torbellino de punta.
+
+**Es solo para visualizar.** El VLM es potencial e inviscido: no ve el fuselaje (se dibuja en gris como referencia), no capta toda la sustentación de los perfiles con mucha curvatura, y el CD que da es solo el inducido. Los números del optimizador salen de AeroBuildup (el recuadro muestra los dos). Tarda ~20 s. Para ver otra familia, cambiá `FAMILIA_FLUJO`.
+""")
+
+code(r"""
+FAMILIA_FLUJO = top_ganadora          # o cualquiera de TOPOLOGIAS_A_CORRER, p. ej. "pod_boom"
+
+fig_flujo, datos_flujo = av.figura_flujo(estados[FAMILIA_FLUJO].mejor().params, FAMILIA_FLUJO)
+if fig_flujo is None:
+    print(f"[{FAMILIA_FLUJO}] el mejor avion es infactible: {datos_flujo['motivo']}")
+else:
+    fig_flujo.show()
 """)
 
 # ---------------------------------------------------------------- 10
@@ -553,7 +606,7 @@ md(r"""
 
 code(r"""
 a = av.analizar_mision_avion(mejor.params, top_ganadora)
-p = mejor.params
+p = a["params_trimados"]      # el avion que se analizo: incidencia de cola resuelta para Cm = 0
 
 salida = {
     "topologia": top_ganadora,
@@ -566,7 +619,10 @@ salida = {
         "velocidad_lenta_ms": mis.V_LENTO,
         "margen_sobre_perdida": mis.MARGEN_SOBRE_PERDIDA,
         "carga_util_kg": mis.MASA_PAYLOAD,
-        "rafaga_vertical_ms": mis.RAFAGA_VERTICAL,
+        "rafaga_vertical_ms": mis._rafaga_vertical(),   # 4.63 con viento, 3.0 sin
+        "densidad_kg_m3": float(a["rho"]),
+        "viento_activo": bool(mis.VIENTO_ACTIVO),
+        "bateria_activa": bool(mis.BATERIA_ACTIVA),
         "banda_margen_estatico": list(av.SM_BANDS[top_ganadora]),
     },
     "parametros": {k: round(float(v), 5) for k, v in sorted(p.items())},
@@ -589,12 +645,31 @@ salida = {
 if a.get("bateria"):
     salida["bateria"] = json.loads(json.dumps(a["bateria"], default=float))
     salida["_mision"]["alcance_km"] = a["bateria"]["alcance_objetivo_km"]
-    salida["_mision"]["viento_activo"] = bool(a.get("viento_activo"))
 
 ruta = Path(f"avion_design_params_{top_ganadora}.json")
-ruta.write_text(json.dumps(salida, indent=2, default=float))
+ruta.write_text(json.dumps(salida, indent=2, default=float), encoding="utf-8")
 print(f"Guardado en {ruta.resolve()}")
 print(json.dumps(salida, indent=2, default=float)[:2500])
+""")
+
+# ---------------------------------------------------------------- 12b
+md(r"""
+## 11b. Guardar los resultados de esta corrida
+
+Crea `<CARPETA_RESULTADOS>/<fecha>_<hora>_<escenario>_<familias>/` **fuera del repositorio** (por defecto `Proyecto final/resultados_optimizador/`) con: `LEEME.md` (qué se corrió y la tabla final), `tabla_resumen.csv`, `ganadores.json` (params **trimados**, listos para `exportar_cad_avion.py`), `convergencia.png`, `comparacion.png`, `curvas_vuelo.png`, `vistas_3d/<familia>.html`, `lineas_flujo/<familia>.html`, `tres_vistas/<familia>.png`, `desgloses/<familia>.txt` y `xflr5/<familia>/` (el avión en XML, los perfiles `.dat` y las condiciones de crucero, para abrirlo en XFLR5). Nunca pisa una carpeta anterior. La nomenclatura está en el `LEEME.md` de esa carpeta.
+""")
+
+code(r"""
+if GUARDAR_RESULTADOS:
+    carpeta = av.guardar_resultados(
+        estados, carpeta_base=CARPETA_RESULTADOS,
+        etiqueta=None,            # p. ej. etiqueta="prueba_eta070"
+        flujo=True,               # False saltea las lineas de flujo (~20 s y ~3 MB por familia)
+        parametros_ga={"paciencia": PACIENCIA, "max_generaciones": MAX_GENERACIONES,
+                       "hijos_por_generacion": N_CROSSBRED + N_WILDCARD, "semilla_azar": SEMILLA_AZAR,
+                       "semillas": SET_SEMILLAS or "las del escenario"})
+else:
+    print("GUARDAR_RESULTADOS = False (seccion 0): no se guardo nada.")
 """)
 
 # ---------------------------------------------------------------- 13
@@ -624,5 +699,5 @@ nb = {
 }
 
 destino = Path(__file__).parent / f"Optimizador_{VERSION}.ipynb"
-destino.write_text(json.dumps(nb, indent=1, ensure_ascii=False))
+destino.write_text(json.dumps(nb, indent=1, ensure_ascii=False), encoding="utf-8")
 print(f"Escrito: {destino}  ({destino.stat().st_size/1024:.1f} KB, {len(cells)} celdas)")

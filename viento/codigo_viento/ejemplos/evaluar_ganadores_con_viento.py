@@ -12,7 +12,8 @@ Uso (desde la carpeta codigo_viento):
 
 Qué calcula, para cada topología y cada sitio:
   1. Operabilidad a la velocidad de crucero del optimizador (80 km/h) y a V_MAX.
-  2. CL de crucero con la densidad del sitio (el optimizador usa 1.225 kg/m3).
+  2. CL de crucero con la densidad del sitio (ganadores.json se calculó con
+     1.225 kg/m3; las funciones usan la densidad que trae cada análisis).
   3. Ráfaga rápida (FAR 23.341, misma cuenta que mision_avion.py) con la
      ráfaga de diseño del sitio en lugar de 3 m/s.
   4. (con VLM) Ráfaga 1-coseno barriendo la longitud H, con el avión libre de

@@ -36,8 +36,9 @@ solo dos topologías. Esta revisión la reemplaza entera. Los cambios:
    final que es variable de diseño, no un número mágico.
 
 5. FLAPS. Ver `FLAP_*` más abajo y el encabezado de `mision_avion.py`: la
-   misión pide crucero a 120 km/h Y vuelo a 10 m/s, que son un factor 11 en
-   CL. Sin hipersustentación no cierra.
+   misión de entonces pedía crucero a 120 km/h Y vuelo a 10 m/s, un factor 11
+   en CL. Hoy el crucero de diseño es 80 km/h (factor ~5) y 120 km/h es la
+   velocidad máxima, pero sin hipersustentación sigue sin cerrar.
 
 6. CINCO TOPOLOGÍAS en vez de dos (ver `TOPOLOGIAS`).
 
@@ -61,7 +62,8 @@ Tres pedidos de Felipe después de revisar el código:
    (`_proyectar_no_decreciente`): el borde de ataque solo podía flecharse
    hacia atrás, nunca hacia adelante, porque el offset no podía ser negativo.
    Ahora el rango se abre a `[-hi, hi]` y la proyección pasa a
-   `_proyectar_monotona` -- la MISMA función que ya se usaba para la
+   `_proyectar_monotona` (hoy `_proyectar_monotona_desde_cero`, que además
+   incluye la raíz = 0 en la secuencia) -- la MISMA función que ya se usaba para la
    elevación (diedro/anedro, ver más abajo): elige la proyección monótona más
    cercana, creciente O decreciente, la que quede más cerca en distancia L2.
    El resultado es el mismo argumento que ya estaba documentado para el
@@ -134,6 +136,7 @@ from typing import Optional
 
 import aerosandbox as asb
 import aerosandbox.numpy as np
+import numpy as _onp
 from scipy.interpolate import PchipInterpolator
 
 # Las proyecciones isotónicas son matemática pura y no dependen de la
@@ -142,7 +145,7 @@ from scipy.interpolate import PchipInterpolator
 from optimizacion_ala.geometria import (
     N_SECCIONES_FILETE,
     WINGLET_MIN_H,
-    _proyectar_monotona,
+    _proyectar_monotona_desde_cero,
     _proyectar_no_decreciente,
     camino_winglet,
 )
@@ -168,6 +171,17 @@ _FRAC_ESTACION = np.linspace(0.0, 1.0, N_ESTACIONES)
 # rectos.
 N_ESTACIONES_LOFT = 11
 _FRAC_LOFT = np.linspace(0.0, 1.0, N_ESTACIONES_LOFT)
+
+
+def interp_estaciones(frac, valores):
+    """Interpola una magnitud definida en las N_ESTACIONES de control (cuerda,
+    offset, elevación, torsión) a cualquier fracción de semi-envergadura, con
+    PCHIP. Es LA forma en planta del ala: la usan el solver (`_loftear_ala`),
+    la estructura (`estructura_avion`), el flap (`geometria_flap`) y la raíz de
+    los booms, para que todos vean la misma ala (antes los tres últimos
+    interpolaban linealmente y el solver con PCHIP)."""
+    return PchipInterpolator(_FRAC_ESTACION, [float(v) for v in valores])(frac)
+
 
 # Perfil de las superficies de cola. Simétrico, como corresponde a una
 # superficie que tiene que dar fuerza en los dos sentidos. Se deja FIJO (no
@@ -245,14 +259,17 @@ SM_BANDS = {t: TOPOLOGIAS[t]["sm_band"] for t in TOPOLOGIAS}
 # BOUNDS -- ALA (compartido por todas las topologías)
 # =====================================================================
 BOUNDS_ALA = {
-    # Envergadura: ahora es VARIABLE (ver punto 2 del encabezado). El techo
-    # de 3.5 m no es aerodinámico sino logístico: por encima de eso el avión
-    # deja de entrar desarmado en una camioneta y de ser lanzable a mano.
-    "envergadura": (2.0, 3.5),
+    # Envergadura TOTAL del avión, puntas de winglet incluidas (desde
+    # 2026-10-20; el ala sale de restarle los winglets, ver semi_envergadura).
+    # El techo era 3.5 m (logístico); desde 2026-10-19 es 3.0 m por la
+    # evaluación de riesgo SORA que pide la operación BVLOS en Argentina (ver
+    # mision_avion.ENVERGADURA_MAX_M).
+    "envergadura": (2.0, 3.0),
 
-    # Cuerdas [m] en las 5 estaciones. Mínimo de FABRICACIÓN, no
-    # aerodinámico: por debajo de ~15 cm el perfil se vuelve imposible de
-    # construir con precisión y el Reynolds local se desploma.
+    # Cuerdas [m] en las 5 estaciones. Mínimos de FABRICACIÓN, no
+    # aerodinámicos: 16 cm en la raíz y 10 cm en el resto; por debajo de eso
+    # el perfil se vuelve imposible de construir con precisión y el Reynolds
+    # local se desploma.
     "root_chord": (0.16, 0.55),
     **{f"chord_{i}": (0.10, 0.55) for i in range(1, N_ESTACIONES)},
 
@@ -263,7 +280,7 @@ BOUNDS_ALA = {
     # ADELANTE y no solo hacia atrás -- antes el rango arrancaba en 0.0 y
     # excluía esa opción por completo. Se proyecta a MONÓTONA (creciente o
     # decreciente, nunca ondulada) en clamp_to_bounds_avion, con el mismo
-    # criterio y la misma función (_proyectar_monotona) que ya se usaba para
+    # criterio y la misma función (_proyectar_monotona_desde_cero) que ya se usaba para
     # la elevación -- ver la revisión 2026-09-28 en el encabezado del módulo.
     **{f"le_offset_{i}": (-0.14, 0.14) for i in range(1, N_ESTACIONES)},
 
@@ -433,6 +450,8 @@ def clamp_to_bounds_avion(params: dict, topologia: str) -> dict:
       `optimizacion_ala.geometria.clamp_to_bounds` para el mismo argumento
       aplicado al caso solo-hacia-atrás que regía antes acá).
     - ELEVACIÓN monótona (diedro o anedro, no ondulada).
+    En los dos últimos la raíz (= 0) forma parte de la secuencia monótona
+    (corregido 2026-10-19: antes quedaba afuera y pasaban formas en zigzag).
     """
     bounds = BOUNDS_POR_TOPOLOGIA[topologia]
     p = {k: min(max(params.get(k, lo), lo), hi) for k, (lo, hi) in bounds.items()}
@@ -445,13 +464,15 @@ def clamp_to_bounds_avion(params: dict, topologia: str) -> dict:
         lo, hi = bounds[k]
         p[k] = min(max(v, lo), hi)
 
+    # Offsets y elevaciones: monótonos INCLUYENDO la raíz (= 0), ver
+    # `_proyectar_monotona_desde_cero`.
     claves_le = [f"le_offset_{i}" for i in range(1, N_ESTACIONES)]
-    for k, v in zip(claves_le, _proyectar_monotona([p[k] for k in claves_le])):
+    for k, v in zip(claves_le, _proyectar_monotona_desde_cero([p[k] for k in claves_le])):
         lo, hi = bounds[k]
         p[k] = min(max(v, lo), hi)
 
     claves_e = [f"elev_{i}" for i in range(1, N_ESTACIONES)]
-    for k, v in zip(claves_e, _proyectar_monotona([p[k] for k in claves_e])):
+    for k, v in zip(claves_e, _proyectar_monotona_desde_cero([p[k] for k in claves_e])):
         lo, hi = bounds[k]
         p[k] = min(max(v, lo), hi)
 
@@ -471,8 +492,25 @@ def clamp_to_bounds_avion(params: dict, topologia: str) -> dict:
 # =====================================================================
 # ALA PRINCIPAL
 # =====================================================================
+def extension_winglet(params: dict) -> float:
+    """Cuánto agrega el winglet en y más allá de la punta del ala, de UN lado
+    [m]. Un winglet vertical (cant 0) casi no agrega; uno inclinado 70°
+    agrega ~0.94 de su largo. 0 si no hay winglet."""
+    camino = camino_winglet(params, (0.0, 0.0, 0.0), n_filete=N_SECCIONES_FILETE)
+    return max((float(y) for _, y, _, _ in camino), default=0.0)
+
+
 def semi_envergadura(params: dict) -> float:
-    return 0.5 * float(params["envergadura"])
+    """Semi-envergadura del ALA, sin winglets [m].
+
+    Desde 2026-10-20 el parámetro `envergadura` es la envergadura TOTAL del
+    avión, puntas de winglet incluidas (la "dimensión característica" de SORA,
+    limitada a 3.0 m): el ala se achica sola lo que ocupen los winglets. Antes
+    `envergadura` era la del ala y un winglet inclinado la hacía crecer, así que
+    con el ala en 3.0 m cualquier winglet dejaba el avión fuera del límite y el
+    GA no podía explorarlos."""
+    total2 = 0.5 * float(params["envergadura"])
+    return max(total2 - extension_winglet(params), 0.5 * total2)
 
 
 def _loftear_ala(params: dict, x0: float):
@@ -492,10 +530,10 @@ def _loftear_ala(params: dict, x0: float):
     elevs = [0.0] + [params[f"elev_{i}"] for i in range(1, N_ESTACIONES)]
     twists = [params[f"twist_{i}"] for i in range(N_ESTACIONES)]
 
-    cuerda = PchipInterpolator(_FRAC_ESTACION, cuerdas)(_FRAC_LOFT)
-    offset = PchipInterpolator(_FRAC_ESTACION, offs)(_FRAC_LOFT)
-    elev = PchipInterpolator(_FRAC_ESTACION, elevs)(_FRAC_LOFT)
-    torsion = PchipInterpolator(_FRAC_ESTACION, twists)(_FRAC_LOFT)
+    cuerda = interp_estaciones(_FRAC_LOFT, cuerdas)
+    offset = interp_estaciones(_FRAC_LOFT, offs)
+    elev = interp_estaciones(_FRAC_LOFT, elevs)
+    torsion = interp_estaciones(_FRAC_LOFT, twists)
 
     y = _FRAC_LOFT * b2
     x_le = x0 + offset * b2
@@ -614,31 +652,6 @@ def _fuselaje_completo(params: dict, largo: float) -> asb.Fuselage:
     return asb.Fuselage(name="Fuselaje", xsecs=xsecs)
 
 
-def _fuselaje_pod_boom(params: dict) -> asb.Fuselage:
-    """Góndola corta que se contrae hasta el diámetro de la viga, y viga
-    recta hasta la cola. Es la arquitectura de planeador: casi toda la
-    superficie mojada está en la góndola, y la viga aporta el brazo de cola
-    con muy poca superficie."""
-    R = 0.5 * float(params["fuselaje_diametro"])
-    r_boom = 0.5 * float(params["boom_diametro"])
-    L_pod = float(params["fuselaje_largo"])
-    L_boom = float(params["boom_largo"])
-    L_morro = float(params["morro_largo_frac"]) * L_pod
-    L_trans = float(params["boattail_largo_frac"]) * L_pod
-    L_recto = max(L_pod - L_morro - L_trans, 0.05 * L_pod)
-    exp_m = float(params["morro_exp"])
-
-    xsecs = _xsecs_morro(R, L_morro, exp_m)
-    xsecs.append(asb.FuselageXSec(xyz_c=[float(L_morro + L_recto), 0, 0], radius=float(R)))
-    for k in range(1, 8):                               # transición a la viga
-        s = k / 7.0
-        xsecs.append(asb.FuselageXSec(
-            xyz_c=[float(L_morro + L_recto + s * L_trans), 0, 0],
-            radius=float(R - (R - r_boom) * s ** 1.5)))
-    xsecs.append(asb.FuselageXSec(xyz_c=[float(L_pod + L_boom), 0, 0], radius=float(r_boom)))
-    return asb.Fuselage(name="Gondola + viga", xsecs=xsecs)
-
-
 def _boom_lateral(params: dict, y: float, x_ini: float, x_fin: float, z: float, nombre: str) -> asb.Fuselage:
     """Una viga de cola lateral del doble boom, como cuerpo de revolución
     delgado. Se modela como fuselaje (y no se omite, como en la versión
@@ -755,24 +768,24 @@ def construir_avion(params: dict, topologia: str) -> asb.Airplane:
     alas = [ala]
     fuselajes = []
 
-    if spec["fuselaje"] == "pod_boom":
-        fuselajes.append(_fuselaje_pod_boom(params))
-        x_fin = L_fus + float(params["boom_largo"])
-    else:
-        fuselajes.append(_fuselaje_completo(params, L_fus))
-        x_fin = L_fus
+    # Todas las topologías usan el fuselaje de revolución completo ("corto" en
+    # el doble boom es solo un rango de BOUNDS distinto). La góndola + viga del
+    # pod_boom se eliminó el 2026-10-13 (ahora es un fuselaje continuo).
+    fuselajes.append(_fuselaje_completo(params, L_fus))
+    x_fin = L_fus
 
     if spec["cola"] == "doble_boom":
         b2 = semi_envergadura(params)
         frac = float(params["boom_lateral_frac"])
         # Estación del ala donde nace la viga: se interpola la geometría del
-        # ala en esa fracción para que la viga salga del borde de fuga real.
+        # ala en esa fracción (con la MISMA PCHIP que el solver) para que la
+        # viga salga del borde de fuga real.
         cuerdas = [params["root_chord"]] + [params[f"chord_{i}"] for i in range(1, N_ESTACIONES)]
         offs = [0.0] + [params[f"le_offset_{i}"] for i in range(1, N_ESTACIONES)]
         elevs = [0.0] + [params[f"elev_{i}"] for i in range(1, N_ESTACIONES)]
-        c_loc = float(np.interp(frac, _FRAC_ESTACION, cuerdas))
-        x_le = x_ala + float(np.interp(frac, _FRAC_ESTACION, offs)) * b2
-        z_loc = float(np.interp(frac, _FRAC_ESTACION, elevs)) * b2
+        c_loc = float(interp_estaciones(frac, cuerdas))
+        x_le = x_ala + float(interp_estaciones(frac, offs)) * b2
+        z_loc = float(interp_estaciones(frac, elevs)) * b2
         y_boom = frac * b2
         x_cola = x_le + c_loc + float(params["boom_largo"])
         alas += _cola_doble_boom(params, x_cola, y_boom, z_loc)
@@ -805,7 +818,7 @@ def construir_avion(params: dict, topologia: str) -> asb.Airplane:
 # =====================================================================
 # DIAGNÓSTICOS
 # =====================================================================
-def volumenes_de_cola(params: dict, topologia: str) -> dict:
+def volumenes_de_cola(params: dict, topologia: str, avion: Optional[asb.Airplane] = None) -> dict:
     """Coeficientes de volumen de cola V_H y V_V del candidato.
 
         V_H = S_h * l_h / (S_ref * c_ref)     típico 0.5-0.7 en esta clase
@@ -814,8 +827,12 @@ def volumenes_de_cola(params: dict, topologia: str) -> dict:
     NO son restricciones (ver encabezado del módulo): se reportan para poder
     decir si el resultado cayó en territorio conocido. La cola en V se
     descompone en su proyección horizontal y vertical, que es la forma
-    estándar de compararla contra una cola convencional."""
-    avion = construir_avion(params, topologia)
+    estándar de compararla contra una cola convencional.
+
+    `avion`: el `asb.Airplane` ya construido, si se tiene (evita armarlo de
+    nuevo; `mision_avion` lo pasa)."""
+    if avion is None:
+        avion = construir_avion(params, topologia)
     mac, s_ref, b_ref, _ = referencias_ala(params)
     x_cg = float(avion.xyz_ref[0])
 
@@ -871,11 +888,12 @@ def geometria_flap(params: dict) -> dict:
     b2 = semi_envergadura(params)
     fr = np.linspace(0.0, 1.0, 101)
     cuerdas = [params["root_chord"]] + [params[f"chord_{i}"] for i in range(1, N_ESTACIONES)]
-    c = np.interp(fr, _FRAC_ESTACION, cuerdas)
+    c = interp_estaciones(fr, cuerdas)      # misma forma en planta que el solver
     dentro = (fr >= ini) & (fr <= fin)
-    trapz = getattr(np, "trapezoid", None) or np.trapz
+    # numpy puro (no aerosandbox.numpy, que tiene otra firma de trapz)
+    trapz = getattr(_onp, "trapezoid", None) or _onp.trapz
     s_total = float(trapz(c, fr * b2))
-    s_flap = float(trapz(np.where(dentro, c, 0.0), fr * b2))
+    s_flap = float(trapz(_onp.where(dentro, c, 0.0), fr * b2))
     return {"tiene_flap": True, "frac_superficie": s_flap / max(s_total, 1e-9),
             "deflexion": defl, "cuerda_frac": float(params["flap_cuerda_frac"])}
 

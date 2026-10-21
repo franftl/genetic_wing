@@ -14,7 +14,7 @@ El detalle técnico está en la [Research Note 16](<../documentos_de_decision/Re
 - Fichas de los dos sitios con datos ERA5 (`fichas/*.yaml`), tablas, figuras e informe (`caracterizacion_viento.pdf`).
 - Paquete `codigo_viento/viento_uav`: campos de viento, VLM con viento, respuesta dinámica a ráfagas, operabilidad.
 - `optimizar_con_viento.py`: corre la competencia con viento y la compara con la del 18/09.
-- `resultados_optimizacion/`: tabla y gráficos "sin viento vs con viento".
+- `resultados/`: ganadores, tablas, gráficos (comparación, curvas de empuje y potencia, convergencia) y vistas 3D "sin viento vs con viento", ordenados por tipo.
 
 ### Viento dentro del optimizador (`optimizacion_avion/`)
 
@@ -34,12 +34,12 @@ El resto del optimizador (geometría, estructura, algoritmo genético, perfiles,
 |---|---|---|---|
 | Densidad del aire | 1.225 kg/m³ | **1.056 kg/m³** | Aire real de Puesto Hernández (el más liviano) |
 | Ráfaga vertical de diseño | 3.0 m/s | **4.63 m/s** | 3σ de turbulencia moderada en los sitios |
-| Regla nueva | — | Se descarta si la ráfaga supera n = 4.5 | El ala se rompería |
-| Término nuevo | — | Turbulencia, peso 0.75 | Resistencia extra por volar en aire turbulento |
+| Regla nueva | — | Se descarta si la ráfaga supera la carga límite, n = 3.0 (`N_RAFAGA_ADMISIBLE`; hasta el 19/10 era n = 4.5, la carga última, sin coeficiente de seguridad) | La ráfaga de diseño es una carga límite |
+| Término nuevo | — | Turbulencia, peso 0.75 (desde V51.2, en el modo "mision", la turbulencia entra en la energía de la misión en vez de como término aparte) | Resistencia extra por volar en aire turbulento |
 
 **Cómo se eligió el peso:** 0.75 hace que un 1 % de resistencia por turbulencia cueste en el puntaje lo mismo que un 1 % de resistencia común, así que no es un peso arbitrario. Se evaluó también un término para la estructura frente a la ráfaga, y se descartó: reforzar el ala cuesta 1–5 g, porque el larguero ya está dimensionado por rigidez.
 
-**Compatibilidad:** con `VIENTO_ACTIVO = False` el optimizador da *exactamente* los mismos resultados que el código original. Está verificado con los 5 ganadores del 18/09 en `viento/codigo_viento/tests/test_optimizador_viento.py`; pasan las 18 pruebas.
+**Compatibilidad:** con `VIENTO_ACTIVO = False` el viento no interviene en nada. El test `test_sin_viento_no_usa_ningun_dato_del_sitio` (en `viento/codigo_viento/tests/test_optimizador_viento.py`) lo verifica cambiando todos los datos del sitio por valores absurdos: el puntaje sin viento no se mueve. (Antes se comparaba contra los scores guardados del 18/09, pero esos dejaron de reproducirse por cambios ajenos al viento: penalización de envergadura, borde de fuga de V51, pod_boom continuo.)
 
 ---
 
@@ -66,7 +66,8 @@ El resto del optimizador (geometría, estructura, algoritmo genético, perfiles,
 - **Con o sin viento:** `VIENTO_ACTIVO` en `optimizacion_avion/mision_avion.py`.
 - **Comparación completa** (~30–45 min): `python viento/optimizar_con_viento.py`
 - **Solo rehacer la tabla y los gráficos:** `python viento/optimizar_con_viento.py --solo-comparar`
-- **Notebook `02_Optimizacion_Avion.ipynb`:** corre con viento si `VIENTO_ACTIVO = True`. Ojo: la celda de exportación anota la ráfaga como `mis.RAFAGA_VERTICAL` (3.0), aunque con viento se usa 4.63.
+- **Notebook `Optimizador_V53.1.ipynb`:** sección 0, interruptor `VIENTO`. La celda de exportación anota la ráfaga y la densidad que realmente se usaron.
+- **`optimizar_con_viento.py`** fija `BATERIA_ACTIVA` (`--bateria off` por defecto, como la corrida del 18/09) y elige semillas con `--semillas`.
 - **Pruebas:** `python -m pytest viento/codigo_viento/tests -q`
 
 ---
@@ -75,6 +76,5 @@ El resto del optimizador (geometría, estructura, algoritmo genético, perfiles,
 
 - **Piloto automático:** si va a ajustar la velocidad según el viento, conviene sumar al puntaje la energía por misión con viento de frente.
 - **Término de ráfaga existente (`PESO_RAFAGA`):** hoy vale ~0 para todos los diseños y no discrimina entre ellos.
-- **Carga límite:** la ráfaga del sitio da n ≈ 3.1–3.3, apenas arriba de `N_LIMITE = 3.0`. Decidir si se sube.
+- **Carga límite:** la ráfaga del sitio da n ≈ 3.1–3.3, apenas arriba de `N_LIMITE = 3.0`. Desde el 19/10 el optimizador lo exige como restricción (`N_RAFAGA_ADMISIBLE`), así que los ganadores con viento de esta tabla quedan inválidos y hay que volver a correr. Si el grupo decide subir `N_LIMITE`, la restricción se mueve sola.
 - **Pod-boom:** el algoritmo cortó en la generación 9; volver a correrlo con más paciencia.
-- **Notebook:** corregir la etiqueta de la ráfaga en la celda de exportación.

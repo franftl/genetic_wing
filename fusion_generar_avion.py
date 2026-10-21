@@ -97,7 +97,10 @@ import adsk.fusion
 # =============================================================================
 # DONDE BUSCAR EL JSON DE GEOMETRIA
 # =============================================================================
-RUTA_JSON = r"C:\Users\felip\Desktop\UAV FP bateria\avion_geometry_cad.json"
+# Ruta absoluta del JSON, si se quiere fijar una ("" = buscarlo al lado de este
+# script y, si no está, preguntar con un diálogo). Antes había una ruta de la
+# PC de Felipe, que en cualquier otra máquina no existe.
+RUTA_JSON = ""
 NOMBRE_JSON = "avion_geometry_cad.json"
 
 # La API de Fusion trabaja SIEMPRE en CENTIMETROS, sin importar las unidades que

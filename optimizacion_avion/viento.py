@@ -56,6 +56,9 @@ import numpy as np
 
 G = 9.80665
 
+# numpy >= 2.0 renombró trapz -> trapezoid; esto anda con las dos.
+_trapezoid = getattr(np, "trapezoid", None) or np.trapz
+
 # --- Condiciones de diseño: peor caso de Cañadón León y Puesto Hernández ---
 RHO_SITIO = 1.056          # [kg/m3] densidad de diseño (Puesto Hernández, p05 de verano)
 RAFAGA_VERTICAL_SITIO = 4.63   # [m/s] ráfaga discreta 1-coseno de diseño (3 sigma, moderada)
@@ -97,7 +100,7 @@ def sigma_n_turbulencia(carga_alar: float, CL_alpha_rad: float, rho: float, V: f
     tau = 2.0 * carga_alar / (G * rho * V * CL_alpha_rad)
     omega = np.logspace(np.log10(V / 1e5), np.log10(V / 1e-2), 4000)
     integrando = omega ** 2 / (1 + (tau * omega) ** 2) * espectro_dryden_w(omega, sigma_w, Lw, V)
-    return float(np.sqrt(np.trapezoid(integrando, omega)) / G)
+    return float(np.sqrt(_trapezoid(integrando, omega)) / G)
 
 
 def resistencia_extra_turbulencia(frac_inducida: float, s_n: float, V: float,

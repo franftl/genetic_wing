@@ -23,7 +23,7 @@ Datos de viento/
 │   └── procesar_viento.py          ← genera fichas, tablas y figuras a partir de datos/
 ├── codigo_viento/                  ← implementación: paquete viento_uav, tests y evaluación de los ganadores
 ├── optimizar_con_viento.py         ← corre la competencia de topologías CON viento y la compara con la del 18/09
-├── resultados_optimizacion/        ← tabla y gráficos de esa comparación
+├── resultados/                     ← resultados de esa comparación: ganadores, tablas, gráficos y vistas 3D (ver su LEEME.md)
 └── caracterizacion_viento.pdf/.tex ← informe completo
 ```
 
@@ -76,7 +76,7 @@ Al pasar el crucero de 60 a 80 km/h, el problema de Cañadón León se achicó m
 - **ningún diseño entra en pérdida**: el margen va del 18 % al 41 %;
 - el **factor de carga** queda en n ≈ 3.1–3.4 a 80 km/h, y llega a n ≈ 4.2–4.6 si la misma ráfaga ocurre a 120 km/h.
 
-**c) Estructura.** `estructura.py` dimensiona con `N_LIMITE = 3.0` (`N_ULTIMO = 4.5`). La ráfaga de diseño a 80 km/h y la ráfaga de operación a 120 km/h quedan **levemente por encima** de ese límite, y la ráfaga de diseño a 120 km/h llega al borde del último. Es una decisión del grupo, con dos caminos:
+**c) Estructura.** `estructura.py` dimensiona con `N_LIMITE = 3.0` (`N_ULTIMO = 4.5`). La ráfaga de diseño a 80 km/h y la ráfaga de operación a 120 km/h quedan **levemente por encima** de ese límite, y la ráfaga de diseño a 120 km/h llega al borde del último. Desde el 19/10/2026 el optimizador exige que la ráfaga del sitio en crucero no supere la carga **límite** (`mision_avion.N_RAFAGA_ADMISIBLE = N_LIMITE`). Para permitir más hay dos caminos:
 - subir `N_LIMITE`;
 - adoptar, como CS-23, una ráfaga menor a velocidad máxima y limitar la velocidad en aire turbulento.
 

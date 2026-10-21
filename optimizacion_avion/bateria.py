@@ -24,9 +24,15 @@ nombradas. Los supuestos NO validados están marcados.
     m_batería   = E_batería / ENERGIA_ESPECIFICA_PACK      (Wh/kg a nivel pack)
 
 Dónde sale cada número (conversación de diseño del 2026-10, fuentes abajo):
-  * ETA_PROPULSIVA_TOTAL = 0.65 = hélice (~0.75 en crucero) x motor (~0.85)
-    x ESC (~0.95) = 0.61, redondeado. ES UN SUPUESTO: reemplazar por el dato
-    medido de la hélice/motor elegidos apenas se tenga.
+  * ETA_PROPULSIVA_TOTAL = 0.65. La cadena hélice (~0.75 en crucero) x
+    motor (~0.85) x ESC (~0.95) da 0.61: 0.65 supone componentes algo mejores
+    que esos típicos (es un supuesto OPTIMISTA, ~6 % menos batería que con
+    0.61). Reemplazar por el dato medido de la hélice/motor elegidos apenas
+    se tenga.
+  * La masa de batería es CONTINUA (sale de la energía) para que el puntaje
+    no tenga escalones; el pack real (`dimensionar_pack`) se arma en grupos
+    de CELDAS_EN_SERIE celdas y puede pesar hasta un grupo más (~1 kg con
+    12S de 21700). Es informativo y se muestra en el desglose.
   * Celdas: datos de hoja de datos agregados por aboutenergy.io (ver CELDAS).
     El pack agrega FACTOR_MASA_PACK = 1.15 (níquel soldado, BMS, cableado,
     funda), que es un supuesto de ingeniería.
@@ -90,6 +96,10 @@ ETA_MOTOR_ESC_DESPEGUE = 0.80          # [-]
 MASA_BATERIA_INICIAL_KG = 3.6          # [kg] punto de arranque (cerca de lo que sale con Li-ion de 270 Wh/kg)
 TOL_MASA_BATERIA_KG = 0.10             # [kg] ~2.5 % de la masa de batería -> error de alcance <= ~2.5 %
 MAX_PASADAS = 3
+# Si el punto fijo pide más batería que esto, el lazo diverge (la resistencia
+# crece más rápido que lo que aporta la batería): el avión no puede volar el
+# alcance. Cota de seguridad, muy por encima de cualquier diseño razonable.
+MASA_BATERIA_MAX_KG = 50.0
 
 
 # =====================================================================
@@ -139,12 +149,15 @@ def cerrar_masa_bateria(D0: float, frac_inducida: float, W0: float, masa_resto_k
                         masa_bat_usada: float, V: float, celda: str | None = None,
                         g: float = 9.80665) -> float:
     """Punto fijo m_bat = f(D(W(m_bat))) con la aerodinámica de UNA pasada
-    reescalada analíticamente. `masa_resto_kg` es todo lo que no es batería."""
+    reescalada analíticamente. `masa_resto_kg` es todo lo que no es batería.
+    Devuelve inf si diverge (pide más de MASA_BATERIA_MAX_KG)."""
     m = masa_bat_usada
     for _ in range(60):
         W = (masa_resto_kg + m) * g
         D = resistencia_a_peso(D0, frac_inducida, W0, W)
         m_nueva = masa_bateria_para(D, V, celda)
+        if not math.isfinite(m_nueva) or m_nueva > MASA_BATERIA_MAX_KG:
+            return float("inf")
         if abs(m_nueva - m) < 1e-5:
             return m_nueva
         m = 0.5 * m + 0.5 * m_nueva      # amortiguado

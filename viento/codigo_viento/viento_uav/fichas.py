@@ -9,8 +9,9 @@ Uso:
     f.U_ds("diseno")        # 4.63 m/s
     f.dryden(120)           # sigmas y escalas de Dryden a 120 m
 
-Las rutas se resuelven respecto de la carpeta "Datos de viento" (dos niveles
-arriba de este archivo). Se puede pasar otra con el argumento `base`.
+Las rutas se resuelven respecto de la carpeta de datos de viento, dos niveles
+arriba de este archivo (genetic_wing/viento; en la copia vieja, "Datos de
+viento"). Se puede pasar otra con el argumento `base`.
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ from pathlib import Path
 
 import yaml
 
-BASE_DATOS = Path(__file__).resolve().parents[2]   # .../Datos de viento
+BASE_DATOS = Path(__file__).resolve().parents[2]   # .../genetic_wing/viento
 SITIOS = ("canadon_leon", "puesto_hernandez")
 
 KT = 0.514444      # m/s por nudo

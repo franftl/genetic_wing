@@ -5,7 +5,7 @@ Cada una optimiza su PROPIA subpoblación de punta a punta, independiente, y
 al final se comparan los mejores puntajes.
 
 Por qué subpoblaciones separadas y no una sola población mixta: el `score`
-de `evaluar_mision_avion` SÍ es comparable entre topologías (mismos nueve
+de `evaluar_mision_avion` SÍ es comparable entre topologías (mismos
 términos, mismos pesos, mismas referencias de escala, misma misión), así que
 competir por el mejor score final es válido. Lo que NO es válido es cruzar
 (BLX-alfa) un padre con cola en V con uno de doble boom: sus vectores de
@@ -17,9 +17,10 @@ crossover entre familias.
 ==========================================================================
 SEMILLAS -- de dónde salen
 ==========================================================================
-Están en `semillas.json`, al lado de este módulo, y las genera
-`gen_semillas.py` (también incluido, para que el proceso sea reproducible y
-no un número mágico). El procedimiento es:
+Las semillas "de Felipe" están en `semillas.json`, al lado de este módulo, y
+las genera `gen_semillas.py` (también incluido, para que el proceso sea
+reproducible y no un número mágico; escribe `semillas_out.json`, que se
+revisa y se copia a mano sobre `semillas.json`). El procedimiento es:
 
 1. Se define una base de ala + fuselaje + flap a mano, y una cola a mano por
    topología, con criterio de diseño pero sin pretensión de optimalidad.
@@ -35,19 +36,35 @@ Hay DOS semillas por topología, y están a propósito en lados opuestos del
 compromiso central de esta misión:
 
   A: ala grande (b ~ 3.1 m, S ~ 1.02 m2) con perfiles de ALTA SUSTENTACIÓN
-     (fx63137 / naca6412). Vuela lento con holgura, pero en crucero a
-     120 km/h anda por L/D ~ 7.3.
+     (fx63137 / naca6412). Vuela lento con holgura, pero en crucero
+     (con la misión vieja, 120 km/h) andaba por L/D ~ 7.3.
   B: ala más chica (b ~ 2.85 m, S ~ 0.82 m2) con perfiles de camber
      MODERADO (naca6412 / naca4412) y un flap que sí rinde. L/D ~ 10.4 en
-     crucero -- bastante mejor -- y todavía vuela a 10 m/s.
+     ese crucero -- bastante mejor -- y todavía vuela a 10 m/s.
 
 Sembrar variado no es cosmético: BLX-alfa entre dos padres que tienen el
 MISMO valor en una dimensión devuelve siempre ese valor, así que una
 dimensión donde las dos semillas coinciden queda sin explorar.
 
 Que la semilla B le gane a la A en L/D por 40% ya dice algo interesante
-antes de optimizar: a 120 km/h el ala grande se paga caro, y el perfil de
+antes de optimizar: en crucero el ala grande se paga caro, y el perfil de
 alta sustentación no es gratis. Esa es la pelea que el GA tiene que resolver.
+
+==========================================================================
+SEMILLAS POR ESCENARIO (2026-10-19)
+==========================================================================
+`semillas.json` está pensado para la misión sin viento y sin batería: con
+viento (aire de 1.056 kg/m3) o con batería (~11 kg, ~2 L más de fuselaje)
+sus aviones son INVÁLIDOS, y el GA arrancaría a ciegas. Por eso
+`semillas_para_escenario()` elige el set según los interruptores de
+`mision_avion` EN EL MOMENTO DE CORRER (no al importar):
+
+  batería on            -> evaluacion_bateria_350km/semillas_bateria.json
+  viento on, batería off -> ganador con viento + ganador sin viento (18/09)
+  los dos off           -> semillas.json (las de Felipe)
+
+`optimizar_topologia` y `correr_competencia` la usan si no se les pasa
+`seed_population`; el notebook y los scripts también.
 """
 
 from __future__ import annotations
@@ -58,21 +75,45 @@ from typing import Optional
 
 from .evolucion_avion import EstadoEvolucionAvion, correr_evolucion_completa_avion
 from .ga_numerico_avion import generar_hijos_avion
+from . import mision_avion as _ma
 from .geometria_avion import TOPOLOGIAS, clamp_to_bounds_avion
-from .mision_avion import evaluar_mision_avion
+from .mision_avion import describir_puntaje, evaluar_mision_avion
 
 _RUTA_SEMILLAS = Path(__file__).with_name("semillas.json")
+_RAIZ = Path(__file__).resolve().parents[1]
+RUTA_SEMILLAS_BATERIA = _RAIZ / "evaluacion_bateria_350km" / "semillas_bateria.json"
+RUTA_GANADORES = Path(__file__).with_name("ganadores.json")
+RUTA_GANADORES_VIENTO = Path(__file__).with_name("ganadores_viento.json")
+
+
+def _leer_json(ruta: Path) -> dict:
+    return json.loads(Path(ruta).read_text(encoding="utf-8"))
 
 
 def _cargar_semillas() -> dict:
-    with open(_RUTA_SEMILLAS) as f:
-        crudas = json.load(f)
+    crudas = _leer_json(_RUTA_SEMILLAS)
     # Se vuelven a pasar por clamp: si alguien edita el JSON a mano, el
     # candidato entra igual al pipeline como diseño fabricable.
     return {t: [clamp_to_bounds_avion(p, t) for p in lista] for t, lista in crudas.items()}
 
 
 SEEDS_POR_TOPOLOGIA = _cargar_semillas()
+
+
+def semillas_para_escenario(viento: Optional[bool] = None, bateria: Optional[bool] = None) -> dict:
+    """{topologia: [params, params]} válidas (en lo posible) para el escenario
+    pedido; por defecto el de `mision_avion.VIENTO_ACTIVO / BATERIA_ACTIVA`
+    en este momento. Ver "SEMILLAS POR ESCENARIO" en el encabezado."""
+    viento = _ma.VIENTO_ACTIVO if viento is None else viento
+    bateria = _ma.BATERIA_ACTIVA if bateria is None else bateria
+    if bateria:
+        crudas = _leer_json(RUTA_SEMILLAS_BATERIA)
+    elif viento:
+        gv, gs = _leer_json(RUTA_GANADORES_VIENTO), _leer_json(RUTA_GANADORES)
+        crudas = {t: [gv[t]["params"], gs[t]["params"]] for t in TOPOLOGIAS if t in gv and t in gs}
+    else:
+        return {t: list(v) for t, v in SEEDS_POR_TOPOLOGIA.items()}
+    return {t: [clamp_to_bounds_avion(p, t) for p in lista] for t, lista in crudas.items()}
 
 
 def optimizar_topologia(
@@ -84,15 +125,17 @@ def optimizar_topologia(
     max_generaciones: int = 60,
     checkpoint_path: Optional[Path] = None,
     verbose: bool = True,
+    reanudar: bool = False,
 ) -> EstadoEvolucionAvion:
-    """Evolución completa de UNA topología.
+    """Evolución completa de UNA topología. Sin `seed_population` usa
+    `semillas_para_escenario()` (las del escenario de viento/batería activo).
 
     Los defaults de `paciencia` y `max_generaciones` subieron respecto de la
     versión anterior (8/40) porque el espacio de diseño creció bastante: de
     ~20 parámetros por topología a 46-51. Con más dimensiones, el GA
     necesita más generaciones para explotar una dirección buena antes de que
     la racha sin mejora lo corte."""
-    seeds = seed_population if seed_population is not None else SEEDS_POR_TOPOLOGIA[topologia]
+    seeds = seed_population if seed_population is not None else semillas_para_escenario()[topologia]
 
     def objetivo_fn(params: dict) -> float:
         return evaluar_mision_avion(params, topologia)
@@ -104,7 +147,7 @@ def optimizar_topologia(
         seeds, topologia, generar_hijos_fn, objetivo_fn,
         n_crossbred=n_crossbred, n_wildcard=n_wildcard,
         paciencia=paciencia, max_generaciones=max_generaciones,
-        checkpoint_path=checkpoint_path, verbose=verbose,
+        checkpoint_path=checkpoint_path, verbose=verbose, reanudar=reanudar,
     )
 
 
@@ -116,9 +159,12 @@ def correr_competencia(
     max_generaciones: int = 60,
     checkpoint_dir: Optional[Path] = None,
     verbose: bool = True,
+    reanudar: bool = False,
 ) -> dict:
     """Corre cada topología por separado y devuelve {topologia: estado}.
-    No hay ningún intercambio entre topologías durante la corrida."""
+    No hay ningún intercambio entre topologías durante la corrida. Las
+    semillas salen de `semillas_para_escenario()`; con `reanudar=True` y
+    `checkpoint_dir`, cada topología sigue desde su checkpoint si existe."""
     topologias = topologias if topologias is not None else list(TOPOLOGIAS.keys())
     resultados = {}
     for topologia in topologias:
@@ -128,7 +174,7 @@ def correr_competencia(
         resultados[topologia] = optimizar_topologia(
             topologia, n_crossbred=n_crossbred, n_wildcard=n_wildcard,
             paciencia=paciencia, max_generaciones=max_generaciones,
-            checkpoint_path=ckpt, verbose=verbose)
+            checkpoint_path=ckpt, verbose=verbose, reanudar=reanudar)
     return resultados
 
 
@@ -151,5 +197,5 @@ def tabla_resultados(resultados: dict, extra: Optional[dict] = None) -> str:
     for i, (nombre, score, gen) in enumerate(filas, start=1):
         g = f"  ({gen} generaciones)" if gen is not None else "  (externo)"
         marca = "  <-- GANA" if i == 1 else ""
-        L.append(f"  {i}. {nombre:<{ancho}} score={score:8.4f}{g}{marca}")
+        L.append(f"  {i}. {nombre:<{ancho}} score={describir_puntaje(score)}{g}{marca}")
     return "\n".join(L)

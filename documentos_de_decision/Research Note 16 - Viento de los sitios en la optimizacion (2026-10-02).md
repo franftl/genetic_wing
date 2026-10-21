@@ -28,8 +28,8 @@ El viento medio y el fuerte no entran en ninguna cuenta: sin un piloto automáti
 Cambios en `mision_avion.py` (todos bajo `VIENTO_ACTIVO`):
 
 1. **Condiciones** (afectan a los términos que ya existían, sin peso propio): densidad del sitio en las fórmulas y en `AeroBuildup` (vía `atmosphere=`), Reynolds con la viscosidad del sitio, y ráfaga de 4.63 m/s.
-2. **Restricción dura:** si la ráfaga del sitio lleva el ala más allá de la carga última (`N_ULTIMO = 4.5`), el candidato se descarta.
-3. **Término nuevo: eficiencia en turbulencia**, `1 / (1 + resistencia extra)` con `PESO_TURBULENCIA = 0.75`.
+2. **Restricción dura:** si la ráfaga del sitio lleva el ala más allá de la carga última (`N_ULTIMO = 4.5`), el candidato se descarta. *(Actualización 2026-10-19: se compara contra la carga **límite**, `N_RAFAGA_ADMISIBLE = N_LIMITE = 3.0`; 4.5 no dejaba coeficiente de seguridad. Con esa regla los ganadores con viento de esta nota, n ≈ 3.1–3.3, quedan inválidos.)*
+3. **Término nuevo: eficiencia en turbulencia**, `1 / (1 + resistencia extra)` con `PESO_TURBULENCIA = 0.75`. *(Actualización 2026-10-19, V51.2: con `PUNTAJE_MODO = "mision"` la turbulencia ya no es un término aparte: la resistencia turbulenta entra directamente en la energía para el alcance, que es el objetivo. El término sigue en el modo `"legado"`.)*
 
 ### 2.1 Por qué la turbulencia cuesta energía
 
@@ -55,7 +55,7 @@ Con el aire del sitio, esas 10 semillas entran en pérdida a 10.1–10.6 m/s y s
 
 ## 3. Resultados (corrida del 2026-10-02)
 
-`python viento/optimizar_con_viento.py`: paciencia 8, máximo 35 generaciones (igual que la corrida del 18/09), semilla de azar fija. Ganadores en `optimizacion_avion/ganadores_viento.json`; tabla y gráficos en `viento/resultados_optimizacion/`. Los dos diseños se evalúan **con el viento del sitio**:
+`python viento/optimizar_con_viento.py`: paciencia 8, máximo 35 generaciones (igual que la corrida del 18/09), semilla de azar fija. Ganadores en `optimizacion_avion/ganadores_viento.json`; tablas, gráficos y vistas 3D en `viento/resultados/`. Los dos diseños se evalúan **con el viento del sitio**:
 
 | Topología | Diseño | Score | S [m²] | b [m] | W/S [N/m²] | Masa [kg] | L/D | V pérdida [m/s] | n ráfaga |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|

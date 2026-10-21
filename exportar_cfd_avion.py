@@ -501,6 +501,7 @@ def main() -> None:
         return
 
     escala = 1000.0 if args.unidades == "mm" else 1.0
+    params = ma.params_trimados(params, top)      # con la incidencia de cola que trima (TRIM_RESUELTO)
     avion = construir_avion(params, top)
     cuerpos = mallar_cuerpos(avion, RESOLUCIONES[args.resolucion])
 

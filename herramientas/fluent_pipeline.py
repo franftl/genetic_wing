@@ -10,6 +10,7 @@ Uso (PowerShell, desde la raiz del repo):
     python herramientas\\fluent_pipeline.py --solo-chequeo                 # revisa el dominio del STEP
     python herramientas\\fluent_pipeline.py --alpha 1.21                   # malla + calculo
     python herramientas\\fluent_pipeline.py --alpha 0 1.21 4 --sin-malla   # barrido, reusa la malla
+    python herramientas\\fluent_pipeline.py --alpha 1.21 --sin-malla --modelo k-omega   # mismo caso con SST puro
 
 Entradas : STEP con el dominio fluido (medio modelo, plano de simetria en y = 0), en mm.
            Ejes del modelo: x hacia atras, y a la derecha, z hacia arriba.
@@ -49,10 +50,11 @@ LARGO = 1.79
 DOMINIO_MIN = {"aguas_arriba": 5.0, "aguas_abajo": 10.0, "lateral": 5.0, "vertical": 5.0}
 
 # --- Malla de pared (para Transition SST: y+ ~ 1) ---
-PRIMERA_CAPA_MM = 0.015
-CRECIMIENTO = 1.2
-N_CAPAS = 30
-TAMANO_SUPERFICIE_MM = {"min": 0.5, "max_avion": 4.0, "max_dominio": 600.0}
+# Dos perfiles de malla. "rapida" = primera prueba del pipeline (~4-6 M celdas); "fina" = la de verdad (~10-15 M).
+PERFILES_MALLA = {
+    "rapida": {"primera_capa_mm": 0.015, "crecimiento": 1.2, "n_capas": 25, "avion_mm": 8.0, "min_mm": 1.0, "max_mm": 600.0},
+    "fina":   {"primera_capa_mm": 0.015, "crecimiento": 1.2, "n_capas": 30, "avion_mm": 4.0, "min_mm": 0.5, "max_mm": 600.0},
+}
 
 
 # =============================================================================
@@ -101,7 +103,7 @@ def chequear_dominio(ruta: Path) -> bool:
 # =============================================================================
 # Fluent (requiere Ansys + ansys-fluent-core). Comandos segun PyFluent 0.2x; ajustar a la version.
 # =============================================================================
-def mallar(step: Path, salida: Path, n_proc: int, gui: bool):
+def mallar(step: Path, salida: Path, n_proc: int, gui: bool, perfil: dict):
     import ansys.fluent.core as pyfluent
 
     meshing = pyfluent.launch_fluent(mode="meshing", precision="double", processor_count=n_proc,
@@ -114,8 +116,17 @@ def mallar(step: Path, salida: Path, n_proc: int, gui: bool):
     t["Import Geometry"].Execute()
 
     # Tamano de superficie. El ala necesita ~4 mm; el borde de fuga de 2 mm, al menos 3-4 celdas en el espesor.
+    # Tamano local sobre el avion (zona 'plane'). SIN PROBAR: depende de que el STEP conserve ese nombre como label.
+    try:
+        t["Add Local Sizing"].AddChildToTask()
+        t["Add Local Sizing"].Arguments = {"AddChild": "yes", "BOIControlName": "avion", "BOIExecution": "Face Size",
+                                           "BOIFaceLabelList": ["plane"], "BOISize": perfil["avion_mm"], "BOIGrowthRate": 1.2}
+        t["Add Local Sizing"].Execute()
+    except Exception as e:  # noqa: BLE001
+        print("AVISO: no pude crear el tamano local del avion (%s); sigo con el global." % e)
+
     t["Generate the Surface Mesh"].Arguments = {"CFDSurfaceMeshControls": {
-        "MinSize": TAMANO_SUPERFICIE_MM["min"], "MaxSize": TAMANO_SUPERFICIE_MM["max_dominio"],
+        "MinSize": perfil["min_mm"], "MaxSize": perfil["max_mm"],
         "GrowthRate": 1.2, "SizeFunctions": "Curvature", "CurvatureNormalAngle": 12}}
     t["Generate the Surface Mesh"].Execute()
 
@@ -129,8 +140,8 @@ def mallar(step: Path, salida: Path, n_proc: int, gui: bool):
     # Capas limite sobre el avion (zona 'plane'): y+ ~ 1.
     t["Add Boundary Layers"].AddChildToTask()
     t["Add Boundary Layers"].Arguments = {
-        "BLControlName": "bl-avion", "OffsetMethodType": "uniform", "NumberOfLayers": N_CAPAS,
-        "FirstHeight": PRIMERA_CAPA_MM, "GrowthRate": CRECIMIENTO, "FaceScope": {"GrowthMethod": "uniform"}}
+        "BLControlName": "bl-avion", "OffsetMethodType": "uniform", "NumberOfLayers": perfil["n_capas"],
+        "FirstHeight": perfil["primera_capa_mm"], "GrowthRate": perfil["crecimiento"], "FaceScope": {"GrowthMethod": "uniform"}}
     t["Add Boundary Layers"].InsertCompoundChildTask()
     t["add-boundary-layers-child-1"].Arguments = {
         "BLControlName": "bl-avion", "FaceScope": {"GrowthMethod": "uniform"}, "ZoneSelectionList": ["plane"]}
@@ -145,7 +156,7 @@ def mallar(step: Path, salida: Path, n_proc: int, gui: bool):
     return solver
 
 
-def configurar_y_resolver(solver, alpha_deg: float, iteraciones: int, salida: Path) -> dict:
+def configurar_y_resolver(solver, alpha_deg: float, iteraciones: int, salida: Path, modelo: str) -> dict:
     a = math.radians(alpha_deg)
     ca, sa = math.cos(a), math.sin(a)
     st = solver.settings
@@ -153,7 +164,7 @@ def configurar_y_resolver(solver, alpha_deg: float, iteraciones: int, salida: Pa
     st.setup.general.solver.type = "pressure-based"
     st.setup.general.solver.time = "steady"
     st.setup.models.energy.enabled = False
-    st.setup.models.viscous.model = "transition-sst"
+    st.setup.models.viscous.model = modelo     # "transition-sst" o "k-omega" (SST) para comparar
     st.setup.materials.fluid["air"].density.value = RHO
     st.setup.materials.fluid["air"].viscosity.value = MU
 
@@ -200,6 +211,8 @@ def main():
     ap.add_argument("--procesos", type=int, default=8)
     ap.add_argument("--solo-chequeo", action="store_true", help="solo revisa el dominio del STEP (no usa Ansys)")
     ap.add_argument("--sin-malla", action="store_true", help="reusa resultados/cfd_run/malla.msh.h5")
+    ap.add_argument("--malla", choices=list(PERFILES_MALLA), default="rapida", help="rapida = prueba del pipeline; fina = definitiva")
+    ap.add_argument("--modelo", choices=["transition-sst", "k-omega"], default="transition-sst")
     ap.add_argument("--gui", action="store_true", help="abre Fluent con ventana")
     args = ap.parse_args()
 
@@ -215,11 +228,11 @@ def main():
                                         dimension=3, ui_mode="gui" if args.gui else "no_gui")
         solver.tui.file.read_mesh(str(SALIDA / "malla.msh.h5"))
     else:
-        solver = mallar(args.step, SALIDA, args.procesos, args.gui)
+        solver = mallar(args.step, SALIDA, args.procesos, args.gui, PERFILES_MALLA[args.malla])
 
     resultados = []
     for a in args.alpha:
-        r = configurar_y_resolver(solver, a, args.iteraciones, SALIDA)
+        r = configurar_y_resolver(solver, a, args.iteraciones, SALIDA, args.modelo)
         resultados.append(r)
         print("alpha %.2f  L %.2f N  D %.2f N  CL %.4f  CD %.5f  L/D %.2f" % (
             a, r["L_N"], r["D_N"], r["CL"], r["CD"], r["L_sobre_D"]))

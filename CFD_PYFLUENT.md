@@ -75,3 +75,34 @@ Diferencia con el modelo: L −52 %, D +46 %. No es el ángulo, ni la velocidad,
 8. [ ] Verificar en Fusion los ángulos de las secciones (raíz +4.0°, punta −4.45°).
 9. [ ] Volver a correr el optimizador con V53 y regenerar la geometría con los parámetros nuevos antes de la CFD definitiva.
 10. [ ] Tabla comparativa final CFD vs código (L, D, CL, CD, L/D, por componente si se puede).
+
+
+## 8. Estado al 2026-10-27 y corrida de la noche (recinto grande, los dos modelos)
+
+El pipeline que se usa de verdad es el de Fluent 24.1 + PyFluent 0.27 (`C:\Users\felip\venv_pyfluent`): `herramientas/mallar_fluent.py`
+(malla), `herramientas/correr_cfd_fluent.py` (barrido), `herramientas/calibrar_cfd_aerobuildup.py` (comparación y calibración).
+Lo aprendido de la API está en `herramientas/NOTAS_FLUENT.md`. `fluent_pipeline.py` queda solo para `--solo-chequeo` y `--revisar-set`.
+
+**Resultados ya obtenidos** (malla v5, recinto chico 8.3 x 2.5 x 3 m con tapas de simetría, k-ω SST, `resultados/cfd_run/barrido_v5_total.json`):
+CL = 0.244 / 0.279 / 0.358 a α = 0 / 1.21 / 4° contra 0.240 / 0.361 / 0.639 del modelo. El incremento de CL respecto de α = 0 es 0.285 x
+el del modelo en los dos ángulos: parece un artefacto del montaje (las tapas de simetría arriba y abajo mantienen el flujo horizontal).
+CD de la CFD = 0.0284 / 0.0334 / 0.0492, con 136-316 cuentas de exceso sobre el modelo a igual CL.
+
+**Qué cambió para la noche**
+- `encl_grande.step` (raíz del repo): recinto x [−5, 11.85], y [0, 6.7], z [−5.3, 5.3] m (≈ 1197 m³). Se hizo a partir de `encl_red_v2.step` cambiando solo las
+  coordenadas de las 6 caras de la caja (el avión no se tocó); validado con OpenCascade como sólido cerrado, 72 caras, volumen = caja − avión.
+- `zona_estela.step`: caja x [−0.3, 4.5], y [0, 1.9], z [−0.5, 0.7] m para refinar la estela (`mallar_fluent.py --estela zona_estela.step --tam-estela 200`).
+  **Experimental y sin probar con Fluent** (cuerpo de influencia vía `Import Body of Influence Geometry`); si falla, la malla sale sin estela y lo avisa.
+- Las tapas (`m_walls`) pasan a **velocity-inlet con el mismo vector de viento** (`--paredes velocidad`, default). Con `--paredes simetria` se repite lo de antes.
+- Celda máxima de 1500 mm en el espacio lejano (`--tam-max 1500`): con 600 mm el recinto grande daría millones de celdas de relleno.
+- `correr_cfd_fluent.py`: plan por prioridad (`--plan "transicion:0,4;sst:4;..."`), corte por convergencia de L y D (< 0.3 % en 3 bloques de 50 iteraciones, mínimo 300/150 y máximo 800/450),
+  CSV incremental con y+ y tiempo por iteración, retoma lo ya hecho, `--limite HH:MM`.
+
+**Cómo lanzarla** (PowerShell, raíz del repo): `.\herramientas\correr_noche.ps1 -Limite 08:30`. Malla grande (con estela; si falla o pasa de 7 M de celdas, sin estela) → barrido →
+calibración. Si no hay malla grande usa `malla_v5` y lo dice. Sale `resultados/cfd_run/noche/noche_grande/resultados.csv` y `resultados/calibracion_cfd.png/.json`.
+
+**Qué esperar.** ≈ 17 s/iteración (SST) y ≈ 25 s (Transition SST) con ~4.5 M de celdas: en una noche entran unos 4-5 ángulos. Si CL(4°) se acerca a 0.6, el problema era el recinto/tapas;
+si CD(0°) baja hacia 0.015-0.02 con Transition SST, era el modelo de turbulencia. La función de transformación (`CL_cfd = a·CL_ab + b`, `CD_cfd = CD_ab + d0 + d2·CL²`) solo vale la pena con ≥ 4-5 puntos
+convergidos por modelo; con menos, es indicativa. Los casos no convergidos quedan con `convergio = 0` y la calibración los ignora.
+
+**Pendiente de verificar con Fluent** (nunca corrido todavía): nombre `transition-sst` y de la turbulencia de `m_walls` tras cambiarla a velocity-inlet, la estela, y que el segundo grupo del plan (que relee la malla) arranque limpio.

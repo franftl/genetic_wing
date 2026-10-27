@@ -6,7 +6,7 @@ Rama de trabajo: `bateria-350km` (se empuja también a `main`). La rama `viento`
 ## Estructura
 - `optimizacion_avion/` — paquete (geometría, misión, estructura, batería, manufactura, gráficos). `VERSION` en `__init__.py`.
 - `optimizacion_ala/`, `viento/` — otros proyectos del repo (no mover: `viento` depende de las rutas).
-- `herramientas/` — `exportar_cad_avion.py` (JSON de geometría en mm), `exportar_cfd_avion.py` (caso CFD), `fusion_generar_avion.py` (script de Fusion), `construir_notebook_avion.py` (genera `Optimizador_<VERSION>.ipynb`), `fluent_pipeline.py` (borrador PyFluent).
+- `herramientas/` — `exportar_cad_avion.py` (JSON de geometría en mm), `exportar_cfd_avion.py` (caso CFD), `fusion_generar_avion.py` (script de Fusion), `construir_notebook_avion.py` (genera `Optimizador_<VERSION>.ipynb`), `fluent_pipeline.py` (chequeo de dominio), `mallar_fluent.py` / `correr_cfd_fluent.py` / `calibrar_cfd_aerobuildup.py` / `correr_noche.ps1` (CFD con PyFluent 0.27, ver `herramientas/NOTAS_FLUENT.md`).
 - `resultados/` — checkpoints, parámetros ganadores (`avion_design_params_<top>.json`), `avion_geometry_cad.json`, casos `cfd_<top>/`.
 - `VERSIONES.md` — regla: una modificación sube el decimal (V53 → V53.1); agregar/modificar un módulo sube el entero. Al subir: cambiar `VERSION`, regenerar el notebook y agregar entrada en `VERSIONES.md`.
 
@@ -25,6 +25,7 @@ Rama de trabajo: `bateria-350km` (se empuja también a `main`). La rama `viento`
 - Fluent reporta fuerzas en ejes de la malla; sustentación y resistencia se obtienen rotando al viento: D = Fx·cosα + Fz·sinα, L = −Fx·sinα + Fz·cosα.
 - Malla con capa límite (2026-10-27): `herramientas/mallar_fluent.py` (Fluent 24.1 vía `C:\Users\felip\venv_pyfluent`, PyFluent 0.27) mallá `encl_red_v2.step` en ~5 min: 2.56 M celdas, 24 capas desde 0.025 mm (×1.2, y+ ≈ 0.8), ortogonalidad mínima 0.067, salida en `resultados/cfd_run/malla_v5.msh.h5`. Las mallas v2-v4 estaban mal (fronteras como pared, capas sobre el recinto). y+ medido 0.77 de media (`herramientas/chequear_yplus.py`). Receta, trampas y procesos huérfanos de Fluent en `herramientas/NOTAS_FLUENT.md`.
 - Pendiente: dominio nuevo (mínimo: 5 m aguas arriba, 10 m aguas abajo del avión, 5 m laterales y verticales; `python herramientas/fluent_pipeline.py --solo-chequeo` lo verifica) con refinamiento de estela, Transition SST con 0.1 % de intensidad, α = 0 / 1.21 / 4°, ala sola.
+- Estado 2026-10-27: barrido k-ω SST en recinto chico da pendiente de CL = 0.285 x la del modelo (artefacto de las tapas de simetría, hipótesis). Preparado `encl_grande.step`, tapas velocity-inlet, Transition SST, `calibrar_cfd_aerobuildup.py` y `herramientas/correr_noche.ps1` (ver sección 8 de `CFD_PYFLUENT.md`). Aún sin correr con el recinto grande.
 - Cómo correr la CFD y qué casos faltan: ver `CFD_PYFLUENT.md` (actualizarlo al terminar cada caso).
 - `herramientas/fluent_pipeline.py` es un borrador SIN PROBAR (nombres de comandos de PyFluent a ajustar a la versión de Ansys).
 

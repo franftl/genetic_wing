@@ -1,0 +1,17 @@
+{
+  "parametros": {
+    "step": "C:\\Users\\felip\\Desktop\\UAV FP bateria\\encl_red_v2.step",
+    "procesos": 8,
+    "primera_capa": 0.015,
+    "crecimiento": 1.2,
+    "capas": 30,
+    "tam_avion": 6.0,
+    "tam_min": 1.0,
+    "tam_max": 600.0,
+    "hasta": "volumen",
+    "etiqueta": "v2b",
+    "gui": false
+  },
+  "celdas_detectadas": [],
+  "tiempo_s": 165.4
+}

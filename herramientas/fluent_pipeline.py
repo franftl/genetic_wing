@@ -3,11 +3,12 @@ Pipeline de CFD con PyFluent: chequeo del dominio -> malla -> solver -> L y D en
 
 BORRADOR SIN PROBAR. Se escribio sin poder ejecutar Ansys, asi que la primera corrida va a pedir
 ajustes de nombres de comandos segun la version de Ansys/PyFluent (se corrige iterando con el error).
-Lo unico verificado es `--solo-chequeo` (no necesita Ansys).
+Lo unico verificado es `--solo-chequeo` y `--revisar-set` (no necesitan Ansys).
 
 Uso (PowerShell, desde la raiz del repo):
     pip install ansys-fluent-core
     python herramientas\\fluent_pipeline.py --solo-chequeo                 # revisa el dominio del STEP
+    python herramientas\\fluent_pipeline.py --revisar-set Encl_test_files\\dp0\\FFF\\Fluent\\FFF.set   # revisa un caso a mano
     python herramientas\\fluent_pipeline.py --alpha 1.21                   # malla + calculo
     python herramientas\\fluent_pipeline.py --alpha 0 1.21 4 --sin-malla   # barrido, reusa la malla
     python herramientas\\fluent_pipeline.py --alpha 1.21 --sin-malla --modelo k-omega   # mismo caso con SST puro
@@ -43,9 +44,10 @@ CG = (0.6343, 0.0, 0.0)    # m, centro de momentos
 TURB_INTENSIDAD = 0.1  # % (aire libre; 5 % es de tunel de viento y arruina la transicion)
 VISC_RATIO = 10.0
 
-# --- Avion (m) para chequear el dominio ---
-SEMIENVERGADURA = 1.68
-LARGO = 1.79
+# --- Avion (m) para chequear el dominio (medido en encl_red.step: x [0, 1.849], y [0, 1.674], z [-0.073, 0.317]) ---
+SEMIENVERGADURA = 1.674
+LARGO = 1.849
+Z_AVION = (-0.073, 0.317)
 # Distancias minimas del avion a las fronteras (m). Criterio ingenieril conservador para fuerzas.
 DOMINIO_MIN = {"aguas_arriba": 5.0, "aguas_abajo": 10.0, "lateral": 5.0, "vertical": 5.0}
 
@@ -79,12 +81,12 @@ def chequear_dominio(ruta: Path) -> bool:
     (x0, x1), (y0, y1), (z0, z1) = (tuple(t / 1000.0 for t in r) for r in bbox_step(ruta))
     vol = (x1 - x0) * (y1 - max(y0, 0.0)) * (z1 - z0)
     print("Dominio (m): x [%.2f, %.2f]  y [%.2f, %.2f]  z [%.2f, %.2f]   ~%.0f m3" % (x0, x1, y0, y1, z0, z1, vol))
-    # el avion ocupa x in [0, LARGO], y in [0, SEMIENVERGADURA], z en [-0.08, +0.33]
+    # el avion ocupa x in [0, LARGO], y in [0, SEMIENVERGADURA], z in Z_AVION
     d = {
         "aguas_arriba": 0.0 - x0,
         "aguas_abajo": x1 - LARGO,
         "lateral": y1 - SEMIENVERGADURA,
-        "vertical": min(z1 - 0.33, -0.08 - z0),
+        "vertical": min(z1 - Z_AVION[1], Z_AVION[0] - z0),
     }
     ok = True
     for k, minimo in DOMINIO_MIN.items():
@@ -96,8 +98,63 @@ def chequear_dominio(ruta: Path) -> bool:
         print("   x [%.1f, %.1f]  y [0, %.1f]  z [%.1f, %.1f]  (m, medio modelo)" % (
             -DOMINIO_MIN["aguas_arriba"], LARGO + DOMINIO_MIN["aguas_abajo"],
             SEMIENVERGADURA + DOMINIO_MIN["lateral"],
-            -0.08 - DOMINIO_MIN["vertical"], 0.33 + DOMINIO_MIN["vertical"]))
+            Z_AVION[0] - DOMINIO_MIN["vertical"], Z_AVION[1] + DOMINIO_MIN["vertical"]))
     return ok
+
+
+# =============================================================================
+# Revision de un caso armado a mano (python puro): lee el .set que exporta Fluent
+# (File > Export > Case Settings, o el FFF.set de Workbench) y marca lo que no cuadra.
+# =============================================================================
+def revisar_set(ruta: Path) -> bool:
+    t = ruta.read_text(errors="ignore")
+    problemas, avisos = [], []
+
+    def num(patron):
+        m = re.search(patron, t, re.S)
+        return float(m.group(1)) if m else None
+
+    # Reportes de fuerza sobre el avion: la sustentacion tiene que ir en z (y es la envergadura).
+    for m in re.finditer(r'\(report-definition (lift|drag) \(force-vector ([-\d.eE+]+) ([-\d.eE+]+) ([-\d.eE+]+)\)'
+                         r'.{0,400}?name "([^"]+)"', t, re.S):
+        tipo, fx, fy, fz, nombre = m.group(1), float(m.group(2)), float(m.group(3)), float(m.group(4)), m.group(5)
+        print("  reporte %-14s %-5s vector (%.4f, %.4f, %.4f)" % (nombre, tipo, fx, fy, fz))
+        if abs(fy) > 0.5:
+            problemas.append("'%s' (%s) apunta en y: eso es fuerza LATERAL (y = envergadura). Lift = (-sin a, 0, cos a), "
+                             "drag = (cos a, 0, sin a)." % (nombre, tipo))
+        elif tipo == "lift" and abs(fz) < 0.5:
+            problemas.append("'%s' (lift) no apunta en z." % nombre)
+
+    # Paredes del dominio: shear-bc 0 = no-slip (tunel de viento con capa limite propia).
+    for m in re.finditer(r'\(bc \((\S+) wall mixture\) \(\s*\(motion-bc \. \d+\)\s*\(shear-bc \. (\d+)\)', t):
+        zona, shear = m.group(1), int(m.group(2))
+        if zona != "plane" and shear == 0:
+            problemas.append("la zona '%s' es pared NO-SLIP: el dominio se vuelve un tunel. Cambiarla a symmetry "
+                             "(o pressure-far-field)." % zona)
+
+    if re.search(r'\(rp-trans-sst\? #f\)', t):
+        avisos.append("sin modelo de transicion (SST totalmente turbulento): da mas drag de perfil que NeuralFoil.")
+    ti = num(r'\(turb-intensity \. ([\d.eE+-]+)\)')
+    if ti is not None and ti > 0.005:
+        avisos.append("intensidad de turbulencia de entrada %.1f %% (aire libre ~0.1 %%)." % (100 * ti))
+    if re.search(r'\(velocity-spec \. 0\)', t):
+        avisos.append("velocidad de entrada 'normal a la frontera': alpha = 0 (para otro alpha usar Magnitude and Direction).")
+    for clave, esperado, patron in (("velocidad", V, r'velocity-inlet mixture\) \(.{0,200}?\(vmag \(constant \. ([\d.eE+-]+)\)'),
+                                    ("densidad", RHO, r'\(density \(constant \. (1\.[\d]+)\)'),
+                                    ("viscosidad", MU, r'\(viscosity \(constant \. ([\d.eE+-]+)\)'),
+                                    ("area de referencia", S_REF_COMPLETA / 2.0, r'\(reference-area ([\d.eE+-]+)\)'),
+                                    ("velocidad de referencia", V, r'\(reference-velocity ([\d.eE+-]+)\)')):
+        v = num(patron)
+        if v is not None and abs(v / esperado - 1.0) > 0.005:
+            avisos.append("%s = %.5g (caso del modelo: %.5g)." % (clave, v, esperado))
+
+    for p in problemas:
+        print("  PROBLEMA: " + p)
+    for a in avisos:
+        print("  aviso   : " + a)
+    if not problemas and not avisos:
+        print("  sin observaciones.")
+    return not problemas
 
 
 # =============================================================================
@@ -177,6 +234,9 @@ def configurar_y_resolver(solver, alpha_deg: float, iteraciones: int, salida: Pa
     inlet.turbulence.turbulent_intensity = TURB_INTENSIDAD / 100.0
     inlet.turbulence.turbulent_viscosity_ratio = VISC_RATIO
 
+    # Las tapas laterales/superior/inferior del dominio salen del STEP como pared no-slip: deslizamiento libre.
+    solver.tui.define.boundary_conditions.zone_type("walls", "symmetry")
+
     # Valores de referencia (medio modelo)
     ref = st.setup.reference_values
     ref.area = S_REF_COMPLETA / 2.0
@@ -210,11 +270,16 @@ def main():
     ap.add_argument("--iteraciones", type=int, default=1500)
     ap.add_argument("--procesos", type=int, default=8)
     ap.add_argument("--solo-chequeo", action="store_true", help="solo revisa el dominio del STEP (no usa Ansys)")
+    ap.add_argument("--revisar-set", type=Path, help="revisa un caso armado a mano (.set de Fluent) y sale (no usa Ansys)")
     ap.add_argument("--sin-malla", action="store_true", help="reusa resultados/cfd_run/malla.msh.h5")
     ap.add_argument("--malla", choices=list(PERFILES_MALLA), default="rapida", help="rapida = prueba del pipeline; fina = definitiva")
     ap.add_argument("--modelo", choices=["transition-sst", "k-omega"], default="transition-sst")
     ap.add_argument("--gui", action="store_true", help="abre Fluent con ventana")
     args = ap.parse_args()
+
+    if args.revisar_set:
+        print("Caso %s:" % args.revisar_set)
+        sys.exit(0 if revisar_set(args.revisar_set) else 1)
 
     ok = chequear_dominio(args.step)
     if args.solo_chequeo:

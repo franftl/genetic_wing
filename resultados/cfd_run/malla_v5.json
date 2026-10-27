@@ -1,0 +1,28 @@
+{
+  "parametros": {
+    "step": "C:\\Users\\felip\\Desktop\\UAV FP bateria\\encl_red_v2.step",
+    "procesos": 8,
+    "primera_capa": 0.025,
+    "crecimiento": 1.2,
+    "capas": 24,
+    "tam_avion": 8.0,
+    "tam_min": 1.0,
+    "tam_max": 600.0,
+    "hasta": "volumen",
+    "etiqueta": "v5",
+    "gui": false
+  },
+  "celdas": 2558550,
+  "tipos": {
+    "tet": 0,
+    "hex": 180860,
+    "pyramid": 0,
+    "wedge": 0,
+    "poly": 561044,
+    "poly_prism": 1816646,
+    "hex_prism": 0
+  },
+  "ortogonalidad_minima": 0.0673061,
+  "razon_aspecto_maxima": 2352.07,
+  "tiempo_s": 290.9
+}

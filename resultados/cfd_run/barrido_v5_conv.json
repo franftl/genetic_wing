@@ -1,0 +1,37 @@
+{
+  "parametros": {
+    "malla": "C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\malla_v5.msh.h5",
+    "alfas": "[0.0, 1.21, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0]",
+    "iter": "450",
+    "iter_primera": "700",
+    "limite": "13:55",
+    "velocidad": "22.22",
+    "ti": "0.1",
+    "transicion": "False",
+    "procesos": "8",
+    "etiqueta": "v5_conv",
+    "grafico": "None"
+  },
+  "resultados": [
+    {
+      "alfa_deg": 0.0,
+      "L_N": 77.30286913677917,
+      "D_N": 8.996485683292164,
+      "CL": 0.24437869844751484,
+      "CD": 0.02844072265926562,
+      "L_D": 8.592562902683467,
+      "iteraciones": 700,
+      "tiempo_s": 6370.3
+    },
+    {
+      "alfa_deg": 1.21,
+      "L_N": 88.24545601294398,
+      "D_N": 10.551192092959065,
+      "CL": 0.2789716594631586,
+      "CD": 0.03335563892440641,
+      "L_D": 8.36355316399094,
+      "iteraciones": 450,
+      "tiempo_s": 4487.1
+    }
+  ]
+}

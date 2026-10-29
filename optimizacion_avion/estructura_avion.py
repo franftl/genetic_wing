@@ -17,8 +17,8 @@ versión anterior:
   el ala volante).
 - FLAPS: masa del mecanismo, estimada abajo desde abajo hacia arriba.
 - COLA EN T: factor de masa explícito sobre la deriva (ver `FACTOR_MASA_T`).
-- VIGAS DE COLA: para `doble_boom` (dos). El `pod_boom` ya no tiene viga
-  desde 2026-10-13 (es un fuselaje continuo).
+- VIGAS DE COLA: para `doble_boom` (dos) y `pod_boom` (una). El
+  `fuselaje_continuo` no tiene viga.
 - 2026-10-19: cuerda y elevación se interpolan con la MISMA PCHIP que usa el
   solver (`geometria_avion.interp_estaciones`), no linealmente.
 
@@ -190,7 +190,7 @@ def _masa_cola(params: dict, topologia: str) -> dict:
 
 
 def _masa_fuselaje_y_vigas(params: dict, topologia: str) -> dict:
-    """Recubrimiento del fuselaje más las vigas de cola del doble boom.
+    """Recubrimiento del fuselaje (o góndola) más las vigas de cola.
 
     La superficie mojada del fuselaje se aproxima como un cilindro
     equivalente corregido por el afinamiento de morro y boat-tail: un
@@ -207,7 +207,9 @@ def _masa_fuselaje_y_vigas(params: dict, topologia: str) -> dict:
     masa_fus = MASA_AREAL_PIEL * area_fus
 
     masa_boom = 0.0
-    if TOPOLOGIAS[topologia]["cola"] == "doble_boom":
+    if TOPOLOGIAS[topologia]["fuselaje"] == "pod_boom":
+        masa_boom = MASA_LINEAL_BOOM * float(params["boom_largo"])
+    elif TOPOLOGIAS[topologia]["cola"] == "doble_boom":
         masa_boom = 2.0 * MASA_LINEAL_BOOM * float(params["boom_largo"])
 
     return {"masa_fuselaje": masa_fus, "masa_boom": masa_boom, "area_fuselaje": float(area_fus)}

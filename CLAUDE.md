@@ -9,8 +9,10 @@ histórico, del 18/09). Mantener este archivo al día cuando cambie algo de lo q
 
 Un algoritmo genético (GA) que diseña un UAV eléctrico de ala fija para **Quintana Energy**:
 monitorear pozos petroleros remotos (Cañadón León, Santa Cruz; Puesto Hernández, Mendoza) a
-60–70 km de la base. Compiten 5 **familias** (topologías): `convencional`, `t_tail`, `v_tail`,
-`doble_boom`, `pod_boom` (fuselaje continuo). Cada familia evoluciona por separado y al final se
+60–70 km de la base. Compiten 6 **familias** (topologías): `convencional`, `t_tail`, `v_tail`,
+`doble_boom`, `pod_boom` (motovelero: góndola + viga fina) y `fuselaje_continuo` (fuselaje tubular
+de diámetro casi constante). Ojo: entre el 13/10 y el 21/10, "pod_boom" era el fuselaje continuo.
+Cada familia evoluciona por separado y al final se
 comparan. Aerodinámica: AeroSandbox (AeroBuildup + NeuralFoil). Todo en Python, en español.
 
 **Versión actual: ver `VERSION` en `optimizacion_avion/__init__.py`** (el notebook se llama
@@ -93,6 +95,8 @@ comparan. Aerodinámica: AeroSandbox (AeroBuildup + NeuralFoil). Todo en Python,
 - Errores de programación (KeyError, TypeError, ...) dentro del análisis SUBEN a propósito; los
   numéricos descartan el candidato y se cuentan en `mision_avion.FALLAS_ANALISIS`.
 - Archivos con CRLF y UTF-8; escribir siempre con `encoding="utf-8"` (Windows usa cp1252 por defecto).
+- Cachés (perfiles, flap, borde de fuga): si la clave se redondea, el valor se CALCULA con lo
+  redondeado; si no, el resultado depende del orden de evaluación y las corridas no se reproducen.
 - Autoría: el código general es de Felipe; el viento (`viento/`, `optimizacion_avion/viento.py`,
   partes `VIENTO_ACTIVO`) es de Ivna. Si un cambio toca código del otro, decirlo.
 

@@ -16,8 +16,9 @@ crucero de diseño a 80 km/h con 3 kg de carga útil, velocidad máxima de
 Interruptores: VIENTO_ACTIVO (viento de los sitios, `viento.py`) y
 BATERIA_ACTIVA (batería por alcance de 350 km, `bateria.py`).
 
-TOPOLOGÍAS: convencional, cola en T, cola en V, doble boom, y `pod_boom`
-(desde 2026-10-13 un fuselaje continuo, ya no góndola + viga). Ver
+TOPOLOGÍAS: convencional, cola en T, cola en V, doble boom, `pod_boom`
+(motovelero: góndola + viga) y `fuselaje_continuo` (familia propia desde
+2026-10-21; entre el 13/10 y el 21/10 se llamaba pod_boom). Ver
 `geometria_avion.TOPOLOGIAS`.
 
 ESPACIO DE DISEÑO: 46 a 51 parámetros según la topología -- ala de 5
@@ -56,7 +57,7 @@ lleva la version; ver VERSIONES.md).
 # Version del optimizador. Regla (VERSIONES.md): una modificacion sobre la version
 # existente sube el decimal (V50 -> V50.1, V50.2 ...); agregar o modificar un
 # MODULO sube el numero (V50 -> V51). El notebook y su nombre salen de aca.
-VERSION = "V53.1"
+VERSION = "V54.2"
 
 from .perfiles_avion import (
     ALTA_SUSTENTACION,

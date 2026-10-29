@@ -21,8 +21,9 @@ QUÉ SE EXPORTA Y QUÉ NO
 - El fuselaje NO se exporta: los análisis VLM de XFLR5 no lo usan, y el formato de cuerpos de
   XFLR5 es otro. La masa total sí va, como masa puntual en el CG de diseño, para los análisis
   de sustentación fija (tipo 2) y de estabilidad.
-- Los perfiles se exportan con la forma con que se analizaron (incluido el borde de fuga de 2 mm
-  de la sección de mayor cuerda en que aparece cada uno). Las mezclas entre dos perfiles del
+- Los perfiles se exportan con la forma con que se analizaron, incluido el borde de fuga de 2 mm
+  de cada sección. Un perfil que aparece en dos cuerdas distintas sale dos veces (la segunda con
+  la cuerda en mm en el nombre, p. ej. `fx63137_c92`), porque 2 mm son otra fracción de cuerda. Las mezclas entre dos perfiles del
   catálogo salen como perfiles propios (por ejemplo `naca6412_40_fx63137` = 60 % naca6412 + 40 %
   fx63137).
 """
@@ -79,7 +80,15 @@ def _secciones(ala, perfiles: dict) -> list:
         else:
             largo, diedro = 0.0, 0.0
         nombre = _nombre_seguro(s.airfoil.name)
-        if nombre not in perfiles or float(s.chord) > perfiles[nombre][1]:
+        # Desde V54.2 cada sección lleva su propio borde de fuga de 2 mm absolutos, así que
+        # el mismo perfil en dos cuerdas distintas tiene coordenadas distintas (otra fracción
+        # de cuerda en el borde de fuga). Cada variante sale como un .dat propio, con la
+        # cuerda en mm en el nombre; antes se exportaba una sola, la de la cuerda mayor, y en
+        # la cuerda menor el borde de fuga quedaba más fino que 2 mm.
+        co = np.asarray(s.airfoil.coordinates, float)
+        if nombre in perfiles and not np.allclose(np.asarray(perfiles[nombre][0].coordinates, float), co):
+            nombre = f"{nombre}_c{round(1000 * float(s.chord))}"
+        if nombre not in perfiles:
             perfiles[nombre] = (s.airfoil, float(s.chord))
         filas.append({"y": s_acum, "cuerda": float(s.chord), "xoff": float(P[i, 0] - P[0, 0]),
                       "diedro": diedro, "torsion": float(s.twist), "perfil": nombre,

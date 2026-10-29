@@ -1,6 +1,6 @@
 # Versiones del optimizador de avión
 
-El nombre del notebook lleva la versión: `Optimizador_V53.1.ipynb`. La versión se define
+El nombre del notebook lleva la versión: `Optimizador_V54.2.ipynb`. La versión se define
 en un solo lugar, `VERSION` en `optimizacion_avion/__init__.py`; el notebook y su nombre
 de archivo salen de ahí (`construir_notebook_avion.py` lo lee al regenerar).
 
@@ -274,4 +274,62 @@ Módulo nuevo `optimizacion_avion/xflr5.py` (por eso sube el número).
 - `semillas_bateria.json` / `semillas/bateria_350km.json`: v_tail[1] ahora tiene winglets verticales
   de 0.18 m (violación 0.02, casi factible), así las dos semillas difieren en el winglet.
 - `tabla_resumen.csv` de cada corrida agrega `winglet_m` y la envergadura es la total.
+
+## V54 (2026-10-21) — vuelve el pod boom y el fuselaje continuo es una familia aparte
+
+- **`pod_boom` vuelve a ser el motovelero:** góndola corta + viga fina de cola + cola convencional,
+  como estaba hasta el 13/10 (constructor `_fuselaje_pod_boom` recuperado de la historia de git, con
+  la nariz roma de V51; masa de la viga en `estructura_avion`; `BOUNDS_POD_BOOM` originales).
+- **`fuselaje_continuo` es una familia nueva:** el fuselaje tubular de diámetro casi constante que
+  desde el 13/10 se llamaba `pod_boom` (`BOUNDS_FUSELAJE_CONTINUO`). Ahora son 6 familias.
+- **OJO con archivos de entre el 13/10 y el 21/10:** lo guardado como "pod_boom" en esas fechas
+  (checkpoints, carpetas de `resultados_optimizador/`, `avion_design_params_pod_boom.json`) es en
+  realidad un fuselaje continuo. Cargado ahora como pod_boom se convierte en otro avión.
+- Semillas: `semillas_bateria.json` y `semillas/bateria_350km.json` tienen `pod_boom` (pod boom real
+  reparado para batería + el ganador con viento del 02/10) y `fuselaje_continuo` (el de 2.0 × 0.165 m
+  y una variante de 1.6 × 0.18 m); `semillas.json`, `felipe_originales` y
+  `ganadores_sin_y_con_viento` suman `fuselaje_continuo`. `semillas_para_escenario` completa las
+  familias que le falten a un set con el de batería o con semillas.json. `gen_semillas.py` tiene las
+  dos familias.
+
+## V54.1 (2026-10-21) — resultados reproducibles (cachés de perfiles)
+
+- Problema: la misma corrida de v_tail (mismo azar, mismas semillas) dio 1.659 con V53.1 y 1.630
+  con V54, que no cambió nada del v_tail. Causa: `perfiles_avion.perfil_con_flap` guardaba el perfil
+  con flap bajo la deflexión REDONDEADA a 0.1° pero lo calculaba con la deflexión EXACTA del primero
+  que llegaba; los siguientes con la misma clave recibían ese perfil. El resultado dependía del orden
+  en que se evaluaron los aviones en el kernel (otra familia antes, la tabla de semillas, una corrida
+  anterior). Verificado: el mismo avión daba 1.47988 o 1.48026 según el orden.
+- Ahora se calcula con los valores ya redondeados (también en `manufactura.perfil_con_te`): el
+  resultado no depende del orden. Cambia muy poco cada avión (deflexión de flap cuantizada a 0.1°),
+  pero las corridas de V54.1 no van a coincidir exactamente con las anteriores.
+- Regla: un caché con clave redondeada tiene que CALCULAR con el valor redondeado.
+
+## V54.2 (2026-10-29) — borde de fuga abierto hacia el lado correcto
+
+- Problema: `manufactura.perfil_con_te` abría el borde de fuga de 2 mm con
+  `asb.Airfoil.set_TE_thickness`, que lo abre en la dirección del hueco que el perfil ya tiene. En
+  un perfil cerrado ese hueco es ruido numérico (~1e-20) y la dirección sale al azar:
+  - sd7062, fx63137, mh60 y sus mezclas: el extradós quedaba 2 mm POR DEBAJO del intradós (borde de
+    fuga cruzado, espesor negativo cerca del borde de fuga). En v_tail, 9 de las 12 secciones del ala.
+  - mezclas mh80/fx63137: el hueco se abría en x (filo de ~0.5 mm o menos, no 2 mm).
+  - naca0010, naca4412 y sus mezclas salían bien.
+  Efectos: XFoil no converge con un borde de fuga cruzado (en XFLR5 las polares de esos perfiles
+  terminan "Finished" pero vacías, y el análisis del avión falla con "could not be interpolated
+  (Clmax = 0.00)"); en Fusion el loft de esas secciones se corta a sí mismo; NeuralFoil analizaba
+  esa forma. `verificar_avion` del CAD no lo detectaba porque mide el hueco sin signo.
+- Arreglo: `manufactura.abrir_borde_de_fuga` reemplaza a `set_TE_thickness`. Abre siempre en
+  vertical (extradós arriba, intradós abajo), lineal desde el borde de ataque, y corrige la
+  diferencia CON SIGNO, así que también endereza un perfil que llegue cruzado. Verificado en los
+  ganadores v_tail y pod_boom: las 29 secciones con 2.00 mm y espesor positivo en toda la cuerda.
+- `exportar_cad_avion.verificar_avion` suma `borde_fuga_orientado_ok` (aplicado al
+  `avion_geometry_cad.json` anterior marca las 6 secciones sd7062 de la raíz).
+- `xflr5.py`: un perfil que aparece en dos cuerdas distintas sale como dos `.dat` (el segundo con
+  la cuerda en mm en el nombre, p. ej. `fx63137_c92`). Antes salía uno solo, el de la cuerda mayor,
+  y en la menor el borde de fuga quedaba más fino que 2 mm (1.3 mm en la punta del v_tail).
+- Cambio en los resultados (mismos parámetros, AeroBuildup): v_tail CD crucero +2.7 %, L/D 19.39 →
+  19.06, masa +0.9 %, SM 13.8 % → 13.8 %; pod_boom CD +1.2 %, L/D 20.52 → 20.35. Las corridas
+  anteriores a V54.2 se hicieron con la forma cruzada: no son comparables uno a uno con las nuevas.
+- Notebook regenerado (`Optimizador_V54.2.ipynb`). Pendiente: volver a exportar CAD/XFLR5 de los
+  ganadores que se vayan a usar.
 

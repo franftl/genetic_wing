@@ -66,7 +66,7 @@ El resto del optimizador (geometría, estructura, algoritmo genético, perfiles,
 - **Con o sin viento:** `VIENTO_ACTIVO` en `optimizacion_avion/mision_avion.py`.
 - **Comparación completa** (~30–45 min): `python viento/optimizar_con_viento.py`
 - **Solo rehacer la tabla y los gráficos:** `python viento/optimizar_con_viento.py --solo-comparar`
-- **Notebook `Optimizador_V53.1.ipynb`:** sección 0, interruptor `VIENTO`. La celda de exportación anota la ráfaga y la densidad que realmente se usaron.
+- **Notebook `Optimizador_V54.2.ipynb`:** sección 0, interruptor `VIENTO`. La celda de exportación anota la ráfaga y la densidad que realmente se usaron.
 - **`optimizar_con_viento.py`** fija `BATERIA_ACTIVA` (`--bateria off` por defecto, como la corrida del 18/09) y elige semillas con `--semillas`.
 - **Pruebas:** `python -m pytest viento/codigo_viento/tests -q`
 

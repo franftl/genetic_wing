@@ -1,5 +1,5 @@
 """
-Hace competir las cinco topologías entre sí.
+Hace competir las topologías (familias) entre sí.
 
 Cada una optimiza su PROPIA subpoblación de punta a punta, independiente, y
 al final se comparan los mejores puntajes.
@@ -112,7 +112,16 @@ def semillas_para_escenario(viento: Optional[bool] = None, bateria: Optional[boo
         gv, gs = _leer_json(RUTA_GANADORES_VIENTO), _leer_json(RUTA_GANADORES)
         crudas = {t: [gv[t]["params"], gs[t]["params"]] for t in TOPOLOGIAS if t in gv and t in gs}
     else:
-        return {t: list(v) for t, v in SEEDS_POR_TOPOLOGIA.items()}
+        crudas = {t: list(v) for t, v in SEEDS_POR_TOPOLOGIA.items()}
+    # Si al set le falta alguna familia (p. ej. fuselaje_continuo, que no existía
+    # en los ganadores de septiembre), se completa con el set de batería y, si
+    # tampoco está, con semillas.json.
+    for respaldo in (RUTA_SEMILLAS_BATERIA, _RUTA_SEMILLAS):
+        faltan = [t for t in TOPOLOGIAS if t not in crudas]
+        if not faltan:
+            break
+        r = _leer_json(respaldo)
+        crudas.update({t: r[t] for t in faltan if t in r})
     return {t: [clamp_to_bounds_avion(p, t) for p in lista] for t, lista in crudas.items()}
 
 

@@ -87,6 +87,16 @@ def _abrir_borde_de_fuga(coords: np.ndarray, espesor_frac: float) -> np.ndarray:
     return out
 
 
+def _te_orientado(seccion: dict) -> bool:
+    """True si el primer punto del contorno (borde de fuga del extradós) queda del lado
+    del extradós respecto del último (borde de fuga del intradós)."""
+    p = np.array(seccion["puntos_mm"], float)
+    medio_te = 0.5 * (p[0] + p[-1])
+    i_le = int(np.argmax(np.linalg.norm(p - medio_te, axis=1)))
+    hacia_extrados = p[1:i_le].mean(axis=0) - p[i_le + 1:-1].mean(axis=0)
+    return float(np.dot(p[0] - p[-1], hacia_extrados)) > 0.0
+
+
 def _resamplear_perfil(coords: np.ndarray, n: int) -> np.ndarray:
     d = np.sqrt(np.sum(np.diff(coords, axis=0) ** 2, axis=1))
     s = np.concatenate([[0.0], np.cumsum(d)])
@@ -167,6 +177,10 @@ def verificar_avion(alas: list[dict], fuselajes: list[dict]) -> dict:
             "separacion_min_mm": min(seps) if seps else 0.0,
             "separacion_ok": (min(seps) > 0.1) if seps else True,
             "borde_fuga_min_mm": min(gaps), "borde_fuga_ok": min(gaps) > 1e-3,
+            # V54.2: el hueco tiene que estar abierto hacia afuera (extradós ARRIBA del
+            # intradós). Un hueco "cruzado" mide lo mismo que uno bueno, por eso
+            # borde_fuga_ok solo no alcanza; en Fusion el loft se cortaría a sí mismo.
+            "borde_fuga_orientado_ok": all(_te_orientado(s) for s in secs),
         }
     for f in fuselajes:
         x = np.array([p[0] for p in f["secciones_x_r_mm"]])

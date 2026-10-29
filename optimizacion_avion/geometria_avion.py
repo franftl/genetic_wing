@@ -239,11 +239,19 @@ TOPOLOGIAS = {
         "fuselaje": "corto",
         "cola": "doble_boom",
     },
+    # pod_boom es el motovelero de siempre: góndola corta + viga fina. Entre el
+    # 2026-10-13 y el 2026-10-21 este NOMBRE se usó para el fuselaje continuo,
+    # que desde el 21/10 es una familia propia (`fuselaje_continuo`, abajo):
+    # las dos conviven. Resultados y semillas de esas fechas guardados como
+    # "pod_boom" son en realidad fuselaje continuo (ver VERSIONES.md, V54).
     "pod_boom": {
-        # 2026-10-13: ya NO es góndola + viga fina. Se pidió un fuselaje
-        # continuo (diámetro casi constante, afinado solo hacia la cola). Se
-        # conserva el nombre de la topología para no romper semillas, notebook
-        # ni resultados guardados; el constructor es el del fuselaje "completo".
+        "nombre": "Motovelero: góndola corta + viga de cola + cola convencional",
+        "referencia_real": "Arquitectura de planeador/motovelero (ej. Stemme S10, ASK 21)",
+        "sm_band": (0.10, 0.20),
+        "fuselaje": "pod_boom",
+        "cola": "convencional",
+    },
+    "fuselaje_continuo": {
         "nombre": "Fuselaje continuo (diámetro casi constante, afinado en la cola) + cola convencional",
         "referencia_real": "Fuselaje tubular de largo alcance; sin góndola ni viga fina",
         "sm_band": (0.10, 0.20),
@@ -405,6 +413,18 @@ BOUNDS_DOBLE_BOOM = {
 
 BOUNDS_POD_BOOM = {
     **BOUNDS_ALA, **BOUNDS_FLAP, **BOUNDS_FUSELAJE, **_BOUNDS_COLA_HV,
+    # Acá `fuselaje_largo` es la GÓNDOLA (pod), no el fuselaje entero: lleva
+    # carga útil, batería y motor, y nada más. La cola la sostiene la viga.
+    "fuselaje_largo": (0.35, 0.90),
+    "boom_largo": (0.40, 1.30),
+    "boom_diametro": (0.03, 0.08),
+    # Mismo argumento que en doble_boom: la góndola es corta por diseño, así
+    # que necesita poder engordar para alcanzar el volumen útil mínimo.
+    "fuselaje_diametro": (0.10, 0.32),
+}
+
+BOUNDS_FUSELAJE_CONTINUO = {
+    **BOUNDS_ALA, **BOUNDS_FLAP, **BOUNDS_FUSELAJE, **_BOUNDS_COLA_HV,
     # Fuselaje CONTINUO (2026-10-13): un solo cuerpo de diámetro casi
     # constante de morro a cola, con el afinado solo cerca de la cola.
     #   * sección recta >= 1 - 0.30 - 0.25 = 45 % del largo,
@@ -423,6 +443,7 @@ BOUNDS_POR_TOPOLOGIA = {
     "v_tail": BOUNDS_V_TAIL,
     "doble_boom": BOUNDS_DOBLE_BOOM,
     "pod_boom": BOUNDS_POD_BOOM,
+    "fuselaje_continuo": BOUNDS_FUSELAJE_CONTINUO,
 }
 
 
@@ -652,6 +673,32 @@ def _fuselaje_completo(params: dict, largo: float) -> asb.Fuselage:
     return asb.Fuselage(name="Fuselaje", xsecs=xsecs)
 
 
+def _fuselaje_pod_boom(params: dict) -> asb.Fuselage:
+    """Góndola corta que se contrae hasta el diámetro de la viga, y viga
+    recta hasta la cola. Es la arquitectura de planeador: casi toda la
+    superficie mojada está en la góndola, y la viga aporta el brazo de cola
+    con muy poca superficie. (Recuperado el 2026-10-21; la nariz ahora es la
+    roma de manufactura.py, como en el fuselaje completo.)"""
+    R = 0.5 * float(params["fuselaje_diametro"])
+    r_boom = 0.5 * float(params["boom_diametro"])
+    L_pod = float(params["fuselaje_largo"])
+    L_boom = float(params["boom_largo"])
+    L_morro = float(params["morro_largo_frac"]) * L_pod
+    L_trans = float(params["boattail_largo_frac"]) * L_pod
+    L_recto = max(L_pod - L_morro - L_trans, 0.05 * L_pod)
+    exp_m = float(params["morro_exp"])
+
+    xsecs = _xsecs_morro(R, L_morro, exp_m)             # morro (cara plana, sin punta)
+    xsecs.append(asb.FuselageXSec(xyz_c=[float(L_morro + L_recto), 0, 0], radius=float(R)))
+    for k in range(1, 8):                               # transición a la viga
+        s = k / 7.0
+        xsecs.append(asb.FuselageXSec(
+            xyz_c=[float(L_morro + L_recto + s * L_trans), 0, 0],
+            radius=float(R - (R - r_boom) * s ** 1.5)))
+    xsecs.append(asb.FuselageXSec(xyz_c=[float(L_pod + L_boom), 0, 0], radius=float(r_boom)))
+    return asb.Fuselage(name="Gondola + viga", xsecs=xsecs)
+
+
 def _boom_lateral(params: dict, y: float, x_ini: float, x_fin: float, z: float, nombre: str) -> asb.Fuselage:
     """Una viga de cola lateral del doble boom, como cuerpo de revolución
     delgado. Se modela como fuselaje (y no se omite, como en la versión
@@ -768,11 +815,15 @@ def construir_avion(params: dict, topologia: str) -> asb.Airplane:
     alas = [ala]
     fuselajes = []
 
-    # Todas las topologías usan el fuselaje de revolución completo ("corto" en
-    # el doble boom es solo un rango de BOUNDS distinto). La góndola + viga del
-    # pod_boom se eliminó el 2026-10-13 (ahora es un fuselaje continuo).
-    fuselajes.append(_fuselaje_completo(params, L_fus))
-    x_fin = L_fus
+    if spec["fuselaje"] == "pod_boom":
+        # Góndola + viga: la cola va sobre la viga, al final.
+        fuselajes.append(_fuselaje_pod_boom(params))
+        x_fin = L_fus + float(params["boom_largo"])
+    else:
+        # Fuselaje de revolución completo ("corto" en el doble boom y "continuo"
+        # son solo rangos de BOUNDS distintos).
+        fuselajes.append(_fuselaje_completo(params, L_fus))
+        x_fin = L_fus
 
     if spec["cola"] == "doble_boom":
         b2 = semi_envergadura(params)

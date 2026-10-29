@@ -49,10 +49,13 @@ EXTRA = {
                        boom_lateral_frac=0.30, boom_diametro=0.045, htail_cuerda=0.18,
                        htail_incidencia_deg=-1.0, vstab_altura=0.25, vstab_cuerda=0.18,
                        vstab_taper=0.60),
-    # Desde 2026-10-13 el pod_boom es un fuselaje CONTINUO (ver
-    # BOUNDS_POD_BOOM): largo 0.90-2.20 m, boat-tail corto y que no cierra.
-    "pod_boom": dict(COLA_HV, fuselaje_largo=1.60, fuselaje_diametro=0.16,
-                     morro_largo_frac=0.20, boattail_largo_frac=0.22, boattail_radio_frac=0.45),
+    # pod_boom: góndola corta + viga (los valores originales de Felipe).
+    "pod_boom": dict(COLA_HV, fuselaje_largo=0.62, fuselaje_diametro=0.20,
+                     boom_largo=1.00, boom_diametro=0.050),
+    # fuselaje_continuo (familia propia desde 2026-10-21, ver
+    # BOUNDS_FUSELAJE_CONTINUO): largo 0.90-2.20 m, boat-tail corto que no cierra.
+    "fuselaje_continuo": dict(COLA_HV, fuselaje_largo=1.60, fuselaje_diametro=0.16,
+                              morro_largo_frac=0.20, boattail_largo_frac=0.22, boattail_radio_frac=0.45),
 }
 
 
@@ -136,9 +139,12 @@ EXTRA_B = {
                        boom_lateral_frac=0.40, boom_diametro=0.038, htail_cuerda=0.13,
                        htail_incidencia_deg=-1.0, vstab_altura=0.20, vstab_cuerda=0.13,
                        vstab_taper=0.55),
-    "pod_boom": dict(COLA_HV, fuselaje_largo=1.90, fuselaje_diametro=0.15,
-                     morro_largo_frac=0.25, boattail_largo_frac=0.18, boattail_radio_frac=0.40,
+    "pod_boom": dict(COLA_HV, fuselaje_largo=0.45, fuselaje_diametro=0.26,
+                     boom_largo=1.25, boom_diametro=0.042,
                      htail_span=0.55, htail_root_chord=0.17, cola_arm_frac=0.92),
+    "fuselaje_continuo": dict(COLA_HV, fuselaje_largo=1.90, fuselaje_diametro=0.15,
+                              morro_largo_frac=0.25, boattail_largo_frac=0.18, boattail_radio_frac=0.40,
+                              htail_span=0.55, htail_root_chord=0.17, cola_arm_frac=0.92),
 }
 
 

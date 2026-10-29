@@ -50,7 +50,7 @@ Para calibrar cuán exigente es: el **RQ-7B Shadow** tiene máxima/crucero = 1.5
 
 Con los interruptores de la sección 0 se suman el **viento de los sitios** (aire de 1.056 kg/m³, ráfaga de 4.63 m/s, turbulencia) y la **batería dimensionada por alcance** (350 km).
 
-## Las cinco topologías
+## Las seis topologías (familias)
 
 | topología | descripción | referencia real |
 |---|---|---|
@@ -58,7 +58,8 @@ Con los interruptores de la sección 0 se suman el **viento de los sitios** (air
 | `t_tail` | fuselaje + cola en T | planeadores; horizontal fuera del downwash |
 | `v_tail` | fuselaje + cola en V | familia MQ-1 Predator |
 | `doble_boom` | dos vigas + doble deriva | familia RQ-7 Shadow / ScanEagle |
-| `pod_boom` | fuselaje continuo: diámetro casi constante, afinado solo cerca de la cola (sin góndola ni viga fina) | fuselaje tubular de largo alcance |
+| `pod_boom` | motovelero: góndola corta + viga fina de cola + cola convencional | planeadores / motoveleros (Stemme S10, ASK 21) |
+| `fuselaje_continuo` | fuselaje continuo: diámetro casi constante, afinado solo cerca de la cola (sin góndola ni viga fina) | fuselaje tubular de largo alcance |
 
 **Un resultado teórico que conviene tener a la vista al leer los resultados:** McGeer & Kroo ([J. Aircraft 20(11), 1983](https://ntrs.nasa.gov/citations/19840028263)) muestran que a envergadura dada, y con las restricciones de trimado y estabilidad puestas, la configuración convencional con cola trasera está **muy cerca del óptimo**, y ni el canard ni el tándem la superan salvo casos marginales. O sea: no hay que esperar que una topología exótica gane por goleada. Lo que separa a los candidatos es resistencia parásita, peso estructural y CL_max. Por eso **no** se incluyeron canard ni box-wing: el canard limita el CL_max del ala principal justo cuando es el recurso más escaso, y el box-wing necesita una separación vertical que a 7 kg de construcción artesanal no paga.
 
@@ -122,7 +123,7 @@ Todo lo que se puede querer mover está en esta celda; hay que correrla **antes*
 |---|---|
 | `VIENTO` | `True`: la misión se evalúa con el aire y la ráfaga reales de los sitios (lo de imarzeniuk, `viento.py`). `False`: aire estándar y ráfaga de 3 m/s. |
 | `BATERIA` | `True`: la batería se dimensiona para el `ALCANCE_KM` a velocidad de crucero **todo el vuelo**, y su masa entra al peso del avión (`bateria.py`). `False`: vuelve el modelo viejo, con la batería dentro de `MASA_SISTEMAS = 1.5 kg`. |
-| `FAMILIAS` | Qué familias (topologías) se corren: una lista, por ejemplo `["pod_boom"]` o `["v_tail", "pod_boom"]`, o `"todas"`. Opciones: `convencional`, `t_tail`, `v_tail`, `doble_boom`, `pod_boom`. |
+| `FAMILIAS` | Qué familias (topologías) se corren: una lista, por ejemplo `["pod_boom"]` o `["v_tail", "pod_boom"]`, o `"todas"`. Opciones: `convencional`, `t_tail`, `v_tail`, `doble_boom`, `pod_boom` (góndola + viga), `fuselaje_continuo`. |
 | `CORRIDA_RAPIDA` | `True`: 8 generaciones de paciencia y máximo 20 (~15–30 min por familia). `False`: 10 / 60, puede tardar **horas** por familia, porque con batería cada candidato cuesta el doble. |
 | `GUARDAR_RESULTADOS` | `True`: al final (sección 11b) guarda tablas, gráficos, vistas 3D, líneas de flujo y desgloses en `<CARPETA_RESULTADOS>/<fecha>_<escenario>_<familias>/`. |
 | `CARPETA_RESULTADOS` | Dónde se guardan, **fuera del repositorio**. `None` = `Proyecto final/resultados_optimizador/` (al lado de `genetic_wing`); o cualquier ruta de la computadora. |
@@ -136,7 +137,8 @@ import optimizacion_avion.bateria as bat
 # ------------------------------ INTERRUPTORES ------------------------------
 VIENTO = True            # lo de imarzeniuk (viento de los sitios)
 BATERIA = True           # bateria dimensionada por alcance
-# Familias a correr: lista con cualquiera de convencional, t_tail, v_tail, doble_boom, pod_boom; o "todas"
+# Familias a correr: lista con cualquiera de convencional, t_tail, v_tail, doble_boom, pod_boom (gondola + viga),
+# fuselaje_continuo; o "todas"
 FAMILIAS = ["v_tail", "pod_boom"]
 CORRIDA_RAPIDA = True    # True: paciencia 8 / max 20 generaciones. False: 10 / 60 (horas)
 GUARDAR_RESULTADOS = True   # carpeta <CARPETA_RESULTADOS>/<fecha>_<escenario>_<familias>/ al final (seccion 11b)
@@ -408,7 +410,7 @@ print(av.tabla_resultados(estados))
 md(r"""
 ## 5. Convergencia comparada
 
-Las cinco curvas en los mismos ejes. Es la forma más directa de ver **si la diferencia final entre topologías es real o es ruido**. Si terminan todas pegadas y oscilando, la competencia no está resolviendo nada y hace falta más paciencia o más hijos por generación — que es un resultado legítimo de reportar, y además es lo que predice McGeer & Kroo (ver la introducción).
+Todas las curvas en los mismos ejes. Es la forma más directa de ver **si la diferencia final entre topologías es real o es ruido**. Si terminan todas pegadas y oscilando, la competencia no está resolviendo nada y hace falta más paciencia o más hijos por generación — que es un resultado legítimo de reportar, y además es lo que predice McGeer & Kroo (ver la introducción).
 """)
 
 code(r"""

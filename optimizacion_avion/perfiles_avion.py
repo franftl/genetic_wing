@@ -176,7 +176,13 @@ def perfil_con_flap(base: asb.Airfoil, deflexion_deg: float, cuerda_flap_frac: f
     # La bisagra va medida desde el borde de ataque: un flap del 25% de
     # cuerda tiene la bisagra al 75%.
     hinge = float(np.clip(1.0 - cuerda_flap_frac, 0.60, 0.92))
-    clave = (base.name, round(d, 1), round(hinge, 3))
+    # Se calcula con los valores YA REDONDEADOS de la clave. Antes se
+    # redondeaba la clave pero se calculaba con el valor exacto del primero que
+    # llegaba: dos flaps de 30.02 y 30.04 grados compartían el perfil del que se
+    # hubiera evaluado primero, y el resultado dependía del ORDEN de evaluación
+    # (corridas con el mismo azar daban distinto). Corregido 2026-10-21.
+    d, hinge = round(d, 1), round(hinge, 3)
+    clave = (base.name, d, hinge)
     if clave not in _cache_flap:
         _cache_flap[clave] = base.add_control_surface(deflection=d, hinge_point_x=hinge)
     return _cache_flap[clave]

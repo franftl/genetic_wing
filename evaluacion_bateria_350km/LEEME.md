@@ -67,7 +67,7 @@ Cambiar `CELDA_POR_DEFECTO` en `bateria.py` recalcula todo.
 
 ### Desde el notebook (lo más simple)
 
-Abrir la carpeta raíz del repo en VS Code y correr `Optimizador_V53.1.ipynb` de
+Abrir la carpeta raíz del repo en VS Code y correr `Optimizador_V54.2.ipynb` de
 arriba abajo. La sección **0. Interruptores** (celda nueva, justo después de los
 imports) tiene todo lo que se puede mover: `VIENTO`, `BATERIA`, `CORRIDA_RAPIDA`
 y los supuestos de la batería. Con `CORRIDA_RAPIDA = True` (por defecto) corre solo

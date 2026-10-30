@@ -1,50 +1,50 @@
 # Caso CFD - v_tail
 _Ala + fuselaje + cola en V_  |  escenario del modelo: viento ON, bateria ON
 
-STL en **mm**. Ejes: x hacia atras (del morro a la cola), y a la derecha, z hacia arriba.
+STL en **n/a**. Ejes: x hacia atras (del morro a la cola), y a la derecha, z hacia arriba.
 
 ## Condiciones de entrada
 - Velocidad: 22.22 m/s (80 km/h), Mach 0.066
 - rho = 1.0560 kg/m3, mu = 1.7433e-05 Pa.s, T = 278.7 K, p = 84476 Pa
-- Re (MAC) = 5.195e+05   q = 260.74 Pa
+- Re (MAC) = 6.356e+05   q = 260.74 Pa
 
 ## Referencias para los coeficientes
-- S_ref = 1.2134 m2, c_ref (MAC) = 0.3859 m, b = 3.361 m (AR 9.31)
-- Momentos respecto de xyz = [0.6343, 0.0, 0.0] m
-- Masa 11.64 kg, peso 114.2 N
+- S_ref = 1.2876 m2, c_ref (MAC) = 0.4722 m, b = 2.979 m (AR 6.89)
+- Momentos respecto de xyz = [0.4768, 0.0, 0.0] m
+- Masa 11.90 kg, peso 116.8 N
 
 ## Punto de calculo (crucero)
-- alpha del modelo = 1.213 deg  ->  CL objetivo = 0.3608
+- alpha del modelo = 1.307 deg  ->  CL objetivo = 0.3478
 - Ajustar alpha en el CFD hasta que CL coincida, y comparar CD a igual CL.
 
 ## Lo que predice el modelo (AeroBuildup) en ese punto
-- CL = 0.3610   CD = 0.01766   L/D = 20.44
-- D = 5.587 N  (perfil 3.852 N + inducido 1.735 N)
+- CL = 0.3479   CD = 0.01745   L/D = 19.94
+- D = 5.858 N  (perfil 3.840 N + inducido 2.019 N)
 
 ## Sustentacion y resistencia del modelo en funcion del angulo de ataque
 AeroBuildup a 22.22 m/s, mismas condiciones. Fuerzas del avion COMPLETO (si el CFD es medio modelo, comparar contra la mitad).
 
 | alpha [deg] | CL | CD | L [N] | D [N] | L/D | Cm |
 |---|---|---|---|---|---|---|
-| -4.00 | -0.1461 | 0.01754 | -46.2 | 5.55 | -8.3 | 0.0366 |
-| -2.00 | 0.0475 | 0.01390 | 15.0 | 4.40 | 3.4 | 0.0233 |
-| 0.00 | 0.2399 | 0.01475 | 75.9 | 4.67 | 16.3 | 0.0060 |
-| 1.21 | 0.3610 | 0.01766 | 114.2 | 5.59 | 20.4 | -0.0063 |  <- crucero
-| 2.00 | 0.4399 | 0.02041 | 139.2 | 6.46 | 21.6 | -0.0148 |
-| 4.00 | 0.6391 | 0.03004 | 202.2 | 9.51 | 21.3 | -0.0385 |
-| 6.00 | 0.8336 | 0.04316 | 263.8 | 13.65 | 19.3 | -0.0612 |
-| 8.00 | 1.0221 | 0.05948 | 323.4 | 18.82 | 17.2 | -0.0795 |
-| 10.00 | 1.2041 | 0.07887 | 381.0 | 24.95 | 15.3 | -0.0951 |
-| 12.00 | 1.3754 | 0.10073 | 435.2 | 31.87 | 13.7 | -0.1107 |
+| -4.00 | -0.1292 | 0.01535 | -43.4 | 5.15 | -8.4 | 0.0400 |
+| -2.00 | 0.0478 | 0.01283 | 16.1 | 4.31 | 3.7 | 0.0265 |
+| 0.00 | 0.2286 | 0.01419 | 76.7 | 4.76 | 16.1 | 0.0112 |
+| 1.31 | 0.3479 | 0.01745 | 116.8 | 5.86 | 19.9 | 0.0005 |  <- crucero
+| 2.00 | 0.4112 | 0.01993 | 138.1 | 6.69 | 20.6 | -0.0056 |
+| 4.00 | 0.5936 | 0.02968 | 199.3 | 9.97 | 20.0 | -0.0262 |
+| 6.00 | 0.7753 | 0.04302 | 260.3 | 14.44 | 18.0 | -0.0501 |
+| 8.00 | 0.9547 | 0.05981 | 320.5 | 20.08 | 16.0 | -0.0749 |
+| 10.00 | 1.1306 | 0.07988 | 379.6 | 26.82 | 14.2 | -0.0996 |
+| 12.00 | 1.2990 | 0.10271 | 436.1 | 34.48 | 12.6 | -0.1224 |
 
 ## Geometria exportada
 | Cuerpo | Triangulos | Area mojada [m2] | Volumen [L] | Cerrado |
 |---|---|---|---|---|
-| Ala principal | 4260 | 2.5504 | 39.63 | si |
-| Cola en V | 768 | 0.2743 | 1.41 | si |
-| Fuselaje | 1824 | 0.6390 | 19.97 | si |
+| Ala principal | 4648 | 2.7592 | 50.99 | si |
+| Cola en V | 768 | 0.2214 | 1.12 | si |
+| Fuselaje | 1824 | 0.5712 | 18.17 | si |
 
-Volumen de fuselaje segun el modelo: 20.03 L (debe coincidir con el volumen del cuerpo 'Fuselaje').
+Volumen de fuselaje segun el modelo: 18.22 L (debe coincidir con el volumen del cuerpo 'Fuselaje').
 
 ## Recordatorios
 - Los cuerpos se superponen: unir en el CAD o con el wrapper de Fluent Meshing.

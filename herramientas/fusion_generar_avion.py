@@ -34,8 +34,9 @@ COMO USARLO
 
 3. "Run", con un documento de Diseno abierto.
 
-El script busca el JSON en RUTA_JSON, despues al lado de si mismo; si no lo
-encuentra abre un dialogo para elegirlo.
+Por defecto (SIEMPRE_PREGUNTAR = True) abre siempre un dialogo para elegir el JSON y
+muestra cual modelo va a generar (topologia, envergadura, S, masa) antes de dibujarlo.
+Con SIEMPRE_PREGUNTAR = False busca en RUTA_JSON y despues al lado de si mismo.
 
 QUE DEJA EN EL DOCUMENTO (dentro de un componente "Avion optimizado")
   - Un sketch por seccion de cada superficie (spline cerrado del perfil, ya
@@ -103,6 +104,13 @@ import adsk.fusion
 RUTA_JSON = ""
 NOMBRE_JSON = "avion_geometry_cad.json"
 
+# True = SIEMPRE abre el dialogo para elegir el JSON (no usa ninguno que haya al lado del
+# script: asi nunca se genera sin querer un modelo viejo). False = comportamiento anterior:
+# RUTA_JSON, despues un JSON junto al script, y recien despues el dialogo.
+SIEMPRE_PREGUNTAR = True
+# Carpeta donde abre el dialogo ("" = la ultima que uso Fusion). Ej.: la carpeta results del repo.
+CARPETA_DIALOGO = ""
+
 # La API de Fusion trabaja SIEMPRE en CENTIMETROS, sin importar las unidades que
 # muestre la interfaz. El JSON viene en milimetros y la conversion pasa por
 # aca, una sola vez.
@@ -148,15 +156,18 @@ def _carpeta_de_este_script():
 
 def _ruta_json(ui):
     candidatos = []
-    if RUTA_JSON:
-        candidatos.append(RUTA_JSON if os.path.isabs(RUTA_JSON)
-                          else os.path.join(_carpeta_de_este_script(), RUTA_JSON))
-    candidatos.append(os.path.join(_carpeta_de_este_script(), NOMBRE_JSON))
+    if not SIEMPRE_PREGUNTAR:
+        if RUTA_JSON:
+            candidatos.append(RUTA_JSON if os.path.isabs(RUTA_JSON)
+                              else os.path.join(_carpeta_de_este_script(), RUTA_JSON))
+        candidatos.append(os.path.join(_carpeta_de_este_script(), NOMBRE_JSON))
     for c in candidatos:
         if os.path.exists(c):
             return c
 
     dialogo = ui.createFileDialog()
+    if CARPETA_DIALOGO and os.path.isdir(CARPETA_DIALOGO):
+        dialogo.initialDirectory = CARPETA_DIALOGO
     dialogo.title = "Elegi el JSON de geometria (avion_geometry_cad.json)"
     dialogo.filter = "JSON de geometria (*.json)"
     dialogo.isMultiSelectEnabled = False
@@ -857,6 +868,15 @@ def run(context):
                           "o un caso CFD.\n\nEl archivo que va aca es 'avion_geometry_cad.json' y se genera afuera de Fusion con:\n"
                           "    python herramientas/exportar_cad_avion.py --params resultados/avion_design_params_<top>.json --topologia <top>\n\n"
                           "Archivo elegido:\n%s" % ruta)
+            return
+
+        # Confirmacion: que se vea CUAL modelo se va a generar antes de dibujarlo.
+        resp = ui.messageBox(
+            "Voy a generar este modelo:\n\n%s\n\nTopologia: %s\nEnvergadura: %.0f mm\nSuperficie alar: %.3f m2\nMasa: %.2f kg"
+            % (ruta, meta.get("nombre_topologia", meta.get("topologia", "?")), meta.get("envergadura_mm", 0),
+               meta.get("superficie_m2", 0), meta.get("masa_kg", 0)),
+            "Generar avion", adsk.core.MessageBoxButtonTypes.OKCancelButtonType)
+        if resp != adsk.core.DialogResults.DialogOK:
             return
         if meta.get("unidades") != "mm":
             ui.messageBox("El JSON dice unidades '%s' y este script espera 'mm'. Aborto antes de "

@@ -1,7 +1,18 @@
 """Genera semillas válidas por topología: define una base común y afina
 numéricamente cg_frac_mac (margen estático en banda) e incidencia de cola
-(Cm en crucero ~ 0). Los valores que salen de acá se fijan en competencia.py."""
-import json, sys
+(Cm en crucero ~ 0).
+
+    python -m optimizacion_avion.gen_semillas [topologias...] [--salida X.json]
+
+Escribe `semillas_out.json` (por defecto) y NO pisa `optimizacion_avion/
+semillas.json`: revisar la salida y copiarla a mano. Las semillas se afinan
+con los interruptores de `mision_avion` tal como estén (VIENTO_ACTIVO,
+BATERIA_ACTIVA): para las semillas "de Felipe" correr con los dos en False.
+
+Con mision_avion.TRIM_RESUELTO = True (por defecto desde V51.2) la incidencia
+de cola la resuelve la misión, así que el segundo paso de `afinar` (bisección
+de la incidencia) ya no cambia nada: queda para TRIM_RESUELTO = False."""
+import argparse, json, sys
 from optimizacion_avion.geometria_avion import (
     TOPOLOGIAS, BOUNDS_POR_TOPOLOGIA, clamp_to_bounds_avion, SM_BANDS)
 from optimizacion_avion.mision_avion import analizar_mision_avion, evaluar_mision_avion
@@ -38,8 +49,13 @@ EXTRA = {
                        boom_lateral_frac=0.30, boom_diametro=0.045, htail_cuerda=0.18,
                        htail_incidencia_deg=-1.0, vstab_altura=0.25, vstab_cuerda=0.18,
                        vstab_taper=0.60),
+    # pod_boom: góndola corta + viga (los valores originales de Felipe).
     "pod_boom": dict(COLA_HV, fuselaje_largo=0.62, fuselaje_diametro=0.20,
                      boom_largo=1.00, boom_diametro=0.050),
+    # fuselaje_continuo (familia propia desde 2026-10-21, ver
+    # BOUNDS_FUSELAJE_CONTINUO): largo 0.90-2.20 m, boat-tail corto que no cierra.
+    "fuselaje_continuo": dict(COLA_HV, fuselaje_largo=1.60, fuselaje_diametro=0.16,
+                              morro_largo_frac=0.20, boattail_largo_frac=0.22, boattail_radio_frac=0.45),
 }
 
 
@@ -53,32 +69,36 @@ def afinar(t, base, n=16):
     obj = 0.5 * (lo_sm + hi_sm)
     lo, hi = BOUNDS_POR_TOPOLOGIA[t]["cg_frac_mac"]
     mid = 0.5 * (lo + hi)
+    ultimo_valido = None       # se devuelve el último punto VÁLIDO, no el último probado
     for _ in range(n):
         mid = 0.5 * (lo + hi)
         a = analizar_mision_avion(clamp_to_bounds_avion({**base, "cg_frac_mac": mid}, t), t)
         if a is None:
             hi = mid           # inválido hacia atrás -> el CG se fue muy atrás
             continue
+        ultimo_valido = mid
         if a["SM"] > obj:
             lo = mid
         else:
             hi = mid
-    base = {**base, "cg_frac_mac": mid}
+    base = {**base, "cg_frac_mac": ultimo_valido if ultimo_valido is not None else mid}
 
     clave = "v_tail_incidencia_deg" if t == "v_tail" else "htail_incidencia_deg"
     lo_i, hi_i = BOUNDS_POR_TOPOLOGIA[t][clave]
     mid_i = 0.5 * (lo_i + hi_i)
+    ultimo_valido = None
     for _ in range(n):
         mid_i = 0.5 * (lo_i + hi_i)
         a = analizar_mision_avion(clamp_to_bounds_avion({**base, clave: mid_i}, t), t)
         if a is None:
             hi_i = mid_i
             continue
+        ultimo_valido = mid_i
         if a["Cm_crucero"] > 0:
             lo_i = mid_i       # falta picada -> subir incidencia
         else:
             hi_i = mid_i
-    return clamp_to_bounds_avion({**base, clave: mid_i}, t)
+    return clamp_to_bounds_avion({**base, clave: ultimo_valido if ultimo_valido is not None else mid_i}, t)
 
 
 # Segunda semilla: ala MÁS CHICA y más esbelta, compensada con más flap.
@@ -122,11 +142,18 @@ EXTRA_B = {
     "pod_boom": dict(COLA_HV, fuselaje_largo=0.45, fuselaje_diametro=0.26,
                      boom_largo=1.25, boom_diametro=0.042,
                      htail_span=0.55, htail_root_chord=0.17, cola_arm_frac=0.92),
+    "fuselaje_continuo": dict(COLA_HV, fuselaje_largo=1.90, fuselaje_diametro=0.15,
+                              morro_largo_frac=0.25, boattail_largo_frac=0.18, boattail_radio_frac=0.40,
+                              htail_span=0.55, htail_root_chord=0.17, cola_arm_frac=0.92),
 }
 
 
 if __name__ == "__main__":
-    solo = sys.argv[1:] or list(TOPOLOGIAS)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("topologias", nargs="*", default=list(TOPOLOGIAS))
+    ap.add_argument("--salida", default="semillas_out.json")
+    args = ap.parse_args()
+    solo = args.topologias
     out = {}
     for t in solo:
         out[t] = []
@@ -142,6 +169,6 @@ if __name__ == "__main__":
                       f"Cm={a['Cm_crucero']:+.4f} L/D={a['LD_crucero']:5.2f} "
                       f"b={a['envergadura']:.2f} S={a['S']:.3f} vstall={a['v_stall']:.2f} "
                       f"V_H={a['V_H']:.2f} m={a['masa_total']:.2f}kg")
-    with open("semillas_out.json", "w") as f:
+    with open(args.salida, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=1)
-    print("-> semillas_out.json")
+    print(f"-> {args.salida}  (revisar y copiar a optimizacion_avion/semillas.json si corresponde)")

@@ -67,14 +67,14 @@ Cambiar `CELDA_POR_DEFECTO` en `bateria.py` recalcula todo.
 
 ### Desde el notebook (lo más simple)
 
-Abrir la carpeta raíz del repo en VS Code y correr `Optimizador_V52.ipynb` de
+Abrir la carpeta raíz del repo en VS Code y correr `Optimizador_V54.2.ipynb` de
 arriba abajo. La sección **0. Interruptores** (celda nueva, justo después de los
 imports) tiene todo lo que se puede mover: `VIENTO`, `BATERIA`, `CORRIDA_RAPIDA`
 y los supuestos de la batería. Con `CORRIDA_RAPIDA = True` (por defecto) corre solo
-v_tail y pod_boom, 12 generaciones como máximo. Con `False`, la competencia completa
-(horas). La sección 6 muestra una única tabla con la geometría del ganador (incluye masa, pack,
-alcance y corriente de despegue) y la 7 los gráficos de vuelo lento con y sin flap.
-El notebook se genera con `herramientas/construir_notebook_avion.py`; si se quiere cambiar una
+v_tail y pod_boom, 20 generaciones como máximo (paciencia 8). Con `False`, la competencia completa
+(horas). La sección 6 suma una tabla de batería por ganador y la 7 muestra el desglose
+completo (masa, pack, alcance, corriente de despegue).
+El notebook se genera con `construir_notebook_avion.py`; si se quiere cambiar una
 celda hay que cambiarla ahí (si no, la próxima regeneración la pisa).
 
 ### Desde la terminal

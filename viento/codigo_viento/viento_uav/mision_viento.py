@@ -14,7 +14,16 @@ from __future__ import annotations
 import numpy as np
 
 G = 9.80665
-RHO_0 = 1.225   # densidad que usa hoy el optimizador (asb.Atmosphere(altitude=0))
+# Densidad a nivel del mar: la que usa el optimizador con VIENTO_ACTIVO = False.
+# Los análisis hechos CON viento guardan su propia densidad en analisis["rho"]
+# (1.056); las funciones de abajo usan esa si está (ver _rho_del_analisis).
+RHO_0 = 1.225
+
+
+def _rho_del_analisis(analisis: dict) -> float:
+    """Densidad con la que se calculó el análisis: analisis["rho"] si existe
+    (análisis de 2026-10 en adelante), si no 1.225 (corridas sin viento)."""
+    return float(analisis.get("rho", RHO_0))
 
 
 # ---------------------------------------------------------------------------
@@ -117,20 +126,25 @@ def chequeo_rafaga(W: float, S: float, c_media: float, CL_alpha_por_grado: float
 
 def chequeo_rafaga_desde_analisis(analisis: dict, ficha, V: float | None = None,
                                   criterio: str = "diseno", punto: str = "crucero") -> dict:
-    """Atajo para el dict 'analisis' que guarda optimizacion_avion (ganadores.json).
+    """Atajo para el dict 'analisis' que guarda optimizacion_avion (ganadores.json
+    o ganadores_viento.json).
 
     punto: 'crucero' (V_CRUCERO, CL_max limpio) o 'vmax' (V_MAX, CL_max limpio).
-    Usa la densidad de diseño del sitio y la ráfaga del criterio elegido.
+    Usa la densidad de diseño del sitio y la ráfaga del criterio elegido. Si no
+    se pasa V, se despeja del CL del análisis con la densidad CON LA QUE SE
+    HIZO ese análisis (antes se suponía siempre 1.225, y con un análisis hecho
+    con viento daba una V ~7 % más baja).
     """
     a = analisis
+    rho_a = _rho_del_analisis(a)
     if punto == "crucero":
         CL_max = a["CL_max_crucero"]
         if V is None:
-            V = (2 * a["peso"] / (RHO_0 * a["S"] * a["CL_crucero"])) ** 0.5
+            V = (2 * a["peso"] / (rho_a * a["S"] * a["CL_crucero"])) ** 0.5
     elif punto == "vmax":
         CL_max = a["CL_max_vmax"]
         if V is None:
-            V = (2 * a["peso"] / (RHO_0 * a["S"] * a["CL_vmax"])) ** 0.5
+            V = (2 * a["peso"] / (rho_a * a["S"] * a["CL_vmax"])) ** 0.5
     else:
         raise ValueError("punto debe ser 'crucero' o 'vmax'")
     return chequeo_rafaga(W=a["peso"], S=a["S"], c_media=a["MAC"],
@@ -139,6 +153,7 @@ def chequeo_rafaga_desde_analisis(analisis: dict, ficha, V: float | None = None,
 
 
 def CL_crucero_en_sitio(analisis: dict, ficha) -> float:
-    """El optimizador calcula CL de crucero con rho = 1.225. En el sitio, con
-    aire más liviano, el ala tiene que trabajar a un CL mayor."""
-    return float(analisis["CL_crucero"] * RHO_0 / ficha.rho_diseno)
+    """CL de crucero con la densidad de diseño del sitio. El análisis puede
+    venir a 1.225 (sin viento) o ya a la densidad del sitio (con viento): se
+    reescala desde la densidad con la que se hizo, así no se aplica dos veces."""
+    return float(analisis["CL_crucero"] * _rho_del_analisis(analisis) / ficha.rho_diseno)

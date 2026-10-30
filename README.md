@@ -2,6 +2,12 @@
 
 Proyecto Final de Ingeniería Mecánica, ITBA — Felipe.
 
+> **Para empezar rápido (y para Claude):** el estado ACTUAL del proyecto — misión, cómo se puntúa,
+> mapa del código, cómo correrlo, reglas y decisiones pendientes — está resumido en
+> [`CLAUDE.md`](CLAUDE.md). Claude Code lo lee solo al abrir el repo. Los cambios versión por
+> versión, en [`VERSIONES.md`](VERSIONES.md). Este README es el informe largo; partes (como la §7)
+> describen el modelo del 18/09 y quedan como historia.
+
 Este README es la versión Markdown del informe de arquitectura del proyecto (también disponible en LaTeX/PDF en [`documentos_de_decision/informe_desarrollo.pdf`](documentos_de_decision/informe_desarrollo.pdf) / [`.tex`](documentos_de_decision/informe_desarrollo.tex)): qué hace cada módulo del paquete `optimizacion_avion`, cómo se traducen los requisitos de vuelo y estabilidad en restricciones y términos de puntaje, por qué se tomaron las decisiones de parametrización (winglets, volumen mínimo de fuselaje, misión de tres puntos de vuelo), dónde se cambia cada parámetro, y los resultados de la última corrida de la competencia entre cinco topologías (18 de septiembre de 2026), con las curvas de convergencia del algoritmo genético.
 
 ## Estructura del repositorio
@@ -40,13 +46,13 @@ El problema es optimizar un UAV de ala fija con motor eléctrico, capaz de:
 
 - volar en **crucero de diseño a 80 km/h** (22.2 m/s) con 3.0 kg de carga útil — éste es el punto donde se optimizan eficiencia aerodinámica, estabilidad estática y margen de ráfaga;
 - alcanzar una **velocidad máxima de 120 km/h** (33.3 m/s), como requisito de reserva frente a viento y ráfagas — entra como restricción dura y como término adicional de puntaje, pero *ya no es el punto de diseño*;
-- volar **lento, a 10 m/s**, para reconocimiento, despegue y aterrizaje, con margen del 20% sobre la velocidad de pérdida.
+- volar **lento, a 10 m/s**, para reconocimiento, despegue y aterrizaje. La restricción dura es $v_{stall} < 10$ m/s; el margen del 20 % sobre la pérdida ($v_{stall} \le 8.33$ m/s) es un **objetivo que puntúa**, no una restricción (ver §3.1).
 
 Estos tres puntos de vuelo compiten entre sí: crucero eficiente pide ala chica y perfiles de poco camber, vuelo lento pide ala grande y perfiles de alta sustentación (o flaps), y velocidad máxima pide baja resistencia de perfil a bajo $C_L$.
 
 La misión bajó de crucero a 120 km/h a 80 km/h el 18/09/2026 tras un análisis de alcance con batería (ver [Research Note 15](<documentos_de_decision/Research Note 15 - Winglets, volumen de fuselaje y replanteo de la mision (2026-09-18).md>)): pedir 300 km de autonomía volando a 120 km/h exige cerca de 8.6 kg de batería sobre un avión de ~7 kg en seco, porque el alcance eléctrico R = Eη/D se maximiza a resistencia mínima, que para este avión cae cerca de 70–80 km/h y no a 120. El requisito de 120 km/h no se eliminó: se reclasificó como velocidad máxima.
 
-**Viento de los sitios (2026-10-02).** Con `VIENTO_ACTIVO = True` en `mision_avion.py`, la misión se evalúa con el aire y la ráfaga reales del peor caso de los dos sitios candidatos (densidad 1.056 kg/m³ y ráfaga de 4.63 m/s, en vez de 1.225 kg/m³ y 3 m/s), y se suma un término de eficiencia en turbulencia. Con `False` todo da exactamente lo mismo que antes. Detalle y resultados en la [Research Note 16](<documentos_de_decision/Research Note 16 - Viento de los sitios en la optimizacion (2026-10-02).md>); datos de viento en `viento/`.
+**Viento de los sitios (2026-10-02).** Con `VIENTO_ACTIVO = True` en `mision_avion.py`, la misión se evalúa con el aire y la ráfaga reales del peor caso de los dos sitios candidatos (densidad 1.056 kg/m³ y ráfaga de 4.63 m/s, en vez de 1.225 kg/m³ y 3 m/s), y se suma un término de eficiencia en turbulencia. Con `False` el viento no interviene en nada. Desde el 19/10/2026 la ráfaga del sitio se compara contra la carga **límite** (`N_RAFAGA_ADMISIBLE = N_LIMITE = 3.0`), no contra la última. Detalle y resultados en la [Research Note 16](<documentos_de_decision/Research Note 16 - Viento de los sitios en la optimizacion (2026-10-02).md>); datos de viento en `viento/`.
 
 ## 2. Arquitectura del software
 
@@ -55,16 +61,18 @@ La misión bajó de crucero a 120 km/h a 80 km/h el 18/09/2026 tras un análisis
 | Módulo | Responsabilidad |
 |---|---|
 | `perfiles_avion.py` | Catálogo de 19 perfiles aerodinámicos (índices 0–11 = catálogo del ala volante, sin reordenar; 12–18 = perfiles nuevos de alta sustentación). Carga y mezcla perfiles reales de la base UIUC vía AeroSandbox, y modela el flap deflectando el contorno del perfil (no por tabla). |
-| `geometria_avion.py` | Define las 5 topologías (`TOPOLOGIAS`), sus `BOUNDS` de diseño, construye la geometría 3D (`construir_avion`) como un `asb.Airplane`: ala de 5 estaciones con winglets, fuselaje con morro/boat-tail de forma libre, colas (convencional, T, V, doble boom). Calcula diagnósticos: volumen de cola, geometría del flap. |
+| `geometria_avion.py` | Define las topologías (6 desde V54: las 5 de abajo + `fuselaje_continuo`) (`TOPOLOGIAS`), sus `BOUNDS` de diseño, construye la geometría 3D (`construir_avion`) como un `asb.Airplane`: ala de 5 estaciones de control (interpoladas con PCHIP a 11 secciones, `interp_estaciones`, la misma forma que usan estructura y flap) con winglets, fuselaje con morro/boat-tail de forma libre, colas (convencional, T, V, doble boom). Calcula diagnósticos: volumen de cola, geometría del flap. |
 | `estructura_avion.py` | Modelo de masa: larguero del ala dimensionado por flexión *y* rigidez sobre la distribución real de cuerdas, piel, winglets, mecanismo de flap, cola, fuselaje, vigas de boom. Resuelve por punto fijo la circularidad masa↔carga (`converger_masa_avion`). |
 | `mision_avion.py` | El corazón del problema de optimización: evalúa los tres puntos de vuelo, las restricciones duras (estructura, volumen de fuselaje, vuelo a $V_{max}$, vuelo lento, estabilidad, ráfaga) y arma el puntaje escalar que ve el GA (`evaluar_mision_avion`). |
 | `ga_numerico_avion.py` | Operadores genéticos: cruza BLX-α entre dos padres, mutación gaussiana, individuos *wildcard* (muestreo uniforme). Genera la lista de hijos de una generación. |
 | `evolucion_avion.py` | Bucle evolutivo de *una* topología: mantiene el estado (2 padres elite, generación, racha sin mejora), corre generaciones, guarda/carga checkpoints, decide cuándo parar. |
-| `competencia.py` | Orquesta la competencia entre las 5 topologías: corre cada una con su propia subpoblación (nunca se cruzan entre sí, ver §5.3), y compara los puntajes finales. Contiene las semillas (`SEEDS_POR_TOPOLOGIA`, cargadas de `semillas.json`). |
-| `gen_semillas.py` | Script standalone que *genera* `semillas.json`: define una base de diseño razonable a mano por topología y afina numéricamente por bisección el CG (margen estático objetivo) y la incidencia de cola (trim). Se corre una sola vez por revisión de misión/geometría, no en cada optimización. |
-| `manufactura.py` | Restricciones de manufacturabilidad: borde de fuga de 2 mm en todas las superficies y nariz sin punta (cara plana de 5 mm). Se aplican en `construir_avion`, así que las ven el optimizador, el CAD y el CFD. |
-| `bateria.py` | Dimensionamiento de la batería por alcance (350 km), pack y consumo de despegue. |
-| `graficos_avion.py` | Gráficos de vuelo lento (sustentación vs ángulo de ataque con y sin flap, velocidades de pérdida y de despegue) y la tabla única de la geometría ganadora. |
+| `competencia.py` | Orquesta la competencia entre las topologías: corre cada una con su propia subpoblación (nunca se cruzan entre sí, ver §5.3), y compara los puntajes finales. Elige las semillas según el escenario (`semillas_para_escenario`: batería → `semillas_bateria.json`; viento → ganadores con y sin viento; ninguno → `semillas.json`). |
+| `bateria.py` | Batería dimensionada por alcance (350 km) con `BATERIA_ACTIVA`. |
+| `viento.py` | Viento de los sitios (densidad, ráfaga, turbulencia de Dryden) con `VIENTO_ACTIVO`. |
+| `manufactura.py` | Restricciones de fabricación aplicadas en `construir_avion`: borde de fuga de 2 mm y nariz roma. |
+| `xflr5.py` | Exporta un avión a XFLR5 v6 (XML del avión trimado, perfiles `.dat`, condiciones de crucero). También `exportar_xflr5_avion.py` y la carpeta `xflr5/` de cada corrida. |
+| `resultados.py` | Guarda cada corrida en `<CARPETA_RESULTADOS>/<fecha>_<escenario>_<familias>/`, **fuera del repositorio** (por defecto `Proyecto final/resultados_optimizador/`, o la variable de entorno `UAV_RESULTADOS`): tablas, gráficos, vistas 3D, líneas de flujo y desgloses. La nomenclatura está en el `LEEME.md` de esa carpeta. |
+| `gen_semillas.py` | Script standalone que *genera* las semillas de `semillas.json` (escribe `semillas_out.json`, que se revisa y se copia): define una base de diseño razonable a mano por topología y afina numéricamente por bisección el CG (margen estático objetivo) y la incidencia de cola (trim). Se corre una sola vez por revisión de misión/geometría, no en cada optimización. |
 | `__init__.py` | Re-exporta la API pública del paquete; es lo único que el notebook necesita importar. |
 
 ### 2.2 Flujo de datos
@@ -92,7 +100,7 @@ Un candidato es un diccionario de parámetros (`params`) más la topología a la
 |---|---|---|
 | Crucero de diseño, 80 km/h | `V_CRUCERO = 80/3.6` | Punto donde se calculan $C_L$, $C_D$, $L/D$, derivadas de estabilidad ($C_{m_\alpha}$, margen estático), trim ($C_{m,crucero}$) y respuesta a ráfaga. Domina el puntaje vía `PESO_EFICIENCIA=1.0` sobre $f_{ef} = D_{REF}/D_{crucero}$. |
 | Velocidad máxima, 120 km/h | `V_MAX = 120/3.6` | Restricción dura: si el $C_L$ requerido en $V_{max}$ ≥ $C_{L,max}$ a ese Reynolds, el candidato se descarta (no se sostiene). Además puntúa con `PESO_VELMAX=0.5` sobre $f_{vm} = D_{REF\_VMAX}/D_{vmax}$ — la mitad del peso del crucero, porque es un requisito de reserva, no el régimen habitual de vuelo. |
-| Vuelo lento, 10 m/s | `V_LENTO = 10.0` | Restricción dura: la velocidad de pérdida con flap desplegado tiene que ser < `V_LENTO`. Puntúa el margen *sobre* el objetivo (no solo el paso/no-paso) con `PESO_LENTO=1.0`, para que el optimizador no se quede pegado al borde de la restricción. |
+| Vuelo lento, 10 m/s | `V_LENTO = 10.0` | Restricción dura: la velocidad de pérdida con flap desplegado tiene que ser < `V_LENTO`. Puntúa el margen hasta el objetivo `V_STALL_OBJETIVO = V_LENTO/1.20 = 8.33 m/s` con `PESO_LENTO=1.0` (el término llega a 1 justo en el objetivo); el 20 % **no** es restricción dura. |
 
 ### 3.2 Restricciones duras (descartan el candidato, no puntúan)
 
@@ -102,9 +110,11 @@ Un candidato es un diccionario de parámetros (`params`) más la topología a la
 - **Margen estático negativo** ($SM = -dC_m/dC_L \leq 0$): el avión sería inestable en cabeceo.
 - **$C_{n_\beta} \leq 0$ o $C_{l_\beta} \geq 0$**: inestabilidad direccional o lateral.
 - **Entra en pérdida con la ráfaga de diseño** (3.0 m/s vertical; 4.63 m/s con viento del sitio) en crucero.
-- **Con viento del sitio: la ráfaga supera la carga última** ($n > N_{ULTIMO} = 4.5$).
+- **Con viento del sitio: la ráfaga supera la carga límite** ($n > N_{RAFAGA\_ADMISIBLE} = N_{LIMITE} = 3.0$; hasta el 19/10/2026 se comparaba contra la última, 4.5, que no dejaba coeficiente de seguridad).
 
 ### 3.3 Puntaje (término suave, pondera candidatos válidos entre sí)
+
+> **Desde V51.2 (19/10/2026)** el puntaje por defecto es `PUNTAJE_MODO = "mision"`: **un objetivo**, la energía de batería para volar el alcance ($1.0 \cdot E_{ref}/E$, con $E_{ref}$ = 1200 Wh; con batería activa incluye el peso de la propia batería), más los requisitos de estabilidad y margen de pérdida como **restricciones pasa/no pasa** (banda de SM, margen de pérdida ≥ 20 %, $C_{n\beta} \ge 0.0005$/grado, $C_{l\beta} \le -0.0005$/grado), y **trim resuelto**: la incidencia de cola se calcula para $C_m = 0$ en crucero (`TRIM_RESUELTO`). Quedan como términos *pendientes de decisión* el vuelo lento (1.0) y la velocidad máxima (0.5). Desde el 19/10 la envergadura es un requisito: **total ≤ 3.0 m con winglets** (`ENVERGADURA_MAX_M`), porque el vuelo BVLOS en Argentina cae en la categoría Específica de ANAC, que pide una evaluación de riesgo tipo SORA, y en SORA pasar de 3 m sube un escalón el riesgo en tierra. Desde V51.3 los infactibles no valen −inf sino que se ordenan por cuánto violan las restricciones (reglas de Deb), así el GA puede llegar a la zona factible aunque arranque fuera. El motivo está en el encabezado de `mision_avion.py` ("PUNTAJE POR MISIÓN"). La tabla de abajo es el modo `"legado"`, que se conserva para comparar:
 
 score = Σᵢ wᵢ·fᵢ, con fᵢ ∈ [0, ~1]:
 
@@ -148,7 +158,7 @@ Los pesos de estabilidad (1.5) y vuelo lento (1.0) son los más altos a propósi
 | Semillas de partida (dos por topología) | `gen_semillas.py` | diccionarios `BASE`/`BASE_B` y `EXTRA`/`EXTRA_B`; correr el script después para regenerar `semillas.json` |
 | Parámetros del GA (tamaño de camada, paciencia, generaciones) | `competencia.py` / llamada a `correr_competencia` | argumentos `n_crossbred`, `n_wildcard`, `paciencia`, `max_generaciones` |
 
-> **Importante**: cualquier cambio en `BOUNDS_*` o en la misión (velocidades, restricción de volumen) puede volver inválidas las semillas actuales. El procedimiento correcto es correr `python -m optimizacion_avion.gen_semillas` para regenerar `semillas.json` *antes* de lanzar una competencia nueva — así se hizo el 18/09/2026 al bajar el crucero a 80 km/h y agregar la restricción de volumen.
+> **Importante**: cualquier cambio en `BOUNDS_*` o en la misión (velocidades, restricción de volumen) puede volver inválidas las semillas actuales. El procedimiento correcto es correr `python -m optimizacion_avion.gen_semillas` (escribe `semillas_out.json`; revisarlo y copiarlo sobre `optimizacion_avion/semillas.json`) *antes* de lanzar una competencia nueva. Con batería o viento las semillas son otras: ver `competencia.semillas_para_escenario` y la biblioteca `semillas/` — así se hizo el 18/09/2026 al bajar el crucero a 80 km/h y agregar la restricción de volumen.
 
 ## 5. El algoritmo genético
 
@@ -206,6 +216,8 @@ El incremento de $C_{L,max}$ por flap no se toma de tabla (Raymer/Roskam: plain 
 Se agregaron 7 perfiles de alta sustentación (naca4412, naca6412, sd7062, fx63137, e423, s1210, s1223) al final del catálogo existente, sin reordenar los 12 originales (reordenar cambiaría el significado de índices ya usados). El s1223, el de mayor $C_{L,max}$ del catálogo, está caracterizado específicamente para bajo Reynolds por Guglielmo & Selig [11].
 
 ## 7. Resultados de la corrida del 18 de septiembre de 2026
+
+> **Ojo:** estos resultados son **anteriores** a la penalización de envergadura (28/09), al viento (02/10), a la batería (12/10), al pod_boom continuo (13/10), a las restricciones de manufactura de V51 y a las correcciones de V51.1. Con el modelo actual los mismos diseños dan otro puntaje; sirven como referencia histórica, no como el resultado vigente.
 
 Corrida completa de las 5 topologías bajo la misión de tres puntos de vuelo (crucero 80 km/h, máxima 120 km/h, lento 10 m/s) y la restricción de volumen de fuselaje, con `paciencia=8`, `max_generaciones=35`. Tiempo total: 1030 s. Geometrías completas en [`optimizacion_avion/ganadores.json`](optimizacion_avion/ganadores.json).
 

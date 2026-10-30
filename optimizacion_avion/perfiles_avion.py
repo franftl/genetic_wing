@@ -55,8 +55,8 @@ constraint es el vuelo lento.
   18   s1223     -0.2675     12.1%     91.5     2.237       2.236
 
 LO QUE ESTA TABLA NO DICE, Y HAY QUE TENER PRESENTE: el "L/D max" de los
-perfiles nuevos es altísimo, pero ocurre a CL ALTO. En crucero a 120 km/h
-el CL del ala es del orden de 0.1-0.3, y ahí un perfil muy cambado como el
+perfiles nuevos es altísimo, pero ocurre a CL ALTO. En crucero (80 km/h de
+diseño, 120 km/h de máxima) el CL del ala es del orden de 0.1-0.4, y ahí un perfil muy cambado como el
 s1223 es un mal negocio (mucha resistencia de perfil y un Cm0 que hay que
 trimar con la cola, lo que cuesta más resistencia todavía). Por eso NO hay
 que leer esta tabla como "los de abajo son mejores": son mejores PARA VOLAR
@@ -168,7 +168,7 @@ def perfil_con_flap(base: asb.Airfoil, deflexion_deg: float, cuerda_flap_frac: f
     tiene física adicional (la ranura reenergiza la capa límite, el Fowler
     además agranda la superficie) que una deflexión de contorno NO captura.
     Por eso el modelo ofrece solo flap plain, que además es el realista
-    para construcción artesanal -- ver `FLAP_TIPOS` en `geometria_avion.py`.
+    para construcción artesanal -- ver el bloque FLAPS en `geometria_avion.py`.
     """
     d = float(deflexion_deg)
     if abs(d) < 0.1:
@@ -176,7 +176,13 @@ def perfil_con_flap(base: asb.Airfoil, deflexion_deg: float, cuerda_flap_frac: f
     # La bisagra va medida desde el borde de ataque: un flap del 25% de
     # cuerda tiene la bisagra al 75%.
     hinge = float(np.clip(1.0 - cuerda_flap_frac, 0.60, 0.92))
-    clave = (base.name, round(d, 1), round(hinge, 3))
+    # Se calcula con los valores YA REDONDEADOS de la clave. Antes se
+    # redondeaba la clave pero se calculaba con el valor exacto del primero que
+    # llegaba: dos flaps de 30.02 y 30.04 grados compartían el perfil del que se
+    # hubiera evaluado primero, y el resultado dependía del ORDEN de evaluación
+    # (corridas con el mismo azar daban distinto). Corregido 2026-10-21.
+    d, hinge = round(d, 1), round(hinge, 3)
+    clave = (base.name, d, hinge)
     if clave not in _cache_flap:
         _cache_flap[clave] = base.add_control_surface(deflection=d, hinge_point_x=hinge)
     return _cache_flap[clave]

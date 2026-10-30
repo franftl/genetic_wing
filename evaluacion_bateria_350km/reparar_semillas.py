@@ -9,8 +9,11 @@ agranda el fuselaje hasta que el volumen alcance y, si hace falta, escala el
 ala hasta que vuele a 10 m/s. No optimiza nada: solo deja un punto de partida
 que el GA pueda evaluar.
 
-    python evaluacion_bateria_350km/reparar_semillas.py [ganadores.json]
-Salida: evaluacion_bateria_350km/semillas_bateria.json
+    python evaluacion_bateria_350km/reparar_semillas.py [topologias...]
+Parte de optimizacion_avion/ganadores_viento.json y ganadores.json (ver BASES).
+Salida: evaluacion_bateria_350km/semillas_bateria.json (solo se reemplazan las
+topologías pedidas; las demás quedan como estaban). Después copiarlo a
+semillas/bateria_350km.json para que la biblioteca de semillas quede al día.
 """
 from __future__ import annotations
 
@@ -47,7 +50,7 @@ def reparar(params: dict, top: str, verbose: bool = True):
                     r[c] = q[c] * k
                 r = clamp_to_bounds_avion(r, top)
                 s = ma.evaluar_mision_avion(r, top)
-                if s > float("-inf"):
+                if ma.es_factible(s):
                     if verbose:
                         print(f"  [{top}] valida con fuselaje {r['fuselaje_largo']:.2f}x{r['fuselaje_diametro']:.2f}, "
                               f"cuerdas x{k:.2f}, score {s:.3f}", flush=True)
@@ -71,7 +74,7 @@ def reparar_con_afinado(params: dict, top: str, verbose: bool = True):
         s = ma.evaluar_mision_avion(r, top)
         if verbose:
             print(f"  [{top}] afinado con cuerdas x{k:.2f}: score {s:.3f}", flush=True)
-        if s > float("-inf"):
+        if ma.es_factible(s):
             return r, s
     return None, None
 
@@ -91,13 +94,13 @@ def variante(semilla_a: dict, top: str):
         q["flap_defl_deg"] = semilla_a["flap_defl_deg"] + dflap
         q["fuselaje_largo"] = semilla_a["fuselaje_largo"] * dlar
         q = clamp_to_bounds_avion(q, top)
-        if ma.evaluar_mision_avion(q, top) > float("-inf"):
+        if ma.es_factible(ma.evaluar_mision_avion(q, top)):
             return q
     return None
 
 
 def reparar_base(top: str, ruta: Path):
-    g = json.load(open(ruta))
+    g = json.loads(ruta.read_text(encoding="utf-8"))
     r, s = reparar(g[top]["params"], top)
     if r is None:
         r, s = reparar_con_afinado(g[top]["params"], top)
@@ -110,7 +113,7 @@ if __name__ == "__main__":
     # ganadores con viento y la otra de los ganadores sin viento.
     args = sys.argv[1:]
     solo = [a for a in args if a in TOPOLOGIAS]
-    out = json.load(open(SALIDA)) if SALIDA.exists() else {}
+    out = json.loads(SALIDA.read_text(encoding="utf-8")) if SALIDA.exists() else {}
     for top in (solo or list(TOPOLOGIAS)):
         lista = []
         for ruta in BASES:
@@ -125,5 +128,5 @@ if __name__ == "__main__":
                 print(f"  [{top}] segunda semilla = variante de la primera")
                 lista.append(v)
         out[top] = lista
-        json.dump(out, open(SALIDA, "w"), indent=1)
+        SALIDA.write_text(json.dumps(out, indent=1), encoding="utf-8")
     print("->", SALIDA)

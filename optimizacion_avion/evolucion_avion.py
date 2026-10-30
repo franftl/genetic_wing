@@ -30,6 +30,7 @@ from typing import Callable, List, Optional
 from optimizacion_ala.evolucion import deberia_parar  # reutilizado tal cual, ver encabezado
 
 from .geometria_avion import CandidateAvion
+from .mision_avion import describir_puntaje, es_factible
 
 GenerarHijosFn = Callable[[CandidateAvion, CandidateAvion, int, int], List[dict]]
 ObjetivoFn = Callable[[dict], float]
@@ -58,7 +59,13 @@ def iniciar_evolucion_avion(
 ) -> EstadoEvolucionAvion:
     """`objetivo_fn` ya viene con la topología fijada (ver
     `competencia.optimizar_topologia`, que arma este closure) -- acá adentro
-    solo se llama como `objetivo_fn(params)`, igual que en el ala volante."""
+    solo se llama como `objetivo_fn(params)`, igual que en el ala volante.
+
+    Hacen falta al menos DOS semillas: el GA cruza siempre dos padres (y con
+    una sola, la primera generación fallaba al desempaquetarlos)."""
+    if len(seed_population) < 2:
+        raise ValueError(f"[{topologia}] hacen falta al menos 2 semillas y hay {len(seed_population)}: "
+                         "el GA cruza dos padres (ver competencia.semillas_para_escenario).")
     scored = [CandidateAvion(topologia=topologia, params=p, score=objetivo_fn(p)) for p in seed_population]
     scored.sort(key=lambda c: c.score, reverse=True)
     estado = EstadoEvolucionAvion(topologia=topologia, parents=scored[:2])
@@ -94,7 +101,15 @@ def correr_generacion_avion(
 
     mejor_despues = max(c.score for c in nuevos_padres)
     mejoro = mejor_despues > mejor_antes + TOLERANCIA_MEJORA
-    nueva_racha = 0 if mejoro else estado.non_improving_streak + 1
+    if mejoro:
+        nueva_racha = 0
+    elif not es_factible(mejor_despues):
+        # Todavía no hay ningún padre factible: el GA está buscando la zona
+        # factible (bajar la violación ya cuenta como mejora). Mientras tanto
+        # la paciencia no corre; lo que corta es max_generaciones.
+        nueva_racha = estado.non_improving_streak
+    else:
+        nueva_racha = estado.non_improving_streak + 1
 
     nuevo_estado = EstadoEvolucionAvion(
         topologia=estado.topologia,
@@ -148,17 +163,34 @@ def correr_evolucion_completa_avion(
     max_generaciones: int = 80,
     checkpoint_path: Optional[Path] = None,
     verbose: bool = True,
+    reanudar: bool = False,
 ) -> EstadoEvolucionAvion:
     """Modo batch, igual que `evolucion.correr_evolucion_completa`, para
     UNA topología. `competencia.correr_competencia` llama a esto una vez
-    por topología con seeds y checkpoint distintos."""
-    estado = iniciar_evolucion_avion(seed_population, topologia, objetivo_fn)
-    if checkpoint_path:
-        guardar_checkpoint(estado, checkpoint_path)
-    if verbose:
-        print(f"[{topologia}] Población semilla: {len(estado.parents)} candidatos elite")
-        for c in estado.parents:
-            print(f"  score={c.score:.4f}")
+    por topología con seeds y checkpoint distintos.
+
+    `reanudar=True`: si `checkpoint_path` existe y es de esta topología, se
+    sigue desde ahí (generación, racha y padres) en vez de sembrar de cero.
+    OJO: los scores guardados son los del modelo con el que se corrió; si
+    cambió la misión o los interruptores, conviene empezar de cero."""
+    estado = None
+    if reanudar and checkpoint_path:
+        estado = cargar_checkpoint(checkpoint_path)
+        if estado is not None and estado.topologia != topologia:
+            estado = None
+        if estado is not None and verbose:
+            print(f"[{topologia}] Reanudando desde {checkpoint_path} (generación {estado.generation})")
+    if estado is None:
+        estado = iniciar_evolucion_avion(seed_population, topologia, objetivo_fn)
+        if checkpoint_path:
+            guardar_checkpoint(estado, checkpoint_path)
+        if verbose:
+            print(f"[{topologia}] Población semilla: {len(estado.parents)} candidatos elite")
+            for c in estado.parents:
+                print(f"  score={describir_puntaje(c.score)}")
+        if verbose and not any(es_factible(c.score) for c in estado.parents):
+            print(f"[{topologia}] OJO: ninguna semilla es factible con el modelo actual; el GA arranca "
+                  "buscando la zona factible (ordenando por violación) y la paciencia no corre hasta encontrarla.")
 
     while not deberia_parar(estado, paciencia, max_generaciones):
         try:
@@ -166,20 +198,24 @@ def correr_evolucion_completa_avion(
                 estado, generar_hijos_fn, objetivo_fn, n_crossbred, n_wildcard
             )
         except Exception as e:
-            if verbose:
-                print(f"\n[{topologia}] Falló la generación {estado.generation + 1}: {e}")
-                print(f"[{topologia}] Deteniendo. Mejor score hasta ahora: {estado.mejor().score:.4f}")
+            # Los candidatos inválidos ya vuelven como -inf desde la misión:
+            # una excepción acá es un error de verdad. Se guarda el estado y se
+            # la deja subir (antes se la imprimía solo con verbose y la corrida
+            # terminaba como si hubiera convergido).
+            print(f"\n[{topologia}] Falló la generación {estado.generation + 1}: {e!r}")
+            print(f"[{topologia}] Mejor score hasta ahora: {describir_puntaje(estado.mejor().score)}")
             if checkpoint_path:
                 guardar_checkpoint(estado, checkpoint_path)
-            return estado
+                print(f"[{topologia}] Estado guardado en {checkpoint_path} (se puede reanudar).")
+            raise
 
         if checkpoint_path:
             guardar_checkpoint(estado, checkpoint_path)
         if verbose:
             print(f"[{topologia}] Generación {estado.generation}: "
-                  f"mejor hijo={max((h['candidate'].score for h in hijos), default=float('-inf')):.4f}  "
-                  f"padres={[round(c.score, 4) for c in estado.parents]}")
+                  f"mejor hijo={describir_puntaje(max((h['candidate'].score for h in hijos), default=float('-inf')))}  "
+                  f"padres={[describir_puntaje(c.score) for c in estado.parents]}")
 
     if verbose:
-        print(f"[{topologia}] Detenido en la generación {estado.generation}. Mejor score: {estado.mejor().score:.4f}")
+        print(f"[{topologia}] Detenido en la generación {estado.generation}. Mejor score: {describir_puntaje(estado.mejor().score)}")
     return estado

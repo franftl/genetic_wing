@@ -317,6 +317,25 @@ def _proyectar_monotona(v):
     return creciente if d_c <= d_d else decreciente
 
 
+def _proyectar_monotona_desde_cero(v):
+    """Proyecta [v_1..v_n] para que la secuencia COMPLETA [0, v_1, ..., v_n]
+    sea monótona (creciente o decreciente, la más cercana en L2).
+
+    La raíz vale 0 por definición (offset y elevación se miden desde ella), así
+    que tiene que entrar en la proyección: proyectar solo v_1..v_n dejaba pasar
+    [0, -0.05, 0, +0.10], un borde de ataque que va para adelante y vuelve para
+    atrás (o un ala de gaviota en elevación). La regresión isotónica con una
+    cota inferior (o superior) se resuelve recortando la solución sin cota, así
+    que: creciente = max(0, PAVA creciente), decreciente = min(0, PAVA
+    decreciente)."""
+    v = [float(x) for x in v]
+    creciente = [max(0.0, x) for x in _proyectar_no_decreciente(v)]
+    decreciente = [min(0.0, -x) for x in _proyectar_no_decreciente([-x for x in v])]
+    d_c = sum((a - b) ** 2 for a, b in zip(v, creciente))
+    d_d = sum((a - b) ** 2 for a, b in zip(v, decreciente))
+    return creciente if d_c <= d_d else decreciente
+
+
 def clamp_to_bounds(params: dict) -> dict:
     """Recorta cada parámetro a BOUNDS y proyecta el borde de ataque a una
     forma FABRICABLE.
@@ -359,9 +378,10 @@ def clamp_to_bounds(params: dict) -> dict:
         p[k] = min(max(v, lo), hi)
 
     # La elevación (diedro) también se proyecta a monótona -- creciente o
-    # decreciente, la que esté más cerca. Ver _proyectar_monotona.
+    # decreciente, la que esté más cerca -- INCLUYENDO la raíz (= 0). Ver
+    # _proyectar_monotona_desde_cero (corregido 2026-10-19).
     claves_e = [f"elev_{i}" for i in range(1, _N_ESTACIONES)]
-    for k, v in zip(claves_e, _proyectar_monotona([p[k] for k in claves_e])):
+    for k, v in zip(claves_e, _proyectar_monotona_desde_cero([p[k] for k in claves_e])):
         lo, hi = BOUNDS[k]
         p[k] = min(max(v, lo), hi)
 

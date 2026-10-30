@@ -61,10 +61,9 @@ import exportar_cfd_avion as ecfd                                   # noqa: E402
 # un spline de Fusion no hace falta). Mismo valor que el exportador del ala.
 N_PUNTOS_CAD = 120
 
-# Espesor de BORDE DE FUGA que se le da al CAD, en mm. Mismas razones que en
-# optimizacion_ala/exportar_cad.py (ESPESOR_BORDE_FUGA_MM): el perfil analizado
-# cierra en filo exacto, que no se puede fabricar y que Fusion puede interpretar
-# como spline cerrada y redondear. 0.0 desactiva la apertura.
+# Espesor de BORDE DE FUGA que se le da al CAD, en mm. Originalmente (como en
+# optimizacion_ala/exportar_cad.py) servia para abrir un perfil que cerraba en
+# filo exacto; 0.0 desactiva la apertura.
 # Desde V51 es una restriccion de manufacturabilidad del MODELO
 # (optimizacion_avion/manufactura.py): el borde de fuga de 2 mm ya viene en los
 # perfiles de `construir_avion`, asi que aca solo se completa lo que falte.
@@ -86,6 +85,16 @@ def _abrir_borde_de_fuga(coords: np.ndarray, espesor_frac: float) -> np.ndarray:
     signo = np.where(np.arange(len(out)) <= i_le, 1.0, -1.0)
     out[:, 1] = out[:, 1] + signo * 0.5 * espesor_frac * x
     return out
+
+
+def _te_orientado(seccion: dict) -> bool:
+    """True si el primer punto del contorno (borde de fuga del extradós) queda del lado
+    del extradós respecto del último (borde de fuga del intradós)."""
+    p = np.array(seccion["puntos_mm"], float)
+    medio_te = 0.5 * (p[0] + p[-1])
+    i_le = int(np.argmax(np.linalg.norm(p - medio_te, axis=1)))
+    hacia_extrados = p[1:i_le].mean(axis=0) - p[i_le + 1:-1].mean(axis=0)
+    return float(np.dot(p[0] - p[-1], hacia_extrados)) > 0.0
 
 
 def _resamplear_perfil(coords: np.ndarray, n: int) -> np.ndarray:
@@ -168,6 +177,10 @@ def verificar_avion(alas: list[dict], fuselajes: list[dict]) -> dict:
             "separacion_min_mm": min(seps) if seps else 0.0,
             "separacion_ok": (min(seps) > 0.1) if seps else True,
             "borde_fuga_min_mm": min(gaps), "borde_fuga_ok": min(gaps) > 1e-3,
+            # V54.2: el hueco tiene que estar abierto hacia afuera (extradós ARRIBA del
+            # intradós). Un hueco "cruzado" mide lo mismo que uno bueno, por eso
+            # borde_fuga_ok solo no alcanza; en Fusion el loft se cortaría a sí mismo.
+            "borde_fuga_orientado_ok": all(_te_orientado(s) for s in secs),
         }
     for f in fuselajes:
         x = np.array([p[0] for p in f["secciones_x_r_mm"]])
@@ -205,6 +218,7 @@ def main() -> None:
 
     params, top = ecfd.cargar_params(args.params, args.topologia)
     params = clamp_to_bounds_avion(params, top)
+    params = ma.params_trimados(params, top)      # con la incidencia de cola que trima (TRIM_RESUELTO)
     avion = construir_avion(params, top)
 
     alas = []
@@ -240,8 +254,9 @@ def main() -> None:
         "masa_kg": caso["referencias"]["masa_kg"],
         "n_puntos_por_perfil": args.puntos,
         "espesor_borde_fuga_mm": args.espesor_te_mm,
-        "_nota_borde_fuga": ("el borde de fuga se abrio a este espesor: el perfil analizado cierra "
-                             "en filo exacto, que no es fabricable ni loftea sin ambiguedad."),
+        "_nota_borde_fuga": ("espesor de borde de fuga del CAD. Desde V51 el modelo ya lo trae "
+                             "(manufactura.ESPESOR_BORDE_FUGA_M = 2 mm); aca solo se completa la "
+                             "diferencia si se pide un espesor mayor."),
         "_nota_simetria": ("las alas con `simetrica: true` se exportan solo del lado derecho (y >= 0); "
                            "el script de Fusion las espeja respecto del plano XZ."),
         "verificacion_en_fusion": {

@@ -96,7 +96,8 @@ class CortanteVertical(Campo):
     U10       : viento a 10 m [m/s]
     alfa      : exponente (ficha: ~0.10 de día, ~0.25 de noche)
     rumbo_deg : ángulo entre la dirección hacia donde va el viento y la ruta
-                (0 = viento de cola, 180 = de frente, 90 = de la izquierda)
+                (0 = viento de cola, 180 = de frente, 90 = el viento va hacia
+                la izquierda, o sea que VIENE de la derecha)
     h_ref     : altura a la que se refiere la velocidad del avión [m]
     Útil para despegue/aterrizaje: el avión baja y el viento de frente cae.
     """

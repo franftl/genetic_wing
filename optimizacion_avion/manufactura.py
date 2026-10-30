@@ -75,36 +75,49 @@ def radio_morro(R: float, s: np.ndarray, exponente: float) -> np.ndarray:
     return r0 + (R - r0) * np.asarray(s, float) ** float(exponente)
 
 
-def _perfil_abierto(airfoil, frac: float):
-    """Copia del perfil con el borde de fuga abierto a `frac` (fraccion de cuerda).
+def abrir_borde_de_fuga(airfoil, espesor_frac: float):
+    """Copia del perfil con el borde de fuga de `espesor_frac` (fracción de cuerda),
+    abierto SIEMPRE en vertical: el extradós sube y el intradós baja.
 
-    NO se usa `asb.Airfoil.set_TE_thickness`: sobre los perfiles repanelados de la
-    base UIUC deja la apertura INVERTIDA en varios de ellos (sd7062, mh80, rg15,
-    e423, ... ; el extrados termina POR DEBAJO del intrados y el contorno se cruza
-    cerca del borde de fuga, asi que el CAD sale con la punta afilada y el
-    analisis ve un perfil de espesor negativo). Aca se abre a mano: se verifica que
-    el perfil vaya extrados -> borde de ataque -> intrados (si no, se invierte) y
-    se desplaza cada punto en y, +/- 0.5*delta*x (nulo en el borde de ataque, maximo
-    en el de fuga), con delta = apertura pedida - apertura actual."""
-    import aerosandbox as asb
-    c = np.asarray(airfoil.coordinates, dtype=float).copy()
-    i_le = int(np.argmin(c[:, 0]))
-    if c[:i_le + 1, 1].mean() < c[i_le:, 1].mean():          # va intrados -> extrados: invertir
-        c = c[::-1].copy()
-        i_le = len(c) - 1 - i_le
-    delta = float(frac) - float(c[0, 1] - c[-1, 1])
-    signo = np.where(np.arange(len(c)) <= i_le, 1.0, -1.0)
-    c[:, 1] += signo * 0.5 * delta * c[:, 0]
-    return asb.Airfoil(name=airfoil.name, coordinates=c)
+    Reemplaza a `asb.Airfoil.set_TE_thickness` (V54.2). Esa función abre el borde de
+    fuga en la dirección del hueco que el perfil ya tiene; en un perfil cerrado ese
+    hueco es ruido numérico (~1e-20) y la dirección sale al azar: en sd7062, fx63137,
+    mh60 y sus mezclas el extradós quedaba POR DEBAJO del intradós (borde de fuga
+    cruzado, espesor negativo), y en las mezclas mh80/fx63137 el hueco se abría en x
+    (filo, sin espesor real). XFoil no converge con un borde de fuga cruzado (polares
+    vacías en XFLR5) y en Fusion el loft se corta a sí mismo.
+
+    El corrimiento es lineal desde el borde de ataque (0) hasta el borde de fuga
+    (espesor completo), como `_abrir_borde_de_fuga` de exportar_cad_avion.py. Si el
+    perfil ya tenía un borde de fuga (o venía cruzado), se corrige la DIFERENCIA con
+    signo, así que el resultado es exactamente `espesor_frac` con la orientación correcta.
+    Contorno en orden Selig: borde de fuga -> extradós -> borde de ataque -> intradós."""
+    co = np.array(airfoil.coordinates, dtype=float)
+    i_le = int(np.argmin(co[:, 0]))
+    x_le = co[i_le, 0]
+    hueco = co[0, 1] - co[-1, 1]                 # con signo: > 0 = extradós arriba
+    delta = float(espesor_frac) - hueco
+    arriba = co[:i_le + 1]
+    abajo = co[i_le:]
+    xi_up = (arriba[:, 0] - x_le) / max(co[0, 0] - x_le, 1e-12)
+    xi_lo = (abajo[:, 0] - x_le) / max(co[-1, 0] - x_le, 1e-12)
+    co[:i_le + 1, 1] = arriba[:, 1] + 0.5 * delta * xi_up
+    co[i_le:, 1] = abajo[:, 1] - 0.5 * delta * xi_lo
+    # El borde de ataque (i_le) es común a los dos tramos y no se mueve (xi = 0).
+    nuevo = type(airfoil)(name=airfoil.name, coordinates=co)
+    assert co[0, 1] - co[-1, 1] > -1e-12, "borde de fuga cruzado tras abrirlo"
+    return nuevo
 
 
 def perfil_con_te(airfoil, cuerda: float):
     """Copia del perfil con el borde de fuga exactamente de
     `ESPESOR_BORDE_FUGA_M` (absoluto) sobre una cuerda dada."""
-    frac = ESPESOR_BORDE_FUGA_M / max(float(cuerda), 1e-6)
-    clave = (airfoil.name, hash(np.asarray(airfoil.coordinates).tobytes()), round(frac, 6))
+    # Redondeado ANTES de calcular, para que el perfil cacheado no dependa del
+    # orden de evaluación (ver perfiles_avion.perfil_con_flap).
+    frac = round(ESPESOR_BORDE_FUGA_M / max(float(cuerda), 1e-6), 6)
+    clave = (airfoil.name, hash(np.asarray(airfoil.coordinates).tobytes()), frac)
     if clave not in _cache_te:
-        _cache_te[clave] = _perfil_abierto(airfoil, frac)
+        _cache_te[clave] = abrir_borde_de_fuga(airfoil, frac)
     return _cache_te[clave]
 
 

@@ -17,7 +17,10 @@ versión anterior:
   el ala volante).
 - FLAPS: masa del mecanismo, estimada abajo desde abajo hacia arriba.
 - COLA EN T: factor de masa explícito sobre la deriva (ver `FACTOR_MASA_T`).
-- VIGAS DE COLA: para `doble_boom` (dos) y `pod_boom` (una).
+- VIGAS DE COLA: para `doble_boom` (dos) y `pod_boom` (una). El
+  `fuselaje_continuo` no tiene viga.
+- 2026-10-19: cuerda y elevación se interpolan con la MISMA PCHIP que usa el
+  solver (`geometria_avion.interp_estaciones`), no linealmente.
 
 Lo que SIGUE reutilizándose tal cual de `optimizacion_ala.estructura`, por
 ser propiedades de MATERIAL o de MISIÓN y no de geometría: RHO_LARGUERO,
@@ -49,11 +52,9 @@ from optimizacion_ala.estructura import (
 )
 
 from .geometria_avion import (
-    N_ESTACIONES, TOPOLOGIAS, WINGLET_MIN_H, geometria_flap, semi_envergadura,
+    N_ESTACIONES, TOPOLOGIAS, WINGLET_MIN_H, geometria_flap, interp_estaciones, semi_envergadura,
 )
 from .perfiles_avion import perfil_en_fraccion_avion
-
-_FRAC = np.linspace(0.0, 1.0, N_ESTACIONES)
 
 # Densidad lineal de una viga de cola de fibra de carbono a esta escala.
 # DECLARADA, no calculada -- ver "lo que este modelo sigue sin ver".
@@ -77,20 +78,21 @@ MASA_AREAL_FLAP = 0.35        # [kg/m^2] de superficie de flap, EXTRA sobre la p
 
 
 def _distribucion_ala(params: dict, n: int = 40):
-    """Cuerda y elevación interpoladas sobre la semi-envergadura real."""
+    """Cuerda y elevación interpoladas sobre la semi-envergadura real, con la
+    misma PCHIP que el solver (ver `interp_estaciones`)."""
     b2 = semi_envergadura(params)
     fr = np.linspace(0.0, 1.0, n)
     cuerdas_ctrl = [params["root_chord"]] + [params[f"chord_{i}"] for i in range(1, N_ESTACIONES)]
     elev_ctrl = [0.0] + [params[f"elev_{i}"] for i in range(1, N_ESTACIONES)]
-    cuerda = np.interp(fr, _FRAC, cuerdas_ctrl)
-    z = np.interp(fr, _FRAC, elev_ctrl) * b2
+    cuerda = np.asarray(interp_estaciones(fr, cuerdas_ctrl), float)
+    z = np.asarray(interp_estaciones(fr, elev_ctrl), float) * b2
     return fr, fr * b2, cuerda, z
 
 
 def _espesores(params: dict, fr):
     """Espesor relativo leído del PERFIL que va en cada estación -- no un
     parámetro declarado. Es lo que hace que elegir un perfil más grueso
-    (p.ej. uno de alta sustentación) also gane altura de larguero."""
+    (p.ej. uno de alta sustentación) también gane altura de larguero."""
     try:
         return np.array([float(perfil_en_fraccion_avion(params, f).max_thickness()) for f in fr])
     except Exception:
@@ -194,7 +196,6 @@ def _masa_fuselaje_y_vigas(params: dict, topologia: str) -> dict:
     equivalente corregido por el afinamiento de morro y boat-tail: un
     cilindro pleno la sobreestimaría bastante ahora que el morro y la cola
     son formas de verdad y no un cono."""
-    tipo = TOPOLOGIAS[topologia]["fuselaje"]
     L = float(params["fuselaje_largo"])
     D = float(params["fuselaje_diametro"])
     f_morro = float(params["morro_largo_frac"])
@@ -206,7 +207,7 @@ def _masa_fuselaje_y_vigas(params: dict, topologia: str) -> dict:
     masa_fus = MASA_AREAL_PIEL * area_fus
 
     masa_boom = 0.0
-    if tipo == "pod_boom":
+    if TOPOLOGIAS[topologia]["fuselaje"] == "pod_boom":
         masa_boom = MASA_LINEAL_BOOM * float(params["boom_largo"])
     elif TOPOLOGIAS[topologia]["cola"] == "doble_boom":
         masa_boom = 2.0 * MASA_LINEAL_BOOM * float(params["boom_largo"])

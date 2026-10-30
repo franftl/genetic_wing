@@ -1,5 +1,36 @@
 """
-Función objetivo de MISIÓN -- ahora con DOS puntos de vuelo.
+Función objetivo de MISIÓN.
+
+==========================================================================
+ESTADO ACTUAL (2026-10-19) -- leer esto primero
+==========================================================================
+Las secciones fechadas de abajo son el HISTORIAL de decisiones y describen
+la misión de cada momento. Lo vigente es:
+
+  * TRES puntos de vuelo: crucero de DISEÑO a 80 km/h (V_CRUCERO), velocidad
+    máxima 120 km/h (V_MAX, restricción + término de puntaje) y vuelo lento a
+    10 m/s (V_LENTO).
+  * Vuelo lento: la restricción DURA es v_stall < V_LENTO. El margen de 20 %
+    (V_STALL_OBJETIVO = 8.33 m/s) NO se exige: se premia en el puntaje
+    (f_lento llega a 1 justo en el objetivo).
+  * Interruptores VIENTO_ACTIVO, BATERIA_ACTIVA, PUNTAJE_MODO y TRIM_RESUELTO.
+  * Con viento, la ráfaga del sitio no puede superar N_RAFAGA_ADMISIBLE (por
+    defecto la carga LÍMITE N_LIMITE = 3.0, ver la actualización 2026-10-19).
+  * Puntaje (PUNTAJE_MODO = "mision", V51.2): UN objetivo, la energía para
+    volar el alcance (`energia_mision_wh`), + requisitos pasa/no pasa
+    (`requisitos_incumplidos`) + dos términos pendientes de decisión (vuelo
+    lento, velocidad máxima). Envergadura total <= ENVERGADURA_MAX_M = 3.0 m
+    (SORA, requisito desde 2026-10-19). "legado" = los 11-12 términos de
+    antes. Ver "PUNTAJE POR MISIÓN" al final de este encabezado.
+  * Trim resuelto (TRIM_RESUELTO): la incidencia de cola se calcula para
+    Cm = 0 en crucero; `params_trimados` devuelve el avión analizado.
+  * Infactibles rankeados por violación (RANKING_INFACTIBLES, V51.3, reglas
+    de Deb): ver la clase `Infactible`. `es_factible` / `describir_puntaje`
+    para leer un puntaje; `analizar_con_motivo` para saber por qué falla.
+
+==========================================================================
+2026-09-17 -- DOS PUNTOS DE VUELO (historial)
+==========================================================================
 
 ==========================================================================
 LA MISIÓN CAMBIÓ (2026-09-17), Y NO ES UN CAMBIO DE UN NÚMERO
@@ -69,9 +100,11 @@ ESTRUCTURA DEL PUNTAJE
           + w_en  * f_envergadura  (NUEVO 2026-09-28: penaliza envergadura > 2.0 m,
                                      dificultad de fabricación artesanal)
 
-RESTRICCIONES DURAS: estructura que no cierra, no sostenerse a 120 km/h, no
-poder volar a 10 m/s ni con flap, margen estático negativo, Cn_beta <= 0,
-Cl_beta >= 0, o entrar en pérdida con la ráfaga de diseño en crucero.
+RESTRICCIONES DURAS: estructura que no cierra, volumen de fuselaje
+insuficiente, no sostenerse a 120 km/h, no poder volar a 10 m/s ni con flap,
+margen estático negativo, Cn_beta <= 0, Cl_beta >= 0, entrar en pérdida con
+la ráfaga de diseño en crucero, o (con viento) ráfaga por encima de
+N_RAFAGA_ADMISIBLE.
 
 ==========================================================================
 ACTUALIZACIÓN 2026-09-18 -- TRES PUNTOS DE VUELO, Y VOLUMEN DE FUSELAJE
@@ -169,12 +202,61 @@ Todos los supuestos (rendimiento propulsivo 0.65, celda, reserva, overhead del
 pack) están como constantes nombradas al principio de bateria.py.
 Con BATERIA_ACTIVA = False vuelve el modelo anterior (batería dentro de
 MASA_SISTEMAS = 1.5 kg). Ver evaluacion_bateria_350km/LEEME.md.
+
+==========================================================================
+ACTUALIZACIÓN 2026-10-19 -- RÁFAGA CONTRA LA CARGA LÍMITE
+==========================================================================
+Con viento, la ráfaga del sitio se comparaba contra la carga ÚLTIMA
+(N_ULTIMO = 4.5). Pero la estructura se dimensiona para N_ULTIMO =
+N_LIMITE x 1.5: aceptar una ráfaga hasta 4.5 g era aceptar que el ala llegue
+a la rotura sin ningún coeficiente de seguridad. Las cargas de ráfaga de
+diseño (FAR/CS 23.333 y 23.341) son cargas LÍMITE, así que se comparan contra
+N_LIMITE. Queda como constante (N_RAFAGA_ADMISIBLE) para poder moverla; si se
+quiere permitir ráfagas mayores, lo coherente es subir N_LIMITE (lo que
+también encarece el larguero), no relajar esta comparación. Sin viento no se
+aplica, para que VIENTO_ACTIVO = False siga dando lo mismo que antes.
+
+Además: el lazo de batería informa la masa con la que se hizo la ÚLTIMA
+pasada (antes, si no convergía, reportaba una masa distinta de la que se
+había usado), y `_analizar_pasada` ya no se traga los errores de programación
+(ver `_ERRORES_DE_PROGRAMACION`).
+
+==========================================================================
+ACTUALIZACIÓN 2026-10-19 (V51.2) -- PUNTAJE POR MISIÓN Y TRIM RESUELTO
+==========================================================================
+Una revisión de la ponderación contra lo que pide Quintana (alcance ante
+todo: pozos a 60-70 km, 200-300 km de autonomía) mostró que el puntaje de 11
+términos no medía la misión:
+  - de los ~4.5 puntos, ~3 eran iguales para todos los diseños válidos
+    (estabilidad 1.5, margen de pérdida 0.4, lateral 0.3, turbulencia 0.73)
+    y otros siempre valían ~0 (ráfaga, envergadura por encima de 2.8 m);
+  - eficiencia, masa y turbulencia contaban la misma cosa (la energía) dos o
+    tres veces y con referencias de escala viejas (D_REF = 3.2 N con D ~ 6 N);
+  - el término de trim, exp(-(Cm/0.02)^2), pesaba más que la aerodinámica:
+    Cm = -0.014 costaba lo mismo que ~20 % de resistencia, y castigaba
+    cualquier cambio de forma (por ejemplo un winglet que baja la resistencia
+    6 %) porque corre el Cm con el CG y la incidencia fijos;
+  - correlación de rangos entre el puntaje y la masa para 350 km: 0.5.
+Cambios:
+  1. OBJETIVO ÚNICO: ENERGIA_REFERENCIA_WH / energia_mision_wh (peso
+     PESO_ALCANCE). Con batería, la energía ya incluye el peso de la batería.
+  2. REQUISITOS PASA / NO PASA (requisitos_incumplidos): SM dentro de la
+     banda, margen de pérdida con ráfaga >= 20 %, Cn_beta >= CN_BETA_MIN,
+     Cl_beta <= -CL_BETA_MIN, y que el trim converja.
+  3. TRIM RESUELTO: ver la sección 3a de `_analizar_pasada`. Si la
+     incidencia necesaria cae fuera de BOUNDS, el candidato es inválido.
+Quedan como términos PENDIENTES, con la forma y el peso de antes, el margen de
+vuelo lento (Quintana pide ~7 m/s para sensores de metano/IR; el modelo usa
+10 m/s), la resistencia a 120 km/h (viento) y la envergadura (límite de
+fabricación). El modo "legado" conserva todo lo anterior para comparar.
 """
 
 from __future__ import annotations
 
 import aerosandbox as asb
 import numpy as np
+
+from collections import Counter
 
 from optimizacion_ala.estructura import G, MASA_PAYLOAD, MASA_SISTEMAS, N_LIMITE, N_ULTIMO
 
@@ -183,7 +265,8 @@ from . import bateria as _bat
 
 from .estructura_avion import converger_masa_avion
 from .geometria_avion import (
-    SM_BANDS, construir_avion, geometria_flap, referencias_ala, volumenes_de_cola,
+    BOUNDS_POR_TOPOLOGIA, SM_BANDS, TOPOLOGIAS, construir_avion, geometria_flap,
+    referencias_ala, volumenes_de_cola,
 )
 from .perfiles_avion import perfil_con_flap, perfil_en_fraccion_avion
 
@@ -208,6 +291,20 @@ VIENTO_ACTIVO = True
 # V_CRUCERO, y entra al peso del avión (lazo cerrado). En False todo vuelve a
 # ser exactamente como antes (batería dentro de MASA_SISTEMAS = 1.5 kg).
 BATERIA_ACTIVA = True
+
+# Cómo se arma el puntaje (2026-10-19, ver "PUNTAJE POR MISIÓN" en el encabezado):
+#   "mision": UN objetivo (energía para volar el alcance) + los requisitos
+#             pasa/no pasa como restricciones + los términos todavía pendientes
+#             de decisión (vuelo lento, velocidad máxima, envergadura).
+#   "legado": la suma ponderada de 11-12 términos de antes, para comparar.
+PUNTAJE_MODO = "mision"
+
+# Trim RESUELTO (2026-10-19): la incidencia de la cola (htail o cola en V) se
+# calcula para que el avión vuele en crucero con Cm = 0 respecto del CG, y la
+# resistencia se mide ahí. El valor de la incidencia que trae el candidato es
+# solo el punto de partida. En False vuelve el modelo de antes (incidencia como
+# variable de diseño y Cm puntuado en el modo "legado").
+TRIM_RESUELTO = True
 
 RAFAGA_VERTICAL = 3.0         # [m/s] ráfaga SIN viento del sitio; con viento: viento.RAFAGA_VERTICAL_SITIO
 VIENTO_MEDIO = _viento.VIENTO_MEDIO_SITIO              # [m/s] antes 3.1 -- informativo, no entra en cuentas
@@ -258,6 +355,39 @@ PENAL_CD_FLAP = 0.04
 CN_BETA_REFERENCIA = 0.0015
 CL_BETA_REFERENCIA = 0.0015
 
+# --- Requisitos PASA / NO PASA (modo "mision") --------------------------
+# Antes eran términos del puntaje que, dentro de lo aceptable, valían lo mismo
+# para todos (estabilidad 1.5, margen de pérdida 0.4, lateral 0.3...): sumaban
+# casi 3 puntos constantes y solo servían como un "casi gate" blando. Ahora
+# son restricciones: se cumplen o el candidato queda afuera.
+#   * margen estático dentro de la banda de la topología (SM_BANDS);
+#   * margen de pérdida con la ráfaga de diseño >= MARGEN_PERDIDA_OK (20 %);
+#   * estabilidad direccional y lateral con un mínimo, no solo con el signo.
+# CN_BETA_MIN / CL_BETA_MIN son SUPUESTOS a validar: ~0.03 /rad, el extremo
+# bajo de lo que se considera aceptable para estabilidad direccional estática
+# en aviones livianos. Con el signo solo (> 0) pasaban diseños casi neutros
+# (pod_boom con 0.0001 /grado).
+CN_BETA_MIN = 0.0005          # [1/grado]  Cn_beta >= esto
+CL_BETA_MIN = 0.0005          # [1/grado]  Cl_beta <= -esto
+
+# --- Trim resuelto --------------------------------------------------------
+_DI_TRIM = 1.0                # [grados] paso para medir dCm/d(incidencia)
+TRIM_TOL_CM = 0.002           # |Cm| aceptado en crucero después de trimar
+TRIM_MAX_CORRECCIONES = 2
+
+# Factor de carga máximo admisible para la ráfaga del sitio (solo con
+# VIENTO_ACTIVO). Es una carga LÍMITE: ver la actualización 2026-10-19 del
+# encabezado. Antes era N_ULTIMO (4.5), sin margen sobre la rotura.
+N_RAFAGA_ADMISIBLE = N_LIMITE
+
+# Errores que indican un BUG (clave mal escrita, atributo inexistente, tipo
+# equivocado), no un candidato inválido: se dejan subir para que no pase
+# inadvertido que TODOS los candidatos dan -inf. Cualquier otra excepción
+# (numérica, de NeuralFoil, de AeroSandbox) descarta el candidato y se cuenta
+# en FALLAS_ANALISIS, que se puede mirar desde el notebook.
+_ERRORES_DE_PROGRAMACION = (KeyError, NameError, AttributeError, ImportError, TypeError)
+FALLAS_ANALISIS: Counter = Counter()
+
 # =====================================================================
 # VOLUMEN MÍNIMO DE FUSELAJE -- variable fácil de mover (ver encabezado, punto 3)
 # =====================================================================
@@ -284,7 +414,7 @@ FACTOR_UTILIZACION_VOLUMEN = 0.55
 # en geometria_avion.py, así que TODO candidato queda en la zona penalizada
 # o justo en el borde; lo que el término hace es preferir, a igualdad de lo
 # demás, el extremo angosto de ese rango en vez de tratarlo como gratis.
-ENVERGADURA_MANUFACTURA_MAX = 2.0     # [m]
+ENVERGADURA_MANUFACTURA_MAX = 2.0     # [m]  (solo modo "legado"; en "mision" manda ENVERGADURA_MAX_M)
 # Ancho de la caída gaussiana (ver _meseta): a envergadura = MAX + TOL el
 # término vale exp(-1) = 0.37. 0.4 m es un compromiso deliberado: bastante
 # V52.1: bajado a 0.2 m junto con PESO_ENVERGADURA = 1.5. Costo en puntaje:
@@ -295,7 +425,45 @@ ENVERGADURA_MANUFACTURA_MAX = 2.0     # [m]
 ENVERGADURA_MANUFACTURA_TOL = 0.2     # [m]  (V52.1: antes 0.4)
 
 # =====================================================================
-# PESOS
+# ENVERGADURA MÁXIMA (requisito pasa / no pasa, 2026-10-19)
+# =====================================================================
+# Argentina (ANAC, Res. 550/2025) no limita la envergadura: clasifica por masa.
+# Pero la misión es BVLOS (pozos a 60-70 km), así que cae en la categoría
+# ESPECÍFICA, que exige un sistema de gestión de riesgo documentado ("por
+# ejemplo SORA u otro equivalente"). En la tabla de riesgo en tierra de SORA
+# la columna la define la dimensión característica (para un ala fija, la
+# envergadura total, con winglets): hasta 3 m, BVLOS en zona poco poblada da
+# GRC intrínseco 4; por encima, 5 (un escalón más de exigencia, SAIL III ->
+# IV con riesgo aéreo bajo). La energía cinética (~3-7 kJ) queda muy por
+# debajo del límite de esa columna (34 kJ), así que la envergadura es la que
+# decide. Se toma 3.0 m "por ahora", a confirmar con la Parte 102 de las RAAC.
+# Se mide sobre el avión COMPLETO (máximo |y| de todas las superficies,
+# winglets incluidos), no sobre el parámetro `envergadura` del ala.
+ENVERGADURA_MAX_M = 3.0               # [m] envergadura total, puntas de winglet incluidas
+
+# =====================================================================
+# OBJETIVO DE LA MISIÓN (modo "mision")
+# =====================================================================
+# La misión de Quintana es ALCANCE (pozos a 60-70 km, recorridos de ~120 km,
+# 200-300 km de autonomía deseada; el requisito vigente es bateria.ALCANCE_KM).
+# Con el alcance fijo, el mejor avión es el que necesita MENOS ENERGÍA de
+# batería para volarlo: f_alcance = ENERGIA_REFERENCIA_WH / E, con
+#   E = (D * V / eta + P_avionica) * t * (1 + reserva)     (bateria.py)
+# y D la resistencia de crucero en las condiciones de la misión (con viento,
+# la que incluye la turbulencia). Con BATERIA_ACTIVA, D ya es la del avión con
+# su batería (lazo cerrado), así que la masa entra sola: un avión más pesado
+# pide más sustentación, más inducida y más energía. Reemplaza a los términos
+# de eficiencia, masa y turbulencia, que contaban lo mismo dos o tres veces
+# (y con referencias de escala viejas: D_REFERENCIA = 3.2 N cuando hoy D ~ 6 N).
+ENERGIA_REFERENCIA_WH = 1200.0   # [Wh] ~ lo que piden los aviones de 350 km (Research Note 17)
+# Con 1.0 y la referencia de arriba, 1 % menos de energía suma ~0.01 puntos.
+# TASA DE CAMBIO con los términos pendientes (para decidir con Quintana):
+# 0.1 m/s menos de velocidad de pérdida (PESO_LENTO) vale ~6 % de energía.
+PESO_ALCANCE = 1.0
+
+# =====================================================================
+# PESOS (modo "legado"; en "mision" solo se usan PESO_LENTO, PESO_VELMAX y
+# PESO_ENVERGADURA, que quedan pendientes de decisión)
 # =====================================================================
 PESO_EFICIENCIA = 1.0
 PESO_MASA = 0.3
@@ -441,9 +609,97 @@ def _clmax_ala(params: dict, Re: float, velocidad: float, con_flap: bool) -> flo
     return FACTOR_CLMAX_3D * limpio + d
 
 
-def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = None) -> dict | None:
+# =====================================================================
+# RANKING DE INFACTIBLES (reglas de Deb, 2026-10-19)
+# =====================================================================
+# K. Deb, "An efficient constraint handling method for genetic algorithms",
+# Comput. Methods Appl. Mech. Engrg. 186 (2000) 311-338:
+#   1) un factible le gana a cualquier infactible;
+#   2) entre factibles gana el de mejor objetivo;
+#   3) entre infactibles gana el que viola MENOS las restricciones.
+# Antes todo lo infactible valía -inf: un avión con SM = 9.9 % era tan malo
+# como uno que no vuela, y el GA no tenía hacia dónde moverse cuando las
+# semillas o los hijos caían fuera de lo factible.
+#
+# Se codifica en UN número para que el GA no cambie: un infactible vale
+#   PUNTAJE_INFACTIBLE_TECHO - 10 * (ETAPA_REQUISITOS - etapa) - 9.99 * v / (1 + v)
+# donde `v` es la SUMA de las violaciones normalizadas de todo lo que el avión
+# no cumple (1 ~ "violado por bastante"). Desde 2026-10-19 el análisis NO corta
+# en la primera restricción que falla: la anota y sigue, así un avión al que
+# le falta 0.01 de vuelo lento queda mejor que uno inestable (antes, por
+# etapas, era al revés y el GA empeoraba antes de mejorar). `etapa` < 9 queda
+# solo para los casos en que el análisis no puede seguir (la masa no
+# converge, un CL_max no calculable, la cola no mueve el Cm...); todo lo demás
+# es etapa 9. Todo infactible queda por debajo de PUNTAJE_INFACTIBLE_TECHO y
+# todo factible por encima de 0; -inf queda para errores numéricos.
+RANKING_INFACTIBLES = True          # solo en PUNTAJE_MODO = "mision"
+PUNTAJE_INFACTIBLE_TECHO = -1000.0
+ETAPAS = {
+    0: "estructura que no cierra",
+    1: "volumen de fuselaje",
+    2: "vuelo lento",
+    3: "sustentacion en crucero",
+    4: "estabilidad longitudinal (margen estatico <= 0)",
+    5: "trim (incidencia de cola fuera de rango)",
+    6: "velocidad maxima / resistencia",
+    7: "rafaga (perdida o carga limite)",
+    8: "estabilidad latero-direccional (signo)",
+    9: "requisitos y restricciones",
+}
+ETAPA_REQUISITOS = 9
+
+
+class Infactible:
+    """Resultado de un análisis que no cumple: en qué etapa falló, por cuánto
+    (violación normalizada, >= 0) y por qué. `analizar_mision_avion` lo sigue
+    devolviendo como None; lo usa `evaluar_mision_avion` para el ranking."""
+    __slots__ = ("etapa", "violacion", "motivo")
+
+    def __init__(self, etapa: int, violacion: float, motivo: str):
+        v = float(violacion)
+        self.etapa = int(etapa)
+        self.violacion = v if np.isfinite(v) and v >= 0 else 10.0
+        self.motivo = motivo
+
+    def puntaje(self) -> float:
+        v = self.violacion
+        return PUNTAJE_INFACTIBLE_TECHO - 10.0 * (ETAPA_REQUISITOS - self.etapa) - 9.99 * v / (1.0 + v)
+
+    def __repr__(self):
+        return f"Infactible(etapa {self.etapa}: {ETAPAS[self.etapa]}, violacion {self.violacion:.3f}: {self.motivo})"
+
+
+def es_factible(puntaje: float) -> bool:
+    """True si el puntaje es de un candidato que cumple todo."""
+    return bool(np.isfinite(puntaje) and puntaje > PUNTAJE_INFACTIBLE_TECHO)
+
+
+def describir_puntaje(puntaje: float) -> str:
+    """Texto legible de un puntaje: el valor si es factible, o la etapa y la
+    violación si es infactible (decodifica lo que arma Infactible.puntaje)."""
+    if es_factible(puntaje):
+        return f"{puntaje:.4f}"
+    if not np.isfinite(puntaje):
+        return "invalido (no se pudo analizar)"
+    d = PUNTAJE_INFACTIBLE_TECHO - puntaje
+    escalon = int(d // 10.0)
+    etapa = ETAPA_REQUISITOS - escalon
+    frac = min((d - 10.0 * escalon) / 9.99, 0.999999)
+    v = frac / (1.0 - frac)
+    return f"infactible: {ETAPAS.get(etapa, '?')} (violacion {v:.2f})"
+
+
+def clave_incidencia(topologia: str) -> str:
+    """Parámetro de incidencia de la superficie horizontal de cola de la
+    topología: el que se ajusta para trimar (ver TRIM_RESUELTO)."""
+    return "v_tail_incidencia_deg" if TOPOLOGIAS[topologia]["cola"] == "v" else "htail_incidencia_deg"
+
+
+def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = None) -> "dict | Infactible | None":
     """Una pasada aerodinámica completa. `masa_bateria=None` es el modelo de
-    siempre; con un valor, la batería es una masa explícita de ese tamaño."""
+    siempre; con un valor, la batería es una masa explícita de ese tamaño.
+    Devuelve el dict del análisis, un `Infactible` (qué chequeo falló y por
+    cuánto) o None si no se pudo analizar (error numérico)."""
     sm_min, sm_max = SM_BANDS[topologia]
     try:
         # --- 1. Masa ----------------------------------------------------
@@ -454,8 +710,14 @@ def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = 
                                        masa_sistemas=_bat.MASA_SISTEMAS_SIN_BATERIA,
                                        masa_extra=masa_bateria)
         if est is None:
-            return None
+            return Infactible(0, 1.0, "la masa no converge (o supera 60 kg)")
         W = est["peso_total"]
+        # Restricciones que se pueden violar SIN impedir seguir el análisis: se
+        # anotan acá (texto, violación normalizada) y se sigue, para que el
+        # ranking sume TODAS las violaciones del avión (ver Infactible). Solo
+        # cortan antes los casos en que ya no se puede calcular lo que sigue.
+        viol = []
+        trim_saturado = False
 
         avion = construir_avion(params, topologia)
 
@@ -470,7 +732,8 @@ def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = 
             # el 8.2 L ya traía ~0.5 L de batería: se cambia por el volumen real
             vol_req_L += _bat.volumen_bateria_l(masa_bateria) - _bat.VOLUMEN_BATERIA_INCLUIDO_L
         if vol_geo_L * FACTOR_UTILIZACION_VOLUMEN < vol_req_L:
-            return None
+            viol.append((f"volumen util {vol_geo_L * FACTOR_UTILIZACION_VOLUMEN:.1f} L < {vol_req_L:.1f} L",
+                         (vol_req_L - vol_geo_L * FACTOR_UTILIZACION_VOLUMEN) / vol_req_L))
 
         S = float(avion.s_ref)
         c_ref = float(avion.c_ref)
@@ -484,26 +747,25 @@ def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = 
         Re_lento = V_LENTO * c_ref / nu
         Re_vmax = V_MAX * c_ref / nu
 
-        # --- 2. Punto de vuelo LENTO (nuevo) ----------------------------
-        # Se evalúa PRIMERO porque es la restricción que más aprieta: si el
-        # candidato no puede volar lento, no hay razón para gastar corridas
-        # de AeroBuildup en su crucero.
+        # --- 2. Punto de vuelo LENTO ------------------------------------
         CL_max_lento = _clmax_ala(params, Re_lento, V_LENTO, con_flap=True)
         if not np.isfinite(CL_max_lento) or CL_max_lento <= 0:
-            return None
+            return Infactible(2, 1.0, "CL_max con flap no calculable")
         v_stall = float(np.sqrt(2.0 * W / (rho * S * CL_max_lento)))
-        if v_stall >= V_LENTO:
-            return None   # no puede volar a 10 m/s ni con el flap abajo
+        if v_stall >= V_LENTO:   # no puede volar a 10 m/s ni con el flap abajo
+            viol.append((f"velocidad de perdida {v_stall:.2f} m/s >= {V_LENTO:.0f} m/s",
+                         (v_stall - V_LENTO) / V_LENTO))
         # Margen relativo respecto del objetivo (1.0 = justo en el objetivo).
         margen_lento = (V_LENTO - v_stall) / max(V_LENTO - V_STALL_OBJETIVO, 1e-6)
 
         # --- 3. Crucero -------------------------------------------------
         CL_max_crucero = _clmax_ala(params, Re_crucero, V_CRUCERO, con_flap=False)
         if not np.isfinite(CL_max_crucero) or CL_max_crucero <= 0:
-            return None
+            return Infactible(3, 1.0, "CL_max de crucero no calculable")
         CL_crucero = W / (q * S)
         if CL_crucero >= CL_max_crucero:
-            return None
+            viol.append((f"CL de crucero {CL_crucero:.2f} >= CL_max {CL_max_crucero:.2f}",
+                         (CL_crucero - CL_max_crucero) / CL_max_crucero))
 
         pts = []
         for a in (_A_LO, _A_HI):
@@ -512,26 +774,74 @@ def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = 
             pts.append((_escalar(r["CL"]), _escalar(r["Cm"])))
         (CL1, Cm1), (CL2, Cm2) = pts
         if abs(CL2 - CL1) < 1e-9:
-            return None
+            return Infactible(4, 1.0, "CL no cambia con alpha")
         CL_alpha = (CL2 - CL1) / (_A_HI - _A_LO)
         Cm_alpha = (Cm2 - Cm1) / (_A_HI - _A_LO)
         dCm_dCL = (Cm2 - Cm1) / (CL2 - CL1)
         SM = -dCm_dCL
         Cm0 = Cm1 - dCm_dCL * CL1
         CL_trim = Cm0 / SM if abs(SM) > 1e-9 else float("nan")
-        if not np.isfinite(SM) or SM <= 0:
-            return None
+        if not np.isfinite(SM):
+            return Infactible(4, 10.0, "margen estatico no calculable")
+        # SM <= 0 (inestable) no corta: lo cuenta la banda de SM en los
+        # requisitos (y en el modo "legado" invalida, ver _restricciones_duras).
 
+        def _crucero(av, alfa):
+            return asb.AeroBuildup(airplane=av, op_point=asb.OperatingPoint(
+                atmosphere=atm, velocity=V_CRUCERO, alpha=alfa)).run()
+
+        clave_inc = clave_incidencia(topologia)
+        incidencia_inicial = float(params[clave_inc])
         alpha_crucero = _A_LO + (CL_crucero - CL1) / CL_alpha
 
-        r = asb.AeroBuildup(airplane=avion,
-                            op_point=asb.OperatingPoint(atmosphere=atm, velocity=V_CRUCERO, alpha=alpha_crucero)).run()
+        if not TRIM_RESUELTO:
+            r = _crucero(avion, alpha_crucero)
+        else:
+            # --- 3a. Trim resuelto (ver TRIM_RESUELTO) --------------------
+            # Modelo lineal en (alpha, incidencia) alrededor del punto medido:
+            #   CL = CL1 + CL_alpha (a - A_LO) + CL_i di
+            #   Cm = Cm1 + Cm_alpha (a - A_LO) + Cm_i di
+            # Se pide CL = CL_crucero y Cm = 0. CL_i y Cm_i salen de UNA
+            # corrida extra con la incidencia corrida _DI_TRIM grados.
+            lo_i, hi_i = BOUNDS_POR_TOPOLOGIA[topologia][clave_inc]
+            av_i = construir_avion({**params, clave_inc: incidencia_inicial + _DI_TRIM}, topologia)
+            r_i = asb.AeroBuildup(airplane=av_i, op_point=asb.OperatingPoint(
+                atmosphere=atm, velocity=V_CRUCERO, alpha=_A_LO)).run()
+            CL_i = (_escalar(r_i["CL"]) - CL1) / _DI_TRIM
+            Cm_i = (_escalar(r_i["Cm"]) - Cm1) / _DI_TRIM
+            det = CL_alpha * Cm_i - Cm_alpha * CL_i
+            if abs(det) < 1e-12:   # la cola no controla el cabeceo: no se puede trimar
+                return Infactible(5, 1.0, "la incidencia de cola no mueve el Cm")
+            # Residuos respecto del objetivo, partiendo del punto medido.
+            res_CL, res_Cm = CL_crucero - CL1, -Cm1
+            d_alpha_t = (res_CL * Cm_i - CL_i * res_Cm) / det
+            d_inc = (CL_alpha * res_Cm - Cm_alpha * res_CL) / det
+            alpha_crucero, incidencia = _A_LO + d_alpha_t, incidencia_inicial + d_inc
+            for k in range(TRIM_MAX_CORRECCIONES + 1):
+                if not (lo_i <= incidencia <= hi_i):
+                    # Haría falta más incidencia de la que permite el diseño: se
+                    # usa la del borde (el avión queda sin trimar) y se anota.
+                    viol.append((f"trim pide {incidencia:+.1f} grados de incidencia (rango {lo_i:+.0f} a {hi_i:+.0f})",
+                                 max(lo_i - incidencia, incidencia - hi_i) / 5.0))
+                    incidencia = min(max(incidencia, lo_i), hi_i)
+                    trim_saturado = True
+                params = {**params, clave_inc: incidencia}
+                avion = construir_avion(params, topologia)
+                r = _crucero(avion, alpha_crucero)
+                res_CL = CL_crucero - _escalar(r["CL"])
+                res_Cm = -_escalar(r["Cm"])
+                if trim_saturado or abs(res_Cm) <= TRIM_TOL_CM or k == TRIM_MAX_CORRECCIONES:
+                    break
+                # Corrección de Newton con las mismas derivadas.
+                alpha_crucero += (res_CL * Cm_i - CL_i * res_Cm) / det
+                incidencia += (CL_alpha * res_Cm - Cm_alpha * res_CL) / det
+
         CD = _escalar(r["CD"])
         frac_inducida = _escalar(r["D_induced"]) / _escalar(r["D"])
         CL_real = _escalar(r["CL"])
         Cm_crucero = _escalar(r["Cm"])
         if CD <= 0 or not np.isfinite(CD):
-            return None
+            return Infactible(6, 1.0, "CD de crucero no valido")
 
         # Penalización por llevar flap, con el flap retraído (ver PENAL_CD_FLAP).
         fl = geometria_flap(params)
@@ -550,18 +860,20 @@ def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = 
         q_vmax = 0.5 * rho * V_MAX ** 2
         CL_max_vmax = _clmax_ala(params, Re_vmax, V_MAX, con_flap=False)
         if not np.isfinite(CL_max_vmax) or CL_max_vmax <= 0:
-            return None
+            return Infactible(6, 1.0, "CL_max a V_MAX no calculable")
         CL_vmax = W / (q_vmax * S)
-        if CL_vmax >= CL_max_vmax:
-            return None   # no se sostiene a 120 km/h -- restricción dura
+        if CL_vmax >= CL_max_vmax:   # no se sostiene a 120 km/h -- restricción dura
+            viol.append((f"no se sostiene a {3.6*V_MAX:.0f} km/h", (CL_vmax - CL_max_vmax) / CL_max_vmax))
 
-        alpha_vmax = _A_LO + (CL_vmax - CL1) / CL_alpha
+        # Desde el punto de crucero (que con TRIM_RESUELTO ya es el del avión
+        # trimado) con la pendiente medida.
+        alpha_vmax = alpha_crucero + (CL_vmax - CL_crucero) / CL_alpha
         r_vmax = asb.AeroBuildup(airplane=avion,
                                  op_point=asb.OperatingPoint(atmosphere=atm, velocity=V_MAX, alpha=alpha_vmax)).run()
         CD_vmax = _escalar(r_vmax["CD"])
         CD_vmax = CD_vmax * (1.0 + PENAL_CD_FLAP * fl["frac_superficie"]) if fl["tiene_flap"] else CD_vmax
         if CD_vmax <= 0 or not np.isfinite(CD_vmax):
-            return None
+            return Infactible(6, 1.0, "CD a V_MAX no valido")
         D_vmax = q_vmax * S * CD_vmax
 
         # --- 4. Ráfaga en crucero ---------------------------------------
@@ -573,12 +885,14 @@ def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = 
         dCL_rafaga = CL_alpha * d_alpha
         dn_rafaga = dCL_rafaga * q * S / W
         margen_perdida = (CL_max_crucero - (CL_crucero + dCL_rafaga)) / CL_max_crucero
-        if margen_perdida <= 0.0:
-            return None
-        # Con la ráfaga del sitio: si lleva el ala más allá de la carga ÚLTIMA
-        # con la que se dimensiona la estructura, el ala se rompería.
-        if VIENTO_ACTIVO and 1.0 + dn_rafaga > N_ULTIMO:
-            return None
+        # margen_perdida <= 0 (entra en pérdida con la ráfaga) no corta: lo
+        # cuenta el requisito de margen >= MARGEN_PERDIDA_OK.
+        # Con la ráfaga del sitio: la ráfaga de diseño es una carga LÍMITE y no
+        # puede superar la carga límite de la estructura (ver encabezado,
+        # actualización 2026-10-19).
+        if VIENTO_ACTIVO and 1.0 + dn_rafaga > N_RAFAGA_ADMISIBLE:
+            viol.append((f"rafaga del sitio n = {1 + dn_rafaga:.2f} > {N_RAFAGA_ADMISIBLE:.1f}",
+                         (1.0 + dn_rafaga - N_RAFAGA_ADMISIBLE) / N_RAFAGA_ADMISIBLE))
 
         # --- 4b. Turbulencia continua (ver viento.py) ---------------------
         sigma_n = _viento.sigma_n_turbulencia(W / S, CL_alpha_rad, rho, V_CRUCERO)
@@ -593,11 +907,11 @@ def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = 
             pts_beta.append((_escalar(r_b["Cl"]), _escalar(r_b["Cn"])))
         (Cl_lo, Cn_lo), (Cl_hi, Cn_hi) = pts_beta
         if not all(np.isfinite(v) for v in (Cl_lo, Cl_hi, Cn_lo, Cn_hi)):
-            return None
+            return Infactible(8, 1.0, "derivadas laterales no calculables")
         Cl_beta = (Cl_hi - Cl_lo) / (_B_HI - _B_LO)
         Cn_beta = (Cn_hi - Cn_lo) / (_B_HI - _B_LO)
-        if Cn_beta <= 0.0 or Cl_beta >= 0.0:
-            return None
+        # Signos inestables (Cn_beta <= 0, Cl_beta >= 0) no cortan: los cuentan
+        # los mínimos CN_BETA_MIN / CL_BETA_MIN de los requisitos.
 
         # --- 6. Derivadas de amortiguamiento ----------------------------
         p0 = _PBAR_PERT * 2.0 * V_CRUCERO / b_ref
@@ -616,7 +930,10 @@ def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = 
         Cn_r = (_escalar(rr_hi["Cn"]) - _escalar(rr_lo["Cn"])) / (2.0 * _RBAR_PERT)
 
         mac, s_ref_w, b_ref_w, _ = referencias_ala(params)
-        vol = volumenes_de_cola(params, topologia)
+        vol = volumenes_de_cola(params, topologia, avion)
+        # Envergadura TOTAL (dimensión característica de SORA): el |y| máximo de
+        # todas las superficies, winglets incluidos.
+        envergadura_total = 2.0 * max(abs(float(xs.xyz_le[1])) for w in avion.wings for xs in w.xsecs)
 
         return {
             "topologia": topologia,
@@ -628,7 +945,8 @@ def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = 
             "masa_boom": est["masa_boom"], "fraccion_estructural": est["fraccion_estructural"],
             "flecha_punta_mm": est["flecha_punta_mm"], "manda_rigidez": est["manda_rigidez"],
             # geometría
-            "envergadura": b_ref_w, "S": S, "AR": b_ref_w ** 2 / max(S, 1e-9),
+            "envergadura": b_ref_w, "envergadura_total": envergadura_total,
+            "S": S, "AR": b_ref_w ** 2 / max(S, 1e-9),
             "MAC": mac, "carga_alar": W / S, "peso": W,
             "V_H": vol["V_H"], "V_V": vol["V_V"],
             # crucero
@@ -648,6 +966,13 @@ def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = 
             "flap_deflexion": fl["deflexion"], "flap_cuerda_frac": fl["cuerda_frac"],
             # CG y estabilidad
             "cg_frac_mac": float(params.get("cg_frac_mac", 0.20)),
+            "trim_resuelto": TRIM_RESUELTO, "trim_saturado": trim_saturado,
+            "violaciones_analisis": viol, "clave_incidencia": clave_inc,
+            "incidencia_inicial_deg": incidencia_inicial,
+            "incidencia_trim_deg": float(params[clave_inc]),
+            # params con la incidencia de trim: es el avión que se analizó
+            # (lo que hay que exportar a CAD/CFD, ver params_trimados).
+            "params_trimados": dict(params),
             "SM": SM, "Cm_alpha_por_grado": Cm_alpha, "Cm_crucero": Cm_crucero,
             "Cm0": Cm0, "CL_trim": CL_trim, "CL_alpha_por_grado": CL_alpha,
             "sm_min": sm_min, "sm_max": sm_max,
@@ -664,34 +989,73 @@ def _analizar_pasada(params: dict, topologia: str, masa_bateria: float | None = 
             "extra_turbulencia": extra_turbulencia,
             "D_turbulento": D_crucero * (1.0 + extra_turbulencia),
         }
-    except Exception:
+    except _ERRORES_DE_PROGRAMACION:
+        raise
+    except Exception as e:      # candidato numéricamente inválido
+        FALLAS_ANALISIS[type(e).__name__] += 1
         return None
 
 
 def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
-    """Análisis completo de misión. Con BATERIA_ACTIVA = False es una sola
-    pasada con el modelo de masas de siempre. Con True cierra el lazo
-    batería <-> resistencia: cada pasada corre la aerodinámica completa con una
-    masa de batería dada, y de ahí sale (con la resistencia reescalada por peso,
-    ver bateria.resistencia_a_peso) la masa de batería que corresponde; se
-    repite hasta que deja de cambiar (en la práctica 2 pasadas)."""
+    """Análisis completo de misión: el dict de resultados, o None si el
+    candidato es infactible o no se pudo analizar. Para saber POR QUÉ es
+    infactible (etapa y violación), ver `analizar_con_motivo`."""
+    a = analizar_con_motivo(params, topologia)
+    return a if isinstance(a, dict) and not _restricciones_duras(a) else None
+
+
+def _restricciones_duras(a: dict) -> list:
+    """Restricciones que siempre invalidaron un candidato (también en el modo
+    "legado"): las que anota el análisis + entrar en pérdida con la ráfaga,
+    margen estático <= 0 y signos látero-direccionales inestables."""
+    duras = [t for t, _ in a.get("violaciones_analisis", [])]
+    if a["margen_perdida"] <= 0.0:
+        duras.append("entra en perdida con la rafaga")
+    if a["SM"] <= 0.0:
+        duras.append("margen estatico <= 0 (inestable)")
+    if a["Cn_beta"] <= 0.0 or a["Cl_beta"] >= 0.0:
+        duras.append("estabilidad latero-direccional de signo inestable")
+    return duras
+
+
+def analizar_con_motivo(params: dict, topologia: str) -> "dict | Infactible | None":
+    """Como `analizar_mision_avion`, pero un infactible vuelve como
+    `Infactible` (etapa, violación, motivo) en vez de None. None queda solo
+    para lo que no se pudo analizar.
+
+    Con BATERIA_ACTIVA = False es una sola pasada con el modelo de masas de
+    siempre. Con True cierra el lazo batería <-> resistencia: cada pasada corre
+    la aerodinámica completa con una masa de batería dada, y de ahí sale (con
+    la resistencia reescalada por peso, ver bateria.resistencia_a_peso) la masa
+    de batería que corresponde; se repite hasta que deja de cambiar (en la
+    práctica 2 pasadas)."""
     if not BATERIA_ACTIVA:
         return _analizar_pasada(params, topologia, None)
 
     m_b = _bat.MASA_BATERIA_INICIAL_KG
-    a = None
-    for _ in range(_bat.MAX_PASADAS):
+    convergio = False
+    for i in range(_bat.MAX_PASADAS):
         a = _analizar_pasada(params, topologia, m_b)
-        if a is None:
-            return None
+        if not isinstance(a, dict):
+            return a
         D_ef = a["D_turbulento"] if VIENTO_ACTIVO else a["D_crucero"]
         m_nueva = _bat.cerrar_masa_bateria(D_ef, a["frac_inducida"], a["peso"],
                                            a["masa_total"] - m_b, m_b, V_CRUCERO)
+        if not np.isfinite(m_nueva):
+            return Infactible(0, 1.0, f"la bateria para {_bat.ALCANCE_KM:.0f} km diverge "
+                                      f"(pide mas de {_bat.MASA_BATERIA_MAX_KG:.0f} kg)")
         if abs(m_nueva - m_b) <= _bat.TOL_MASA_BATERIA_KG:
+            convergio = True
+            break
+        if i == _bat.MAX_PASADAS - 1:
+            # Sin pasadas restantes: NO se actualiza m_b, así todo lo que se
+            # informa abajo corresponde a la pasada que efectivamente se corrió.
+            # El déficit queda a la vista en "alcance_logrado_km" < objetivo.
             break
         m_b = m_nueva
 
-    # Balance de energía con la masa de batería que SE USÓ en la última pasada.
+    # Balance de energía con la masa de batería que SE USÓ en la última pasada
+    # (m_b es siempre la de `a`, haya convergido o no).
     e_pack = _bat.energia_especifica_pack()
     E_disp = m_b * e_pack
     E_req = _bat.energia_requerida_wh(D_ef, V_CRUCERO)
@@ -708,13 +1072,111 @@ def analizar_mision_avion(params: dict, topologia: str) -> dict | None:
         "energia_requerida_wh": E_req, "energia_disponible_wh": E_disp,
         "energia_especifica_pack_wh_kg": e_pack,
         "masa_bateria_kg": m_b, "fraccion_masa_bateria": m_b / a["masa_total"],
+        "convergio": convergio, "masa_bateria_punto_fijo_kg": m_nueva,
         "volumen_bateria_l": _bat.volumen_bateria_l(m_b),
         "pack": pack, "despegue": despegue,
     }
     return a
 
 
+def energia_mision_wh(a: dict) -> float:
+    """[Wh] de batería (con reserva) para volar bateria.ALCANCE_KM a V_CRUCERO
+    con la resistencia de la misión (la turbulenta, con viento). Con
+    BATERIA_ACTIVA es la del avión con su batería (lazo cerrado); sin batería,
+    la del avión con MASA_SISTEMAS fija. Es el objetivo del modo "mision"."""
+    if a.get("bateria"):
+        return float(a["bateria"]["energia_requerida_wh"])
+    D_ef = a["D_turbulento"] if a["viento_activo"] else a["D_crucero"]
+    return float(_bat.energia_requerida_wh(D_ef, V_CRUCERO))
+
+
+def _requisitos_con_violacion(a: dict) -> list:
+    """[(texto, violación normalizada)] de los requisitos PASA / NO PASA del
+    modo "mision" que el análisis no cumple. Los que ya descartan el candidato
+    en `_analizar_pasada` (volumen, vuelo lento, V_MAX, ráfaga, signos de
+    estabilidad) no aparecen acá porque ese candidato ni llega."""
+    fallas = list(a.get("violaciones_analisis", []))   # volumen, vuelo lento, V_MAX, trim, ráfaga...
+    sm, lo, hi = a["SM"], a["sm_min"], a["sm_max"]
+    if not (lo <= sm <= hi):
+        fallas.append((f"margen estatico {100*sm:.1f}% fuera de la banda {100*lo:.0f}-{100*hi:.0f}%",
+                       max(lo - sm, sm - hi) / 0.05))
+    if a["margen_perdida"] < MARGEN_PERDIDA_OK:
+        fallas.append((f"margen de perdida con rafaga {100*a['margen_perdida']:.1f}% < {100*MARGEN_PERDIDA_OK:.0f}%",
+                       (MARGEN_PERDIDA_OK - a["margen_perdida"]) / MARGEN_PERDIDA_OK))
+    if a["Cn_beta"] < CN_BETA_MIN:
+        fallas.append((f"Cn_beta {a['Cn_beta']:.5f} < {CN_BETA_MIN:.5f} /grado",
+                       (CN_BETA_MIN - a["Cn_beta"]) / CN_BETA_MIN))
+    if a["Cl_beta"] > -CL_BETA_MIN:
+        fallas.append((f"Cl_beta {a['Cl_beta']:.5f} > -{CL_BETA_MIN:.5f} /grado",
+                       (a["Cl_beta"] + CL_BETA_MIN) / CL_BETA_MIN))
+    b_tot = a.get("envergadura_total", a["envergadura"])
+    if b_tot > ENVERGADURA_MAX_M:
+        fallas.append((f"envergadura total {b_tot:.2f} m > {ENVERGADURA_MAX_M:.1f} m (SORA)",
+                       (b_tot - ENVERGADURA_MAX_M) / 0.3))
+    if a.get("trim_resuelto") and not a.get("trim_saturado") and abs(a["Cm_crucero"]) > 5 * TRIM_TOL_CM:
+        fallas.append((f"no se pudo trimar (Cm en crucero {a['Cm_crucero']:+.4f})",
+                       abs(a["Cm_crucero"]) / (5 * TRIM_TOL_CM) - 1.0))
+    return fallas
+
+
+def requisitos_incumplidos(a: dict) -> list:
+    """Textos de los requisitos PASA / NO PASA que el análisis no cumple
+    (lista vacía = cumple todo). Ver `_requisitos_con_violacion`."""
+    return [t for t, _ in _requisitos_con_violacion(a)]
+
+
 def _terminos(a: dict) -> list:
+    """(nombre, peso, f) de cada término del puntaje, según PUNTAJE_MODO."""
+    if PUNTAJE_MODO == "mision":
+        return _terminos_mision(a)
+    if PUNTAJE_MODO != "legado":
+        raise ValueError(f"PUNTAJE_MODO desconocido: {PUNTAJE_MODO!r} (usar 'mision' o 'legado')")
+    return _terminos_legado(a)
+
+
+def _terminos_mision(a: dict) -> list:
+    """Modo "mision": un objetivo (energía para el alcance) y los dos términos
+    que todavía esperan una decisión de Quintana/Felipe, con la misma forma y
+    peso que tenían. Ver ENERGIA_REFERENCIA_WH / PESO_ALCANCE para la tasa de
+    cambio entre ellos. La envergadura dejó de ser término (2026-10-19): es el
+    requisito ENVERGADURA_MAX_M (SORA)."""
+    f_le = min(1.0, max(a["margen_lento"], 0.0))
+    f_vm = D_REFERENCIA_VMAX / a["D_vmax"]
+    return [
+        (f"alcance (energia {_bat.ALCANCE_KM:.0f} km)", PESO_ALCANCE, ENERGIA_REFERENCIA_WH / energia_mision_wh(a)),
+        ("PENDIENTE vuelo lento", PESO_LENTO, f_le),
+        ("PENDIENTE velocidad maxima", PESO_VELMAX, f_vm),
+    ]
+
+
+def puntaje_de_analisis(a: "dict | Infactible | None") -> float:
+    """Puntaje de un análisis ya hecho (lo que sale de `analizar_con_motivo`
+    o de `analizar_mision_avion`). Usar esto en vez de sumar `_terminos` a
+    mano, que se saltea las restricciones.
+
+    - factible: la suma de los términos (siempre > 0);
+    - infactible, en modo "mision" con RANKING_INFACTIBLES: un número por
+      debajo de PUNTAJE_INFACTIBLE_TECHO que ordena por cuánto viola (reglas
+      de Deb, ver Infactible); si no, -inf;
+    - no analizable (None): -inf."""
+    rankear = PUNTAJE_MODO == "mision" and RANKING_INFACTIBLES
+    if a is None:
+        return -np.inf
+    if isinstance(a, Infactible):
+        return a.puntaje() if rankear else -np.inf
+    if PUNTAJE_MODO != "mision" and _restricciones_duras(a):
+        return -np.inf
+    if PUNTAJE_MODO == "mision":
+        fallas = _requisitos_con_violacion(a)
+        if fallas:
+            if not rankear:
+                return -np.inf
+            return Infactible(ETAPA_REQUISITOS, sum(v for _, v in fallas),
+                              "; ".join(t for t, _ in fallas)).puntaje()
+    return float(sum(w * f for _, w, f in _terminos(a)))
+
+
+def _terminos_legado(a: dict) -> list:
     f_ef = D_REFERENCIA / a["D_crucero"]
     f_ma = MASA_REFERENCIA / a["masa_total"]
     f_es = _meseta(a["SM"], a["sm_min"], a["sm_max"], SM_TOLERANCIA)
@@ -756,19 +1218,31 @@ def _terminos(a: dict) -> list:
 
 
 def evaluar_mision_avion(params: dict, topologia: str) -> float:
+    """Lo que ve el GA. Ver `puntaje_de_analisis` (y `es_factible`,
+    `describir_puntaje` para leerlo)."""
+    return puntaje_de_analisis(analizar_con_motivo(params, topologia))
+
+
+def params_trimados(params: dict, topologia: str) -> dict:
+    """Los params con la incidencia de cola que trima el avión (TRIM_RESUELTO):
+    es el avión que el modelo efectivamente analizó y el que hay que exportar
+    a CAD/CFD o dibujar. Si el candidato es inválido, devuelve los params tal
+    cual."""
     a = analizar_mision_avion(params, topologia)
-    if a is None:
-        return -np.inf
-    return float(sum(w * f for _, w, f in _terminos(a)))
+    return dict(a["params_trimados"]) if a is not None else dict(params)
 
 
 def desglose_mision_avion(params: dict, topologia: str) -> str:
-    a = analizar_mision_avion(params, topologia)
+    a = analizar_con_motivo(params, topologia)
+    if isinstance(a, Infactible):
+        return (f"Candidato INFACTIBLE en la etapa {a.etapa} ({ETAPAS[a.etapa]}): {a.motivo}  "
+                f"(violacion {a.violacion:.2f})")
     if a is None:
         return ("Candidato INVALIDO: no cierra estructuralmente, no entra el volumen util "
                 f"minimo ({VOLUMEN_UTIL_MIN_L:.1f} L) en el fuselaje, no se sostiene a "
                 f"{3.6*V_MAX:.0f} km/h, no puede volar a 10 m/s ni con flap, es inestable, "
-                "o entra en perdida con la rafaga de diseno.")
+                "entra en perdida con la rafaga de diseno"
+                + (f", o la rafaga del sitio supera {N_RAFAGA_ADMISIBLE:.1f} g." if VIENTO_ACTIVO else "."))
     terms = _terminos(a)
     total = sum(w * f for _, w, f in terms)
     L = []
@@ -796,8 +1270,10 @@ def desglose_mision_avion(params: dict, topologia: str) -> str:
              f"({'la rigidez dimensiona el larguero' if a['manda_rigidez'] else 'manda la resistencia'})")
     L.append("")
     L.append("GEOMETRIA")
-    L.append(f"  envergadura ........... {a['envergadura']:6.2f} m   (variable de diseno; "
-             f"penalizada en puntaje por encima de {ENVERGADURA_MANUFACTURA_MAX:.1f} m, fabricacion)")
+    L.append(f"  envergadura ........... {a['envergadura']:6.2f} m ala, "
+             f"{a.get('envergadura_total', a['envergadura']):.2f} m total con winglets   "
+             + (f"(maximo {ENVERGADURA_MAX_M:.1f} m, SORA)" if PUNTAJE_MODO == "mision"
+                else f"(penalizada por encima de {ENVERGADURA_MANUFACTURA_MAX:.1f} m, fabricacion)"))
     L.append(f"  superficie ............ {a['S']:6.3f} m2   AR = {a['AR']:.1f}   MAC = {a['MAC']:.3f} m")
     L.append(f"  carga alar ............ {a['carga_alar']:6.1f} N/m2")
     L.append(f"  volumen de cola ....... V_H = {a['V_H']:.3f}   V_V = {a['V_V']:.4f}"
@@ -820,6 +1296,11 @@ def desglose_mision_avion(params: dict, topologia: str) -> str:
                  f"disponible {b['energia_disponible_wh']:.0f} Wh   alcance logrado {b['alcance_logrado_km']:.0f} km")
         L.append(f"  pack {pk['celda']} {pk['S']}S{pk['P']}P ({pk['n_celdas']} celdas): "
                  f"{pk['capacidad_Ah']:.1f} Ah, {pk['masa_pack_kg']:.2f} kg, {b['volumen_bateria_l']:.1f} L")
+        L.append(f"     (el modelo usa {b['masa_bateria_kg']:.2f} kg continuos; el pack real se arma de a "
+                 f"{pk['S']} celdas y puede pesar hasta ~{pk['S'] * _bat.CELDAS[pk['celda']]['g'] / 1000 * _bat.FACTOR_MASA_PACK:.1f} kg mas)")
+        if not b["convergio"]:
+            L.append(f"  OJO: el lazo bateria<->resistencia NO convergio en {_bat.MAX_PASADAS} pasadas "
+                     f"(el punto fijo pedia {b['masa_bateria_punto_fijo_kg']:.2f} kg)")
         L.append(f"  despegue (info) ....... empuje {dsp['empuje_kgf']:.1f} kgf, {dsp['potencia_electrica_W']:.0f} W, "
                  f"{dsp['corriente_A']:.0f} A (pack aguanta {pk['corriente_continua_max_A']:.0f} A: "
                  f"{'OK' if dsp['corriente_ok'] else 'NO ALCANZA'})")
@@ -845,8 +1326,11 @@ def desglose_mision_avion(params: dict, topologia: str) -> str:
     L.append(f"  margen estatico (SM) .. {100*a['SM']:6.2f} %   (banda {100*a['sm_min']:.0f}-{100*a['sm_max']:.0f}%)")
     L.append(f"  CG .................... {100*a['cg_frac_mac']:6.2f} % de la MAC")
     L.append(f"  Cm en crucero ......... {a['Cm_crucero']:8.5f}   (0 = trimado sin elevador)")
-    L.append(f"  Cn_beta ............... {a['Cn_beta']:8.5f} /grado   (> 0 exigido)")
-    L.append(f"  Cl_beta ............... {a['Cl_beta']:8.5f} /grado   (< 0 exigido)")
+    if a.get("trim_resuelto"):
+        L.append(f"  incidencia de cola .... {a['incidencia_trim_deg']:+6.2f} grados   (resuelta para Cm = 0; "
+                 f"el candidato traia {a['incidencia_inicial_deg']:+.2f})")
+    L.append(f"  Cn_beta ............... {a['Cn_beta']:8.5f} /grado   (>= {CN_BETA_MIN:.4f} exigido)")
+    L.append(f"  Cl_beta ............... {a['Cl_beta']:8.5f} /grado   (<= -{CL_BETA_MIN:.4f} exigido)")
     L.append("")
     L.append("AMORTIGUAMIENTO (informativo)")
     L.append(f"  Cl_p {a['Cl_p']:8.4f}   Cn_r {a['Cn_r']:8.4f}   "
@@ -861,11 +1345,24 @@ def desglose_mision_avion(params: dict, topologia: str) -> str:
     L.append(f"RAFAGA VERTICAL DE DISENO {a['rafaga_vertical']:.2f} m/s  (en crucero)")
     L.append(f"  Kg = {a['Kg']:.3f}  (mu = {a['mu']:.1f})   d_alpha = {a['d_alpha_rafaga']:.2f} grados")
     L.append(f"  dn = {a['dn_rafaga']:.2f}  -> factor de carga {a['n_con_rafaga']:.2f} g   "
-             f"(estructura: limite {N_LIMITE:.1f}, ultima {N_ULTIMO:.1f})")
-    L.append(f"  margen de perdida ..... {100*a['margen_perdida']:6.1f} %   (puntaje pleno desde {100*MARGEN_PERDIDA_OK:.0f}%)")
+             f"(estructura: limite {N_LIMITE:.1f}, ultima {N_ULTIMO:.1f}"
+             + (f"; con viento se exige <= {N_RAFAGA_ADMISIBLE:.1f})" if a["viento_activo"] else ")"))
+    L.append(f"  margen de perdida ..... {100*a['margen_perdida']:6.1f} %   (exigido >= {100*MARGEN_PERDIDA_OK:.0f}%)")
     L.append("")
-    L.append("PUNTAJE")
+    E = energia_mision_wh(a)
+    L.append(f"ENERGIA PARA EL ALCANCE ({_bat.ALCANCE_KM:.0f} km a {3.6*V_CRUCERO:.0f} km/h, con reserva) "
+             f"{E:7.0f} Wh   (referencia {ENERGIA_REFERENCIA_WH:.0f} Wh)")
+    L.append("")
+    if PUNTAJE_MODO == "mision":
+        fallas = requisitos_incumplidos(a)
+        L.append("REQUISITOS (pasa / no pasa)   " + ("TODOS OK" if not fallas else "INCUMPLE -> infactible (el GA lo ordena por violacion)"))
+        for f_ in fallas:
+            L.append(f"  NO: {f_}")
+        L.append("")
+    L.append(f"PUNTAJE  (modo '{PUNTAJE_MODO}')")
     for nombre, w, f in terms:
-        L.append(f"  {nombre:.<28} {w:.2f} x {f:5.3f} = {w*f:6.3f}   ({100*w*f/total:4.1f} %)")
-    L.append(f"  {'TOTAL':.<28} {total:22.3f}")
+        L.append(f"  {nombre:.<32} {w:.2f} x {f:5.3f} = {w*f:6.3f}   ({100*w*f/total:4.1f} %)")
+    L.append(f"  {'TOTAL':.<32} {total:22.3f}"
+             + ("   (pero INCUMPLE requisitos: para el GA es infactible, ver arriba)"
+                if PUNTAJE_MODO == "mision" and requisitos_incumplidos(a) else ""))
     return "\n".join(L)

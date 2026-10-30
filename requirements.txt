@@ -3,9 +3,14 @@
 # (dentro de un entorno virtual -- ver INSTRUCCIONES_VSCODE.md)
 
 aerosandbox>=4.2
+scipy>=1.11        # PCHIP de la forma en planta (geometria_avion); lo trae aerosandbox, pero se usa directo
 pandas>=2.0
 matplotlib>=3.8
 plotly>=5.0        # visualizacion 3D interactiva (vista 3D del notebook)
 numpy>=1.26
+plotly>=5.0        # visualizacion 3D interactiva (secciones 7 y 8 del notebook)
+numpy>=1.26        # con numpy 1.x se usa np.trapz, con 2.x np.trapezoid (el codigo acepta los dos)
+pyyaml>=6.0        # fichas de viento (viento/fichas/*.yaml, viento.condiciones_desde_fichas)
+pytest>=7.0        # tests: python -m pytest viento/codigo_viento/tests -q
 jupyter>=1.0
 ipykernel>=6.29

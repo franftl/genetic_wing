@@ -88,9 +88,9 @@ code(r"""
 import sys
 from pathlib import Path
 
-# optimizacion_avion IMPORTA de optimizacion_ala (perfiles, propiedades de
-# material, criterio de parada), asi que los dos paquetes tienen que estar
-# al lado de este notebook.
+# optimizacion_avion es autocontenido (desde V55 lo que heredo del ala volante
+# esta en optimizacion_avion/base_ala/): alcanza con que el paquete este al
+# lado de este notebook.
 sys.path.insert(0, str(Path.cwd()))
 
 import optimizacion_avion as av

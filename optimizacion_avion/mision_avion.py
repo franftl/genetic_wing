@@ -258,7 +258,7 @@ import numpy as np
 
 from collections import Counter
 
-from optimizacion_ala.estructura import G, MASA_PAYLOAD, MASA_SISTEMAS, N_LIMITE, N_ULTIMO
+from .base_ala.estructura import G, MASA_PAYLOAD, MASA_SISTEMAS, N_LIMITE, N_ULTIMO
 
 from . import viento as _viento
 from . import bateria as _bat

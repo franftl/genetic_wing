@@ -75,8 +75,8 @@ from __future__ import annotations
 import aerosandbox as asb
 import numpy as np
 
-from optimizacion_ala.perfiles import CATALOGO as _CATALOGO_ALA
-from optimizacion_ala.perfiles import N_PUNTOS_LADO, PASO_MEZCLA
+from .base_ala.perfiles import CATALOGO as _CATALOGO_ALA
+from .base_ala.perfiles import N_PUNTOS_LADO, PASO_MEZCLA
 
 # Perfiles de ALTA SUSTENTACIÓN agregados para la misión con vuelo lento.
 # Ordenados por Cm0 decreciente, que en este tramo coincide con CL_max

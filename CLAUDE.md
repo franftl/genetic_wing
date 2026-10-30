@@ -58,7 +58,7 @@ comparan. Aerodinámica: AeroSandbox (AeroBuildup + NeuralFoil). Todo en Python,
 | `optimizacion_avion/competencia.py` | Semillas por escenario (`semillas_para_escenario`) y orquestador |
 | `optimizacion_avion/resultados.py` | Carpeta de resultados de cada corrida, vista 3D, líneas de flujo (VLM) |
 | `optimizacion_avion/xflr5.py` | Exportación a XFLR5 (XML + perfiles .dat + condiciones) |
-| `optimizacion_ala/` | El paquete viejo del ala volante; el avión reutiliza de ahí materiales, proyecciones y perfiles |
+| `optimizacion_avion/base_ala/` | Lo heredado del ala volante (geometría base, estructura, parada del GA, catálogo de perfiles). Desde V55 `optimizacion_avion` es autocontenido; el resto del ala volante está en `codigo_obsoleto/` |
 | `herramientas/construir_notebook_avion.py` | **Genera** `Optimizador_<VERSION>.ipynb` (en la raíz) |
 | `viento/` | Caracterización de viento (ERA5), paquete `viento_uav`, tests |
 | `semillas/` | Biblioteca de sets de semillas (`semillas.listar()`, `semillas.cargar(nombre)`) |

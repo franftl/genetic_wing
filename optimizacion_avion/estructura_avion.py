@@ -46,7 +46,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from optimizacion_ala.estructura import (
+from .base_ala.estructura import (
     E_LARGUERO, FACTOR_DETALLES, FLECHA_MAX_FRAC, G, MASA_AREAL_PIEL,
     MASA_PAYLOAD, MASA_SISTEMAS, N_ULTIMO, RHO_LARGUERO, SIGMA_ADM,
 )

@@ -1,4 +1,4 @@
-# UAV FP -- optimizacion_ala
+# UAV FP -- optimizacion_avion
 # Instalar con:  pip install -r requirements.txt
 # (dentro de un entorno virtual -- ver INSTRUCCIONES_VSCODE.md)
 

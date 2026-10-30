@@ -1,6 +1,6 @@
 # Cómo correr esto desde Visual Studio Code
 
-Esta carpeta (`UAV FP`) ya tiene todo lo que hace falta: el paquete `optimizacion_ala/`, el notebook `01_Optimizacion_Ala.ipynb`, `requirements.txt`, y una carpeta `.vscode/` con las extensiones recomendadas precargadas.
+Esta carpeta (`UAV FP`) ya tiene todo lo que hace falta: el paquete `optimizacion_avion/` y el notebook `Optimizador_<VERSION>.ipynb` (el del ala volante está en `codigo_obsoleto/`), `requirements.txt`, y una carpeta `.vscode/` con las extensiones recomendadas precargadas.
 
 ## 1. Instalar lo necesario (una sola vez)
 
@@ -29,7 +29,7 @@ Esto crea una carpeta `.venv` con un Python aislado para este proyecto, y le ins
 2. Arriba a la derecha del notebook, hacé clic en "Select Kernel" (o el nombre de kernel que aparezca) y elegí el intérprete `.venv` que acabás de crear -- debería aparecer como algo como `Python 3.x.x ('.venv': venv)`.
 3. Corré las celdas en orden con el botón de play de cada celda, o `Run All` arriba. La celda de "Correr una generación" (sección 3) está pensada para correrla muchas veces seguidas -- cada vez que la corrés avanza una generación más.
 
-No hace falta ni `claude login` ni ninguna `API_KEY`: el backend activo (`optimizacion_ala/ga_numerico.py`) no llama a ningún modelo de IA, corre todo localmente.
+No hace falta ni `claude login` ni ninguna `API_KEY`: el backend activo (`optimizacion_avion/ga_numerico_avion.py`) no llama a ningún modelo de IA, corre todo localmente.
 
 ## 4. Si algo no anda
 

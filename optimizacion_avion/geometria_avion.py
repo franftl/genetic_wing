@@ -142,7 +142,7 @@ from scipy.interpolate import PchipInterpolator
 # Las proyecciones isotónicas son matemática pura y no dependen de la
 # topología: se reutilizan tal cual del ala volante (ver allí el porqué de
 # PAVA y de permitir diedro Y anedro).
-from optimizacion_ala.geometria import (
+from .base_ala.geometria import (
     N_SECCIONES_FILETE,
     WINGLET_MIN_H,
     _proyectar_monotona_desde_cero,

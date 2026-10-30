@@ -402,3 +402,17 @@ con `bateria-350km` (Felipe, V52-F a V53-F y todo el trabajo de CFD) en la rama 
   (S 1.085 m², 7.8 kg sin batería). Con el diseño anterior y el código integrado AeroBuildup da lo mismo que antes (CL 0.2399, CD 0.01475 a α = 0).
   Hay que correr el optimizador integrado, tomar el ganador, exportarlo y repetir la CFD sobre ese diseño.
 - Las semillas de `evaluacion_bateria_350km/semillas_bateria.json` son las de Iván.
+
+## V55 (2026-10-30) — `optimizacion_avion` autocontenido
+
+Modificación de módulos (sube el número). Los resultados NO cambian: con el v_tail de la CFD, AeroBuildup da lo mismo que en V54.3
+(CL 0.2399 y CD 0.01475 a α = 0; E = 1115 Wh).
+
+- `optimizacion_avion` ya no importa de `optimizacion_ala`. Los cuatro módulos que usaba (`geometria`, `estructura`, `evolucion`,
+  `perfiles`) pasaron, sin cambios de código, a `optimizacion_avion/base_ala/`.
+- El resto del ala volante (`mision`, `objetivo`, `ga_numerico`, `graficos`, `exportar_cad`, `__init__`) quedó en
+  `codigo_obsoleto/optimizacion_ala_restante/`, junto con `01_Optimizacion_Ala.ipynb`, `fusion_generar_ala.py`,
+  `wing_design_params.json`, `wing_geometry_cad.json` y `evolution_checkpoint.json`.
+- Consecuencia: el notebook y los scripts ya no necesitan `optimizacion_ala/` al lado. Los notebooks de `codigo_obsoleto/` que
+  hacen `import optimizacion_ala` ya no corren sin restaurarla.
+

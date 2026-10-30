@@ -27,7 +27,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable, List, Optional
 
-from optimizacion_ala.evolucion import deberia_parar  # reutilizado tal cual, ver encabezado
+from .base_ala.evolucion import deberia_parar  # reutilizado tal cual, ver encabezado
 
 from .geometria_avion import CandidateAvion
 from .mision_avion import describir_puntaje, es_factible

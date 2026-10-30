@@ -106,3 +106,17 @@ si CD(0°) baja hacia 0.015-0.02 con Transition SST, era el modelo de turbulenci
 convergidos por modelo; con menos, es indicativa. Los casos no convergidos quedan con `convergio = 0` y la calibración los ignora.
 
 **Pendiente de verificar con Fluent** (nunca corrido todavía): nombre `transition-sst` y de la turbulencia de `m_walls` tras cambiarla a velocity-inlet, la estela, y que el segundo grupo del plan (que relee la malla) arranque limpio.
+
+## 9. Resultado de la noche 2026-10-28 (recinto grande, malla_grande.msh.h5, avión completo)
+Detalle, gráficos y tabla en `Ansys noche/` (`HALLAZGOS.md`, `comparacion_cfd_aerobuildup.png`, `tabla_cfd_aerobuildup.csv`; script `herramientas/graficar_hallazgos_noche.py`).
+
+| Modelo | α | Conv. | CL | CD | L/D |
+|---|---|---|---|---|---|
+| Transition SST | 0 | no (800 it) | 0.226 | 0.01945 | 11.6 |
+| Transition SST | 1.21 | sí | 0.414 | 0.02112 | 19.6 |
+| Transition SST | 4 | sí | 0.843 | 0.03265 | 25.8 |
+| Transition SST | 8 | sí | 1.438 | 0.06641 | 21.7 |
+| k-ω SST | 0 | sí | 0.233 | 0.02838 | 8.2 |
+| k-ω SST | 4 | sí | 0.827 | 0.04248 | 19.5 |
+
+Conclusiones: H1 (recinto chico aplasta el CL) confirmada; H2 (el modelo totalmente turbulento infla el CD) confirmada; H3 rechazada. La CFD nueva sobre-sustenta respecto de AeroBuildup (+15 % a 1.21°, +32 % a 4°, pendiente 0.154 /° vs 0.099 /°): sin explicar. Casos que siguen faltando de la sección 7: ala sola, independencia de malla, SST a 1.21° y 8°.

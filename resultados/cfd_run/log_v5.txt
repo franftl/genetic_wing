@@ -1,0 +1,1220 @@
+[  10.2s] Fluent Fluent version 2024 R1
+
+Importing one geom object per program-controlled and one zone per body ...
+    C:\\Program Files\\ANSYS Inc\\v241\\commonfiles\\CPython\\3_10\\winx64\\Release\\python\\..\\Ansys\\TGrid\\CADReaders.py started by felip on Felipes_PC winx64 on Tue Oct 27 00:43:43 2026
+    using Python 3.10.9 (remotes/origin/4e018266dafe29ec2836492d71d245fcfd366d07-dirty:4e018266, Jan  3 2) [MSC v.1920 64 bit (AMD64)]
+    
+    using Ansys.Meshing.FieldMesher build Nov 27 2023 11:54:13
+    
+    running ANSYS TGrid CADToTGridConverter ...
+    setting up parameters ...
+    setting up parameters done.
+    running conversion ...
+    converting 1 file(s) from Workbench to FLTG using output path 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\FM_Felipes_PC_20136/out179307262320136.tgf'
+    converting file 'encl_red_v2.step' (1 of 1) from Workbench to FLTG using output path 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\FM_Felipes_PC_20136'
+    importing data ...
+    importing meshing model from PartMgr from file 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\encl_red_v2.step' ...
+    setting enclosure and symmetry processing to False
+    setting stitch type to PROGRAMTOLERANCE
+    setting transfer named selections to True
+    setting named selection prefixes to ''
+    setting mixed import resolution type to 'SolidAndSurface'
+    setting target application to 'FluentMeshing'
+    attaching to assembly ...
+    attaching to assembly done in 2.978 [s]
+    processing assembly 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\encl_red_v2.step' with ID 1
+    length unit = [mm]
+    processing part 'Avion optimizado (v_tail)|Body16' with ID 3
+    processing named selection 'Color:160.160.160'
+    processing data ...
+    removing named collections of entities ...
+    removed named collections:  'Color:160.160.160'
+    analyzing feature edges ...
+    detecting feature edges, feature angle = 40 [deg] ...
+        Data information
+            Meshing model
+                Attributes:
+                    'LengthUnit': '[mm]'
+                Entity summary:
+                    Component: 2
+                    Body     : 1
+                    Shell    : 1
+                    Face     : 72
+                    Loop     : 74
+                    Edge     : 176
+                    Vertex   : 108
+                    Surface  : 72
+                    Curve    : 176
+                Tessellation summary:
+                    Face facets  : 5360
+                    Edge segments: 3035
+                Bounding box:
+                    (-1000, -2.594105485975717e-12, -1500) x (10300, 2500, 1500)
+                Assembly component hierarchy:
+                    'C:\\Users\\felip\\Desktop\\UAV FP bateria\\encl_red_v2.step'
+                      'Avion optimizado (v_tail)|Body16'
+    
+    
+    exporting FLTG data to file 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\FM_Felipes_PC_20136\\out179307262320136.tgf' ...
+    writing face-based mesh file 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\FM_Felipes_PC_20136\\out179307262320136.tgf' ...
+    ======== Exported Data ========
+    Entity summary:
+        Object       : 1
+        Object region: 1
+        Zone         : 2
+    
+    running conversion done.
+    running ANSYS TGrid CADToTGridConverter done.
+    ran ANSYS TGrid CADToTGridConverter in 3.338 [s]
+
+Reading "C:\Users\felip\Desktop\UAV FP bateria\resultados\cfd_run\FM_Felipes_PC_20136/out179307262320136.tgf"...
+
+nodes: 2874
+edges: 185
+faces: 5360
+cells: 0
+reading 2874 storage data (id 1, type 41, double precision binary).
+generating pointers...done.
+extracting boundary entities...
+ 2874 boundary nodes.
+ 5360 boundary faces.
+ 1 boundary face zones.
+done.
+analyzing boundary connectivity...done.
+
+
+---------------- Import of encl_red_v2, consisting of one single part/object , complete. 
+ 
+[  16.6s] STEP importado
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_0.txt".
+
+-------------------------------------------------------------------------------
+ID    Hostname    Core  O.S.         PID    Vendor                            
+-------------------------------------------------------------------------------
+n7    Felipes_PC  8/16  Windows-x64  32196  AMD Ryzen AI 7 350 w/ Radeon 860M 
+n6    Felipes_PC  7/16  Windows-x64  27424  AMD Ryzen AI 7 350 w/ Radeon 860M 
+n5    Felipes_PC  6/16  Windows-x64  40612  AMD Ryzen AI 7 350 w/ Radeon 860M 
+n4    Felipes_PC  5/16  Windows-x64  21800  AMD Ryzen AI 7 350 w/ Radeon 860M 
+n3    Felipes_PC  4/16  Windows-x64  39416  AMD Ryzen AI 7 350 w/ Radeon 860M 
+n2    Felipes_PC  3/16  Windows-x64  36772  AMD Ryzen AI 7 350 w/ Radeon 860M 
+n1    Felipes_PC  2/16  Windows-x64  33472  AMD Ryzen AI 7 350 w/ Radeon 860M 
+n0*   Felipes_PC  1/16  Windows-x64  32916  AMD Ryzen AI 7 350 w/ Radeon 860M 
+host  Felipes_PC        Windows-x64  35780  AMD Ryzen AI 7 350 w/ Radeon 860M 
+
+MPI Option Selected: intel
+Selected system interconnect: default
+-------------------------------------------------------------------------------
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+       2 origin-avion-optimizado--v_tail--body16             geometry     5360     5360        0
+
+Transcript closed.
+
+separate origin-avion-optimizado--v_tail--body16 into 74 zones
+moved 2 faces to origin-avion-optimizado--v_tail--body16:6
+moved 2 faces to origin-avion-optimizado--v_tail--body16:7
+moved 119 faces to origin-avion-optimizado--v_tail--body16:8
+moved 5051 faces to origin-avion-optimizado--v_tail--body16:9
+moved 1 faces to origin-avion-optimizado--v_tail--body16:10
+moved 2 faces to origin-avion-optimizado--v_tail--body16:11
+moved 5 faces to origin-avion-optimizado--v_tail--body16:12
+moved 2 faces to origin-avion-optimizado--v_tail--body16:13
+moved 1 faces to origin-avion-optimizado--v_tail--body16:14
+moved 2 faces to origin-avion-optimizado--v_tail--body16:15
+moved 2 faces to origin-avion-optimizado--v_tail--body16:16
+moved 1 faces to origin-avion-optimizado--v_tail--body16:17
+moved 1 faces to origin-avion-optimizado--v_tail--body16:18
+moved 1 faces to origin-avion-optimizado--v_tail--body16:19
+moved 1 faces to origin-avion-optimizado--v_tail--body16:20
+moved 1 faces to origin-avion-optimizado--v_tail--body16:21
+moved 1 faces to origin-avion-optimizado--v_tail--body16:22
+moved 3 faces to origin-avion-optimizado--v_tail--body16:23
+moved 1 faces to origin-avion-optimizado--v_tail--body16:24
+moved 2 faces to origin-avion-optimizado--v_tail--body16:25
+moved 2 faces to origin-avion-optimizado--v_tail--body16:26
+moved 2 faces to origin-avion-optimizado--v_tail--body16:27
+moved 2 faces to origin-avion-optimizado--v_tail--body16:28
+moved 1 faces to origin-avion-optimizado--v_tail--body16:29
+moved 1 faces to origin-avion-optimizado--v_tail--body16:30
+moved 1 faces to origin-avion-optimizado--v_tail--body16:31
+moved 3 faces to origin-avion-optimizado--v_tail--body16:32
+moved 2 faces to origin-avion-optimizado--v_tail--body16:33
+moved 1 faces to origin-avion-optimizado--v_tail--body16:34
+moved 1 faces to origin-avion-optimizado--v_tail--body16:35
+moved 1 faces to origin-avion-optimizado--v_tail--body16:36
+moved 2 faces to origin-avion-optimizado--v_tail--body16:37
+moved 2 faces to origin-avion-optimizado--v_tail--body16:38
+moved 2 faces to origin-avion-optimizado--v_tail--body16:39
+moved 1 faces to origin-avion-optimizado--v_tail--body16:40
+moved 2 faces to origin-avion-optimizado--v_tail--body16:41
+moved 2 faces to origin-avion-optimizado--v_tail--body16:42
+moved 1 faces to origin-avion-optimizado--v_tail--body16:43
+moved 1 faces to origin-avion-optimizado--v_tail--body16:44
+moved 1 faces to origin-avion-optimizado--v_tail--body16:45
+moved 1 faces to origin-avion-optimizado--v_tail--body16:46
+moved 2 faces to origin-avion-optimizado--v_tail--body16:47
+moved 1 faces to origin-avion-optimizado--v_tail--body16:48
+moved 1 faces to origin-avion-optimizado--v_tail--body16:49
+moved 1 faces to origin-avion-optimizado--v_tail--body16:50
+moved 2 faces to origin-avion-optimizado--v_tail--body16:51
+moved 1 faces to origin-avion-optimizado--v_tail--body16:52
+moved 2 faces to origin-avion-optimizado--v_tail--body16:53
+moved 1 faces to origin-avion-optimizado--v_tail--body16:54
+moved 1 faces to origin-avion-optimizado--v_tail--body16:55
+moved 1 faces to origin-avion-optimizado--v_tail--body16:56
+moved 1 faces to origin-avion-optimizado--v_tail--body16:57
+moved 2 faces to origin-avion-optimizado--v_tail--body16:58
+moved 1 faces to origin-avion-optimizado--v_tail--body16:59
+moved 1 faces to origin-avion-optimizado--v_tail--body16:60
+moved 1 faces to origin-avion-optimizado--v_tail--body16:61
+moved 1 faces to origin-avion-optimizado--v_tail--body16:62
+moved 1 faces to origin-avion-optimizado--v_tail--body16:63
+moved 1 faces to origin-avion-optimizado--v_tail--body16:64
+moved 1 faces to origin-avion-optimizado--v_tail--body16:65
+moved 1 faces to origin-avion-optimizado--v_tail--body16:66
+moved 1 faces to origin-avion-optimizado--v_tail--body16:67
+moved 3 faces to origin-avion-optimizado--v_tail--body16:68
+moved 2 faces to origin-avion-optimizado--v_tail--body16:69
+moved 2 faces to origin-avion-optimizado--v_tail--body16:70
+moved 2 faces to origin-avion-optimizado--v_tail--body16:71
+moved 2 faces to origin-avion-optimizado--v_tail--body16:72
+moved 1 faces to origin-avion-optimizado--v_tail--body16:73
+moved 1 faces to origin-avion-optimizado--v_tail--body16:74
+moved 1 faces to origin-avion-optimizado--v_tail--body16:75
+moved 2 faces to origin-avion-optimizado--v_tail--body16:76
+moved 82 faces to origin-avion-optimizado--v_tail--body16:77
+moved 2 faces to origin-avion-optimizado--v_tail--body16:78
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_1.txt".
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+      78 origin-avion-optimizado--v_tail--body16:78             geometry        2        2        0
+      77 origin-avion-optimizado--v_tail--body16:77             geometry       82       82        0
+       2 origin-avion-optimizado--v_tail--body16             geometry        2        2        0
+      75 origin-avion-optimizado--v_tail--body16:75             geometry        1        1        0
+      74 origin-avion-optimizado--v_tail--body16:74             geometry        1        1        0
+      73 origin-avion-optimizado--v_tail--body16:73             geometry        1        1        0
+      72 origin-avion-optimizado--v_tail--body16:72             geometry        2        2        0
+      71 origin-avion-optimizado--v_tail--body16:71             geometry        2        2        0
+      70 origin-avion-optimizado--v_tail--body16:70             geometry        2        2        0
+      69 origin-avion-optimizado--v_tail--body16:69             geometry        2        2        0
+      68 origin-avion-optimizado--v_tail--body16:68             geometry        3        3        0
+      67 origin-avion-optimizado--v_tail--body16:67             geometry        1        1        0
+      66 origin-avion-optimizado--v_tail--body16:66             geometry        1        1        0
+      65 origin-avion-optimizado--v_tail--body16:65             geometry        1        1        0
+      64 origin-avion-optimizado--v_tail--body16:64             geometry        1        1        0
+      63 origin-avion-optimizado--v_tail--body16:63             geometry        1        1        0
+      62 origin-avion-optimizado--v_tail--body16:62             geometry        1        1        0
+      61 origin-avion-optimizado--v_tail--body16:61             geometry        1        1        0
+      60 origin-avion-optimizado--v_tail--body16:60             geometry        1        1        0
+      59 origin-avion-optimizado--v_tail--body16:59             geometry        1        1        0
+      58 origin-avion-optimizado--v_tail--body16:58             geometry        2        2        0
+      57 origin-avion-optimizado--v_tail--body16:57             geometry        1        1        0
+      56 origin-avion-optimizado--v_tail--body16:56             geometry        1        1        0
+      55 origin-avion-optimizado--v_tail--body16:55             geometry        1        1        0
+      54 origin-avion-optimizado--v_tail--body16:54             geometry        1        1        0
+      53 origin-avion-optimizado--v_tail--body16:53             geometry        2        2        0
+      52 origin-avion-optimizado--v_tail--body16:52             geometry        1        1        0
+      51 origin-avion-optimizado--v_tail--body16:51             geometry        2        2        0
+      50 origin-avion-optimizado--v_tail--body16:50             geometry        1        1        0
+      49 origin-avion-optimizado--v_tail--body16:49             geometry        1        1        0
+      48 origin-avion-optimizado--v_tail--body16:48             geometry        1        1        0
+      47 origin-avion-optimizado--v_tail--body16:47             geometry        2        2        0
+      46 origin-avion-optimizado--v_tail--body16:46             geometry        1        1        0
+      45 origin-avion-optimizado--v_tail--body16:45             geometry        1        1        0
+      44 origin-avion-optimizado--v_tail--body16:44             geometry        1        1        0
+      43 origin-avion-optimizado--v_tail--body16:43             geometry        1        1        0
+      42 origin-avion-optimizado--v_tail--body16:42             geometry        2        2        0
+      41 origin-avion-optimizado--v_tail--body16:41             geometry        2        2        0
+      40 origin-avion-optimizado--v_tail--body16:40             geometry        1        1        0
+      39 origin-avion-optimizado--v_tail--body16:39             geometry        2        2        0
+      38 origin-avion-optimizado--v_tail--body16:38             geometry        2        2        0
+      37 origin-avion-optimizado--v_tail--body16:37             geometry        2        2        0
+      36 origin-avion-optimizado--v_tail--body16:36             geometry        1        1        0
+      35 origin-avion-optimizado--v_tail--body16:35             geometry        1        1        0
+      34 origin-avion-optimizado--v_tail--body16:34             geometry        1        1        0
+      33 origin-avion-optimizado--v_tail--body16:33             geometry        2        2        0
+      32 origin-avion-optimizado--v_tail--body16:32             geometry        3        3        0
+      31 origin-avion-optimizado--v_tail--body16:31             geometry        1        1        0
+      30 origin-avion-optimizado--v_tail--body16:30             geometry        1        1        0
+      29 origin-avion-optimizado--v_tail--body16:29             geometry        1        1        0
+      28 origin-avion-optimizado--v_tail--body16:28             geometry        2        2        0
+      27 origin-avion-optimizado--v_tail--body16:27             geometry        2        2        0
+      26 origin-avion-optimizado--v_tail--body16:26             geometry        2        2        0
+      25 origin-avion-optimizado--v_tail--body16:25             geometry        2        2        0
+      24 origin-avion-optimizado--v_tail--body16:24             geometry        1        1        0
+      23 origin-avion-optimizado--v_tail--body16:23             geometry        3        3        0
+      22 origin-avion-optimizado--v_tail--body16:22             geometry        1        1        0
+      21 origin-avion-optimizado--v_tail--body16:21             geometry        1        1        0
+      20 origin-avion-optimizado--v_tail--body16:20             geometry        1        1        0
+      19 origin-avion-optimizado--v_tail--body16:19             geometry        1        1        0
+      18 origin-avion-optimizado--v_tail--body16:18             geometry        1        1        0
+      17 origin-avion-optimizado--v_tail--body16:17             geometry        1        1        0
+      16 origin-avion-optimizado--v_tail--body16:16             geometry        2        2        0
+      15 origin-avion-optimizado--v_tail--body16:15             geometry        2        2        0
+      14 origin-avion-optimizado--v_tail--body16:14             geometry        1        1        0
+      13 origin-avion-optimizado--v_tail--body16:13             geometry        2        2        0
+      12 origin-avion-optimizado--v_tail--body16:12             geometry        5        5        0
+      11 origin-avion-optimizado--v_tail--body16:11             geometry        2        2        0
+      10 origin-avion-optimizado--v_tail--body16:10             geometry        1        1        0
+       9 origin-avion-optimizado--v_tail--body16:9             geometry     5051     5051        0
+       8 origin-avion-optimizado--v_tail--body16:8             geometry      119      119        0
+       7 origin-avion-optimizado--v_tail--body16:7             geometry        2        2        0
+       6 origin-avion-optimizado--v_tail--body16:6             geometry        2        2        0
+      76 origin-avion-optimizado--v_tail--body16:76             geometry        2        2        0
+
+Transcript closed.
+[  19.3s] zonas tras separar por angulo: 74
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_2.txt".
+bounding box dimensions ((-1000 0 -1500) (-1000 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_3.txt".
+bounding box dimensions ((-1000 -4.9802336e-14 -1500) (10300 2.608469e-12 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_4.txt".
+bounding box dimensions ((-1000 2500 -1500) (10300 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_5.txt".
+bounding box dimensions ((490.15756 837.56567 42.78804) (490.62689 837.63989 43.374664))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_6.txt".
+bounding box dimensions ((492.41296 837.80768 41.047981) (493.31784 837.86017 41.462589))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_7.txt".
+bounding box dimensions ((490.81284 334.90305 -21.65007) (492.13986 334.90839 -20.634363))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_8.txt".
+bounding box dimensions ((845.88123 1506.9863 87.076828) (846.14044 1507.0011 87.294281))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_9.txt".
+bounding box dimensions ((845.55756 1506.9542 87.294281) (845.88123 1506.9863 87.418938))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_10.txt".
+bounding box dimensions ((876.87708 1339.4308 85.747574) (877.23273 1339.4515 85.858444))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_11.txt".
+bounding box dimensions ((846.14044 1506.9918 86.786049) (846.31665 1507.0011 87.076828))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_12.txt".
+bounding box dimensions ((877.23273 1339.4308 85.529747) (877.51105 1339.4446 85.747574))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_13.txt".
+bounding box dimensions ((877.51105 1339.4446 85.223114) (877.6983 1339.4572 85.529747))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_14.txt".
+bounding box dimensions ((877.6983 1339.457 84.874496) (877.76581 1339.4591 85.223114))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_15.txt".
+bounding box dimensions ((846.31665 1506.9546 86.460571) (846.39185 1506.9918 86.786049))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_16.txt".
+bounding box dimensions ((889.45837 1171.7848 79.239731) (889.75482 1171.793 79.460297))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_17.txt".
+bounding box dimensions ((889.75482 1171.793 78.925377) (889.95123 1171.8097 79.239731))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_18.txt".
+bounding box dimensions ((889.95123 1171.8097 78.563393) (890.01904 1171.8293 78.925377))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_19.txt".
+bounding box dimensions ((889.95123 1171.8097 78.561211) (890.01904 1171.8293 78.925377))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_20.txt".
+bounding box dimensions ((877.6983 1339.457 84.874496) (877.76581 1339.4591 85.223114))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_21.txt".
+bounding box dimensions ((877.51105 1339.4446 85.223114) (877.6983 1339.4572 85.529747))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_22.txt".
+bounding box dimensions ((889.10211 1171.7848 79.460297) (889.45837 1171.7928 79.559013))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_23.txt".
+bounding box dimensions ((892.37451 669.58044 19.561956) (892.44952 669.62292 19.927984))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_24.txt".
+bounding box dimensions ((902.59485 500.86261 2.8974762) (902.77771 500.87482 2.9232967))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_25.txt".
+bounding box dimensions ((903.51819 500.95871 1.961248) (903.54291 500.96271 2.1489406))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_26.txt".
+bounding box dimensions ((961.95984 167.37581 -14.284247) (962.29553 167.38116 -14.174757))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_27.txt".
+bounding box dimensions ((989.86578 71.162636 -27.115467) (990.22314 72.253036 -26.615961))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_28.txt".
+bounding box dimensions ((923.69666 334.80099 -1.3492085) (924.03558 334.81329 -1.2619725))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_29.txt".
+bounding box dimensions ((903.46045 500.94937 1.9678549) (903.54272 500.96201 2.3252549))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_30.txt".
+bounding box dimensions ((889.95123 1171.8097 78.563393) (890.01904 1171.8293 78.925377))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_31.txt".
+bounding box dimensions ((889.75482 1171.793 78.925377) (889.95123 1171.8097 79.239731))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_32.txt".
+bounding box dimensions ((889.45837 1171.7848 79.239731) (889.75482 1171.793 79.460297))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_33.txt".
+bounding box dimensions ((876.99872 1004.668 60.631157) (877.37531 1004.6771 60.716728))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_34.txt".
+bounding box dimensions ((877.76581 1339.457 84.723396) (877.76715 1339.4578 84.874496))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_35.txt".
+bounding box dimensions ((890.0188 1171.8293 78.460793) (890.01904 1171.833 78.563393))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_36.txt".
+bounding box dimensions ((892.44952 669.62292 19.508953) (892.44958 669.63202 19.561956))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_37.txt".
+bounding box dimensions ((846.32025 1506.9547 85.875938) (846.39606 1506.9882 86.259033))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_38.txt".
+bounding box dimensions ((846.10193 1506.9882 85.544098) (846.32025 1506.9954 85.875938))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_39.txt".
+bounding box dimensions ((845.77039 1506.9805 85.320526) (846.10193 1506.9952 85.544098))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_40.txt".
+bounding box dimensions ((877.69452 1339.4578 84.345573) (877.76715 1339.4763 84.723396))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_41.txt".
+bounding box dimensions ((877.4837 1339.4763 84.021393) (877.69452 1339.4828 84.345573))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_42.txt".
+bounding box dimensions ((877.16309 1339.4773 83.800941) (877.4837 1339.4828 84.021393))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_43.txt".
+bounding box dimensions ((889.94226 1171.833 78.079552) (890.0188 1171.8444 78.460793))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_44.txt".
+bounding box dimensions ((889.73401 1171.8444 77.762489) (889.94226 1171.8588 78.079552))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_45.txt".
+bounding box dimensions ((889.42352 1171.8588 77.546112) (889.73401 1171.8694 77.762489))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_46.txt".
+bounding box dimensions ((902.94257 501.05466 0.96352059) (903.26141 501.07074 1.186294))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_47.txt".
+bounding box dimensions ((902.54395 501.07074 0.8726849) (902.94257 501.07593 0.96352059))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_48.txt".
+bounding box dimensions ((892.1554 669.70203 18.807514) (892.36969 669.74664 19.123085))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_49.txt".
+bounding box dimensions ((892.36969 669.63202 19.123085) (892.44958 669.70203 19.508953))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_50.txt".
+bounding box dimensions ((924.61359 334.80646 -2.5013821) (924.63092 334.82626 -2.2967188))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_51.txt".
+bounding box dimensions ((924.01758 334.81927 -3.2467639) (924.34308 334.83765 -3.0236509))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_52.txt".
+bounding box dimensions ((923.62494 334.80984 -3.3261077) (924.01758 334.81927 -3.2467639))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_53.txt".
+bounding box dimensions ((892.1554 669.70361 18.807514) (892.36523 669.74664 19.112808))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_54.txt".
+bounding box dimensions ((891.84247 669.74664 18.597883) (892.1554 669.77448 18.807514))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_55.txt".
+bounding box dimensions ((891.45294 669.77448 18.51598) (891.84247 669.80206 18.597883))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_56.txt".
+bounding box dimensions ((1804.7953 2.865474 10.588948) (1805.1571 2.9789557 10.620219))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_57.txt".
+bounding box dimensions ((1628.4017 25.768446 16.036005) (1633.583 26.160162 17.950987))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_58.txt".
+bounding box dimensions ((1629.7816 19.488625 23.719904) (1631.479 20.195961 23.994169))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_59.txt".
+bounding box dimensions ((1765.1931 354.49686 314.41351) (1766.5702 354.89328 314.81744))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_60.txt".
+bounding box dimensions ((1763.3887 356.08527 313.12915) (1763.4021 356.2431 313.30463))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_61.txt".
+bounding box dimensions ((1804.7953 2.865474 10.588948) (1805.1571 2.9789557 10.620219))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_62.txt".
+bounding box dimensions ((1805.4607 3.2226002 10.407213) (1805.6753 3.5622902 10.517358))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_63.txt".
+bounding box dimensions ((1805.1571 2.9789557 10.517358) (1805.4607 3.2226002 10.588948))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_64.txt".
+bounding box dimensions ((1786.1801 8.2507591 -0.28547087) (1786.3279 9.362339 4.4339447))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_65.txt".
+bounding box dimensions ((1786.1801 8.9903135 -2.5579646) (1786.3279 9.362339 0.86244476))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_66.txt".
+bounding box dimensions ((1786.1801 7.9652882 -4.9283943) (1786.3279 9.362339 -0.28547087))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_67.txt".
+bounding box dimensions ((1786.1801 7.4591737 -5.6329064) (1786.3279 8.9903135 -2.5579646))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_68.txt".
+bounding box dimensions ((1786.1801 2.9456601 -8.8708496) (1786.3279 7.9652882 -4.9283943))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_69.txt".
+bounding box dimensions ((1786.1801 0 -9.3666906) (1786.3279 4.4339447 -8.2507591))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_70.txt".
+bounding box dimensions ((1786.1801 0 -9.3666906) (1786.3279 1.717531 -9.1879797))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_71.txt".
+bounding box dimensions ((0 -4.9802336e-14 -72.565002) (1848.9713 1674.4003 317.25531))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_72.txt".
+bounding box dimensions ((1786.1801 -6.9388939e-17 -9.3471346) (1805.7838 9.327282 10.925505))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_73.txt".
+bounding box dimensions ((-1000 0 1500) (10300 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_74.txt".
+bounding box dimensions ((-1000 0 -1500) (10300 2500 -1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_75.txt".
+bounding box dimensions ((10300 0 -1500) (10300 2500 1500))
+
+Transcript closed.
+[  72.6s] dominio (mm): x [-1000, 10300]  y [0, 2500]  z [-1500, 1500]
+[  72.6s]   inlet       1 zonas       2 caras
+[  72.6s]   outlet      1 zonas       2 caras
+[  72.6s]   symmetry    1 zonas      82 caras
+[  72.6s]   walls       3 zonas       6 caras
+[  72.6s]   plane      68 zonas    5268 caras
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_76.txt".
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+      78 origin-avion-optimizado--v_tail--body16:78             geometry        2        2        0
+      77 origin-avion-optimizado--v_tail--body16:77             geometry       82       82        0
+       2 origin-avion-optimizado--v_tail--body16             geometry        2        2        0
+      75 origin-avion-optimizado--v_tail--body16:75             geometry        1        1        0
+      74 origin-avion-optimizado--v_tail--body16:74             geometry        1        1        0
+      73 origin-avion-optimizado--v_tail--body16:73             geometry        1        1        0
+      72 origin-avion-optimizado--v_tail--body16:72             geometry        2        2        0
+      71 origin-avion-optimizado--v_tail--body16:71             geometry        2        2        0
+      70 origin-avion-optimizado--v_tail--body16:70             geometry        2        2        0
+      69 origin-avion-optimizado--v_tail--body16:69             geometry        2        2        0
+      68 origin-avion-optimizado--v_tail--body16:68             geometry        3        3        0
+      67 origin-avion-optimizado--v_tail--body16:67             geometry        1        1        0
+      66 origin-avion-optimizado--v_tail--body16:66             geometry        1        1        0
+      65 origin-avion-optimizado--v_tail--body16:65             geometry        1        1        0
+      64 origin-avion-optimizado--v_tail--body16:64             geometry        1        1        0
+      63 origin-avion-optimizado--v_tail--body16:63             geometry        1        1        0
+      62 origin-avion-optimizado--v_tail--body16:62             geometry        1        1        0
+      61 origin-avion-optimizado--v_tail--body16:61             geometry        1        1        0
+      60 origin-avion-optimizado--v_tail--body16:60             geometry        1        1        0
+      59 origin-avion-optimizado--v_tail--body16:59             geometry        1        1        0
+      58 origin-avion-optimizado--v_tail--body16:58             geometry        2        2        0
+      57 origin-avion-optimizado--v_tail--body16:57             geometry        1        1        0
+      56 origin-avion-optimizado--v_tail--body16:56             geometry        1        1        0
+      55 origin-avion-optimizado--v_tail--body16:55             geometry        1        1        0
+      54 origin-avion-optimizado--v_tail--body16:54             geometry        1        1        0
+      53 origin-avion-optimizado--v_tail--body16:53             geometry        2        2        0
+      52 origin-avion-optimizado--v_tail--body16:52             geometry        1        1        0
+      51 origin-avion-optimizado--v_tail--body16:51             geometry        2        2        0
+      50 origin-avion-optimizado--v_tail--body16:50             geometry        1        1        0
+      49 origin-avion-optimizado--v_tail--body16:49             geometry        1        1        0
+      48 origin-avion-optimizado--v_tail--body16:48             geometry        1        1        0
+      47 origin-avion-optimizado--v_tail--body16:47             geometry        2        2        0
+      46 origin-avion-optimizado--v_tail--body16:46             geometry        1        1        0
+      45 origin-avion-optimizado--v_tail--body16:45             geometry        1        1        0
+      44 origin-avion-optimizado--v_tail--body16:44             geometry        1        1        0
+      43 origin-avion-optimizado--v_tail--body16:43             geometry        1        1        0
+      42 origin-avion-optimizado--v_tail--body16:42             geometry        2        2        0
+      41 origin-avion-optimizado--v_tail--body16:41             geometry        2        2        0
+      40 origin-avion-optimizado--v_tail--body16:40             geometry        1        1        0
+      39 origin-avion-optimizado--v_tail--body16:39             geometry        2        2        0
+      38 origin-avion-optimizado--v_tail--body16:38             geometry        2        2        0
+      37 origin-avion-optimizado--v_tail--body16:37             geometry        2        2        0
+      36 origin-avion-optimizado--v_tail--body16:36             geometry        1        1        0
+      35 origin-avion-optimizado--v_tail--body16:35             geometry        1        1        0
+      34 origin-avion-optimizado--v_tail--body16:34             geometry        1        1        0
+      33 origin-avion-optimizado--v_tail--body16:33             geometry        2        2        0
+      32 origin-avion-optimizado--v_tail--body16:32             geometry        3        3        0
+      31 origin-avion-optimizado--v_tail--body16:31             geometry        1        1        0
+      30 origin-avion-optimizado--v_tail--body16:30             geometry        1        1        0
+      29 origin-avion-optimizado--v_tail--body16:29             geometry        1        1        0
+      28 origin-avion-optimizado--v_tail--body16:28             geometry        2        2        0
+      27 origin-avion-optimizado--v_tail--body16:27             geometry        2        2        0
+      26 origin-avion-optimizado--v_tail--body16:26             geometry        2        2        0
+      25 origin-avion-optimizado--v_tail--body16:25             geometry        2        2        0
+      24 origin-avion-optimizado--v_tail--body16:24             geometry        1        1        0
+      23 origin-avion-optimizado--v_tail--body16:23             geometry        3        3        0
+      22 origin-avion-optimizado--v_tail--body16:22             geometry        1        1        0
+      21 origin-avion-optimizado--v_tail--body16:21             geometry        1        1        0
+      20 origin-avion-optimizado--v_tail--body16:20             geometry        1        1        0
+      19 origin-avion-optimizado--v_tail--body16:19             geometry        1        1        0
+      18 origin-avion-optimizado--v_tail--body16:18             geometry        1        1        0
+      17 origin-avion-optimizado--v_tail--body16:17             geometry        1        1        0
+      16 origin-avion-optimizado--v_tail--body16:16             geometry        2        2        0
+      15 origin-avion-optimizado--v_tail--body16:15             geometry        2        2        0
+      14 origin-avion-optimizado--v_tail--body16:14             geometry        1        1        0
+      13 origin-avion-optimizado--v_tail--body16:13             geometry        2        2        0
+      12 origin-avion-optimizado--v_tail--body16:12             geometry        5        5        0
+      11 origin-avion-optimizado--v_tail--body16:11             geometry        2        2        0
+      10 origin-avion-optimizado--v_tail--body16:10             geometry        1        1        0
+       9 origin-avion-optimizado--v_tail--body16:9             geometry     5051     5051        0
+       8 origin-avion-optimizado--v_tail--body16:8             geometry      119      119        0
+       7 origin-avion-optimizado--v_tail--body16:7             geometry        2        2        0
+       6 origin-avion-optimizado--v_tail--body16:6             geometry        2        2        0
+      76 origin-avion-optimizado--v_tail--body16:76             geometry        2        2        0
+
+Transcript closed.
+Warning: Invalid input. Using default value for 'Merge with'merge zones into origin-avion-optimizado--v_tail--body16.
+Warning: Invalid input. Using default value for 'Merge with'merge zones into origin-avion-optimizado--v_tail--body16:75.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_77.txt".
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+      78 origin-avion-optimizado--v_tail--body16:78             geometry        2        2        0
+      77 origin-avion-optimizado--v_tail--body16:77             geometry       82       82        0
+       2 origin-avion-optimizado--v_tail--body16             geometry        6        6        0
+      75 origin-avion-optimizado--v_tail--body16:75             geometry     5268     5268        0
+      76 origin-avion-optimizado--v_tail--body16:76             geometry        2        2        0
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_78.txt".
+bounding box dimensions ((-1000 0 -1500) (-1000 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_79.txt".
+bounding box dimensions ((-1000 -4.9802336e-14 -1500) (10300 2.608469e-12 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_80.txt".
+bounding box dimensions ((-1000 0 -1500) (10300 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_81.txt".
+bounding box dimensions ((0 -4.9802336e-14 -72.565002) (1848.9713 1674.4003 317.25531))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_82.txt".
+bounding box dimensions ((10300 0 -1500) (10300 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_83.txt".
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+      78                           inlet             geometry        2        2        0
+      77                        symmetry             geometry       82       82        0
+       2                           walls             geometry        6        6        0
+      75                           plane             geometry     5268     5268        0
+      76                          outlet             geometry        2        2        0
+
+Transcript closed.
+[  82.1s] zonas renombradas: [(78, 'inlet', 2), (77, 'symmetry', 82), (2, 'walls', 6), (75, 'plane', 5268), (76, 'outlet', 2)]
+[  82.1s] zonas clasificadas y nombradas
+[  82.3s] etiquetas por zona creadas
+[  82.5s] tamanos locales creados
+Writing "C:\Users\felip\Desktop\UAV FP bateria\resultados\cfd_run\FM_Felipes_PC_20136\TaskObject3.msh.h5" ...
+writing 1 node zones
+writing 1 edge zones 
+writing 5 face zones 
+writing node curvature data...
+done.
+---------------- The Global Min size was adjusted to 1 
+
+Importing one mesh object per program-controlled and one zone per body ...
+    C:\\Program Files\\ANSYS Inc\\v241\\commonfiles\\CPython\\3_10\\winx64\\Release\\python\\..\\Ansys\\TGrid\\CADReaders.py started by felip on Felipes_PC winx64 on Tue Oct 27 00:44:56 2026
+    using Python 3.10.9 (remotes/origin/4e018266dafe29ec2836492d71d245fcfd366d07-dirty:4e018266, Jan  3 2) [MSC v.1920 64 bit (AMD64)]
+    
+    using Ansys.Meshing.FieldMesher build Nov 27 2023 11:54:13
+    
+    running ANSYS TGrid CADToTGridConverter ...
+    setting up parameters ...
+    setting up parameters done.
+    running conversion ...
+    converting 1 file(s) from Workbench to FLTG using output path 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\FM_Felipes_PC_20136/out179307269620136.tgf'
+    converting file 'encl_red_v2.step.pmdb' (1 of 1) from Workbench to FLTG using output path 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\FM_Felipes_PC_20136'
+    importing data ...
+    importing meshing model from PartMgr from file 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\FM_Felipes_PC_20136\\\\encl_red_v2.step.pmdb' ...
+    setting enclosure and symmetry processing to False
+    setting transfer named selections to True
+    setting named selection prefixes to ''
+    setting mixed import resolution type to 'SolidAndSurface'
+    setting target application to 'FluentMeshing'
+    initializing part manager from file ...
+    processing assembly 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\encl_red_v2.step' with ID 1
+    length unit = [mm]
+    processing part 'Avion optimizado (v_tail)|Body16' with ID 3
+    processing named selection 'Color:160.160.160'
+    processing data ...
+    saving size function background grid to file 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\FM_Felipes_PC_20136\\encl_red_v2.sf' ...
+    writing size function background grid file 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\FM_Felipes_PC_20136\\encl_red_v2.sf' ...
+    Vertices already exist
+    initializing size function background grid done in 0.369 [s]
+    tessellating 72 faces done in 35.565 [s]
+    removing named collections of entities ...
+    removed named collections:  'Color:160.160.160'
+    analyzing feature edges ...
+    detecting feature edges, feature angle = 40 [deg] ...
+        Data information
+            Meshing model
+                Attributes:
+                    'LengthUnit': '[mm]'
+                Entity summary:
+                    Component: 2
+                    Body     : 1
+                    Shell    : 1
+                    Face     : 72
+                    Loop     : 74
+                    Edge     : 176
+                    Vertex   : 108
+                    Surface  : 72
+                    Curve    : 176
+                Tessellation summary:
+                    Face facets  : 140880
+                    Edge segments: 11609
+                Bounding box:
+                    (-1000, -4.981156817313731e-14, -1500) x (10300, 2500, 1500)
+                Assembly component hierarchy:
+                    'C:\\Users\\felip\\Desktop\\UAV FP bateria\\encl_red_v2.step'
+                      'Avion optimizado (v_tail)|Body16'
+    
+    
+    exporting FLTG data to file 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\FM_Felipes_PC_20136\\out179307269620136.tgf' ...
+    writing face-based mesh file 'C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\FM_Felipes_PC_20136\\out179307269620136.tgf' ...
+    ======== Exported Data ========
+    Entity summary:
+        Object       : 1
+        Object region: 1
+        Zone         : 2
+    
+    running conversion done.
+    running ANSYS TGrid CADToTGridConverter done.
+    ran ANSYS TGrid CADToTGridConverter in 36.673 [s]
+
+Reading "C:\Users\felip\Desktop\UAV FP bateria\resultados\cfd_run\FM_Felipes_PC_20136/out179307269620136.tgf"...
+
+nodes: 70997
+edges: 560
+faces: 140880
+cells: 0
+reading 70997 storage data (id 1, type 41, double precision binary).
+appending mesh...
+done.
+generating pointers...done.
+extracting boundary entities...
+ 73871 boundary nodes.
+ 146240 boundary faces.
+ 6 boundary face zones.
+done.
+
+Reading "C:\Users\felip\Desktop\UAV FP bateria\resultados\cfd_run\FM_Felipes_PC_20136\encl_red_v2.sf"...
+
+ANSYS(R) TGLib(TM) 3D, revision 24.1.0
+ Read 151818 vertices
+0 faces marked.
+
+    computing regions...done
+
+
+-------------------------------- --------------------- -------------------- ---------------- ----------
+                            name skewed-cells (> 0.80)    averaged-skewness maximum-skewness face count
+-------------------------------- --------------------- -------------------- ---------------- ----------
+
+avion-optimizado--v_tail--body16                     0          0.053524398       0.79969923     139162
+-------------------------------- --------------------- -------------------- ---------------- ----------
+                            name skewed-cells (> 0.80)    averaged-skewness maximum-skewness face count
+-------------------------------- --------------------- -------------------- ---------------- ----------
+
+avion-optimizado--v_tail--body16                     0          0.053524398       0.79969923     139162
+
+---------------- After Surface mesh, the model consists of 1 fluid/solid regions and 0 voids.
+
+---------------- Surface Meshing of encl_red_v2 complete in  0.65 minutes, with a maximum skewness of  0.80. 
+
+[ 123.3s] malla de superficie generada
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_84.txt".
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+      81 avion-optimizado--v_tail--body16:1                 wall   139162   139162        0
+      78                           inlet             geometry        2        2        0
+      77                        symmetry             geometry       82       82        0
+       2                           walls             geometry        6        6        0
+      75                           plane             geometry     5268     5268        0
+      76                          outlet             geometry        2        2        0
+
+Transcript closed.
+
+separate avion-optimizado--v_tail--body16:1 into 8 zones
+moved 289 faces to avion-optimizado--v_tail--body16:1:84
+moved 329 faces to avion-optimizado--v_tail--body16:1:85
+moved 394 faces to avion-optimizado--v_tail--body16:1:86
+moved 130862 faces to avion-optimizado--v_tail--body16:1:87
+moved 417 faces to avion-optimizado--v_tail--body16:1:88
+moved 6663 faces to avion-optimizado--v_tail--body16:1:89
+moved 154 faces to avion-optimizado--v_tail--body16:1:90
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_85.txt".
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+      90 avion-optimizado--v_tail--body16:1:90                 wall      154      154        0
+      89 avion-optimizado--v_tail--body16:1:89                 wall     6663     6663        0
+      81 avion-optimizado--v_tail--body16:1                 wall      417      417        0
+      87 avion-optimizado--v_tail--body16:1:87                 wall   130862   130862        0
+      86 avion-optimizado--v_tail--body16:1:86                 wall      394      394        0
+      85 avion-optimizado--v_tail--body16:1:85                 wall      329      329        0
+      84 avion-optimizado--v_tail--body16:1:84                 wall      289      289        0
+      88 avion-optimizado--v_tail--body16:1:88                 wall       54       54        0
+      78                           inlet             geometry        2        2        0
+      77                        symmetry             geometry       82       82        0
+       2                           walls             geometry        6        6        0
+      75                           plane             geometry     5268     5268        0
+      76                          outlet             geometry        2        2        0
+
+Transcript closed.
+[ 125.6s] zonas tras separar por angulo: 8
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_86.txt".
+bounding box dimensions ((-1000 0 -1500) (-1000 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_87.txt".
+bounding box dimensions ((-1000 -4.9811568e-14 -1500) (10300 2.608469e-12 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_88.txt".
+bounding box dimensions ((-1000 2500 -1500) (10300 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_89.txt".
+bounding box dimensions ((0 -4.9811568e-14 -72.565002) (1848.9713 1674.4003 317.25513))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_90.txt".
+bounding box dimensions ((1786.1801 -6.9388939e-17 -9.3471346) (1805.7838 9.3349686 10.925505))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_91.txt".
+bounding box dimensions ((-1000 0 1500) (10300 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_92.txt".
+bounding box dimensions ((-1000 0 -1500) (10300 2500 -1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_93.txt".
+bounding box dimensions ((10300 0 -1500) (10300 2500 1500))
+
+Transcript closed.
+[ 131.1s] dominio (mm): x [-1000, 10300]  y [0, 2500]  z [-1500, 1500]
+[ 131.1s]   inlet       1 zonas     154 caras
+[ 131.1s]   outlet      1 zonas      54 caras
+[ 131.1s]   symmetry    1 zonas    6663 caras
+[ 131.1s]   walls       3 zonas    1035 caras
+[ 131.1s]   plane       2 zonas  131256 caras
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_94.txt".
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+      90 avion-optimizado--v_tail--body16:1:90                 wall      154      154        0
+      89 avion-optimizado--v_tail--body16:1:89                 wall     6663     6663        0
+      81 avion-optimizado--v_tail--body16:1                 wall      417      417        0
+      87 avion-optimizado--v_tail--body16:1:87                 wall   130862   130862        0
+      86 avion-optimizado--v_tail--body16:1:86                 wall      394      394        0
+      85 avion-optimizado--v_tail--body16:1:85                 wall      329      329        0
+      84 avion-optimizado--v_tail--body16:1:84                 wall      289      289        0
+      88 avion-optimizado--v_tail--body16:1:88                 wall       54       54        0
+      78                           inlet             geometry        2        2        0
+      77                        symmetry             geometry       82       82        0
+       2                           walls             geometry        6        6        0
+      75                           plane             geometry     5268     5268        0
+      76                          outlet             geometry        2        2        0
+
+Transcript closed.
+Warning: Invalid input. Using default value for 'Merge with'merge zones into avion-optimizado--v_tail--body16:1.
+Warning: Invalid input. Using default value for 'Merge with'merge zones into avion-optimizado--v_tail--body16:1:87.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_95.txt".
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+      90 avion-optimizado--v_tail--body16:1:90                 wall      154      154        0
+      89 avion-optimizado--v_tail--body16:1:89                 wall     6663     6663        0
+      81 avion-optimizado--v_tail--body16:1                 wall     1035     1035        0
+      87 avion-optimizado--v_tail--body16:1:87                 wall   131256   131256        0
+      88 avion-optimizado--v_tail--body16:1:88                 wall       54       54        0
+      78                           inlet             geometry        2        2        0
+      77                        symmetry             geometry       82       82        0
+       2                           walls             geometry        6        6        0
+      75                           plane             geometry     5268     5268        0
+      76                          outlet             geometry        2        2        0
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_96.txt".
+bounding box dimensions ((-1000 0 -1500) (-1000 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_97.txt".
+bounding box dimensions ((-1000 -4.9811568e-14 -1500) (10300 2.608469e-12 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_98.txt".
+bounding box dimensions ((-1000 0 -1500) (10300 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_99.txt".
+bounding box dimensions ((0 -4.9811568e-14 -72.565002) (1848.9713 1674.4003 317.25513))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_100.txt".
+bounding box dimensions ((10300 0 -1500) (10300 2500 1500))
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_101.txt".
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+      90                         m_inlet                 wall      154      154        0
+      89                      m_symmetry                 wall     6663     6663        0
+      81                         m_walls                 wall     1035     1035        0
+      87                         m_plane                 wall   131256   131256        0
+      88                        m_outlet                 wall       54       54        0
+      78                           inlet             geometry        2        2        0
+      77                        symmetry             geometry       82       82        0
+       2                           walls             geometry        6        6        0
+      75                           plane             geometry     5268     5268        0
+      76                          outlet             geometry        2        2        0
+
+Transcript closed.
+[ 140.8s] zonas renombradas: [(90, 'm_inlet', 154), (89, 'm_symmetry', 6663), (81, 'm_walls', 1035), (87, 'm_plane', 131256), (88, 'm_outlet', 54)]
+[ 141.0s] zonas de la malla separadas y etiquetadas (m_*) en avion-optimizado--v_tail--body16
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_102.txt".
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+      90                         m_inlet                 wall      154      154        0
+      89                      m_symmetry                 wall     6663     6663        0
+      81                         m_walls                 wall     1035     1035        0
+      87                         m_plane                 wall   131256   131256        0
+      88                        m_outlet                 wall       54       54        0
+      78                           inlet             geometry        2        2        0
+      77                        symmetry             geometry       82       82        0
+       2                           walls             geometry        6        6        0
+      75                           plane             geometry     5268     5268        0
+      76                          outlet             geometry        2        2        0
+
+Transcript closed.
+
+      id                            name                 type    count      tri     quad
+  ______   _____________________________   __________________   ______   ______   ______
+      90                         m_inlet                 wall      154      154        0
+      89                      m_symmetry                 wall     6663     6663        0
+      81                         m_walls                 wall     1035     1035        0
+      87                         m_plane                 wall   131256   131256        0
+      88                        m_outlet                 wall       54       54        0
+      78                           inlet             geometry        2        2        0
+      77                        symmetry             geometry       82       82        0
+       2                           walls             geometry        6        6        0
+      75                           plane             geometry     5268     5268        0
+      76                          outlet             geometry        2        2        0
+
+
+---------------- Velocity-inlet zone type was automatically assigned to zones containing the string '*inlet*'.
+
+---------------- Pressure-outlet zone type was automatically assigned to zones containing the string '*outlet*'.
+
+---------------- Symmetry zone type was automatically assigned to zones containing the string '*symmetry*'.
+
+---------------- Describe Geometry task complete in  0.00 minutes.
+[ 142.2s] geometria descrita
+
+---------------- Boundary Conditions Updated
+
+---------------- Regions Updated
+[ 142.4s] fronteras y regiones listas
+
+Created Scoped Prism: capas_avion
+
+---------------- Inflation control added to avion-optimizado--v_tail--body16
+[ 143.4s] capas creadas: {'Rate': 1.2, 'BLZoneList': ['m_plane'], 'BLControlName': 'capas_avion', 'BLRegionList': ['avion-optimizado--v_tail--body16'], 'ZoneSelectionList': ['m_plane'], 'FirstHeight': 0.025, 'OffsetMethodType': 'uniform', 'NumberOfLayers': 24, 'FaceScope': {'GrowOn': 'selected-zones'}}
+Writing "C:\Users\felip\Desktop\UAV FP bateria\resultados\cfd_run\FM_Felipes_PC_20136\TaskObject11.msh.h5" ...
+writing 2 node zones
+writing 2 edge zones 
+writing 10 face zones 
+writing node curvature data...
+done.
+    updating regions...
+    done.
+checking object "avion-optimizado--v_tail--body16"...
+    skipping validating regions of mesh object "avion-optimizado--v_tail--body16"...done.
+auto meshing object avion-optimizado--v_tail--body16...
+
+processing scoped prisms...
+    starting orientation...
+done.
+    setting prism growth...done.
+done.
+Identifying Topology...
+
+The octree hexcore cells will be refined using local surface mesh sizes and body of influence (boi) size controls, if there are any defined.
+Generating Prisms...
+
+Generating initial mesh...
+
+Refining mesh...
+
+Create polyhedra ...
+
+delete virtual and dead zones.
+
+Merging zones...
+
+Cleaning up dead entities...
+
+
+Merging Domains...
+done.
+
+                     name       id cells (quality < 0.05)  minimum quality cell count
+------------------------- -------- ---------------------- ---------------- ----------
+avion-optimizado--v_tail--body16      222                      0      0.067306143    2558550
+
+                     name       id cells (quality < 0.05)  minimum quality cell count
+------------------------- -------- ---------------------- ---------------- ----------
+          Overall Summary     none                      0      0.067306143    2558550
+
+Total Number of Cell Zones : 1
+
+[Quality Measure : Orthogonal Quality]
+
+---------------- 2558550 cells were created in :  2.27 minutes
+
+---------------- The mesh has a minimum Orthogonal Quality of:  0.07 
+
+---------------- The volume meshing of avion-optimizado--v_tail--body16 is complete.
+
+[ 280.8s] malla de volumen generada
+Writing "C:/Users/felip/Desktop/UAV FP bateria/resultados/cfd_run/malla_v5.msh.h5" ...
+writing 3 node zones
+writing 1 edge zones 
+writing 6 face zones 
+writing 1 cell zones 
+writing boundary layer flags
+writing node curvature data...
+done.Copying the required intermediate mesh files into C:\\Users\\felip\\Desktop\\UAV FP bateria\\resultados\\cfd_run\\malla_v5_workflow_files
+Done.
+[ 285.2s] guardado C:\Users\felip\Desktop\UAV FP bateria\resultados\cfd_run\malla_v5.msh.h5
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_103.txt".
+
+Mesh Quality:
+
+Minimum Orthogonal Quality =  6.73061e-02
+
+Maximum Aspect Ratio =  2.35207e+03
+
+Transcript closed.
+
+Opening input/output transcript to file "C:/Users/felip/AppData/Local/Temp/tr_mallar_1793072612_104.txt".
+
+      id                                name      type     count      tet      hex  pyramid    wedge     poly     poly-prism      hex-prism
+  ______       _____________________________    ______    ______   ______   ______   ______   ______   ______   ____________   ____________
+     222    avion-optimizado--v_tail--body16     fluid   2558550        0   180860        0        0   561044        1816646              0
+
+Transcript closed.
+
+Mesh Quality:
+
+Minimum Orthogonal Quality =  6.73061e-02
+
+Maximum Aspect Ratio =  2.35207e+03
+ 
+      id                                name      type     count      tet      hex  pyramid    wedge     poly     poly-prism      hex-prism
+  ______       _____________________________    ______    ______   ______   ______   ______   ______   ______   ____________   ____________
+     222    avion-optimizado--v_tail--body16     fluid   2558550        0   180860        0        0   561044        1816646              0
+
+[ 290.9s] informe: {'celdas': 2558550, 'tipos': {'tet': 0, 'hex': 180860, 'pyramid': 0, 'wedge': 0, 'poly': 561044, 'poly_prism': 1816646, 'hex_prism': 0}, 'ortogonalidad_minima': 0.0673061, 'razon_aspecto_maxima': 2352.07, 'tiempo_s': 290.9}

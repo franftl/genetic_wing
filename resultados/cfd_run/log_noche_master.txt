@@ -1,0 +1,5 @@
+>> malla grande lista: 2559801 celdas
+>> CFD: plan 'transicion:0,4;sst:4;transicion:1.21,8;sst:0,1.21,8' hasta 08:30
+AVISO: hay 1 fluent.exe vivo(s): 28632
+>> comparacion y calibracion
+Listo. Resultados: resultados\cfd_run\noche\noche_grande\resultados.csv | resultados\calibracion_cfd.png

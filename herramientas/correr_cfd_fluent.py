@@ -106,15 +106,13 @@ def _yplus(s):
         return None, None
 
 
-def _set_viento(zona, ux, uz, ti):
+def _set_viento(zona, ux, uz, ti, modelo):
     zona.momentum.velocity_specification_method = "Components"
     zona.momentum.velocity_components.set_state([ux, 0.0, uz])
-    zona.turbulence.turbulent_specification = "Intensity and Viscosity Ratio"
+    # Transition SST antepone "Intermittency, " a la opcion; la razon de viscosidades se llama ..._real
+    zona.turbulence.turbulent_specification = ("Intermittency, " if modelo == "transicion" else "") + "Intensity and Viscosity Ratio"
     zona.turbulence.turbulent_intensity = ti / 100.0
-    try:  # el default de Fluent ya es 10; si el nombre cambia con el modelo no se pierde nada
-        zona.turbulence.turbulent_viscosity_ratio = 10.0
-    except Exception:  # noqa: BLE001
-        pass
+    zona.turbulence.turbulent_viscosity_ratio_real = 10.0
 
 
 def _modelo_de_viscosidad(s, modelo):
@@ -188,7 +186,7 @@ def correr_grupo(args, modelo, alfas, hechos, fin, csv_path, json_path, acumulad
             a = math.radians(alfa)
             ux, uz = args.velocidad * math.cos(a), args.velocidad * math.sin(a)
             for z in zonas_viento:
-                _set_viento(z, ux, uz, args.ti)
+                _set_viento(z, ux, uz, args.ti, modelo)
             rd.drag["cd_x"] = {"zones": ["m_plane"], "force_vector": [math.cos(a), 0.0, math.sin(a)]}
             rd.lift["cl_x"] = {"zones": ["m_plane"], "force_vector": [-math.sin(a), 0.0, math.cos(a)]}
             if primera:

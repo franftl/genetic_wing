@@ -80,6 +80,14 @@ Coincide con la estimación (≈ 0.8). El máximo (3.4) está en zonas de alto e
 - `surface_integrals.facet_min/avg/max` sobre una zona de pared devuelve "1" para cualquier campo (no sirve); usar `s.field_data.get_scalar_field_data(field_name="y-plus", surfaces=["m_plane"], node_value=False, boundary_value=True)` y numpy. El nombre del campo es `y-plus` (no `wall-yplus`); la lista sale de `s.field_info.get_scalar_fields_info()`.
 - En el solver: `s.setup.boundary_conditions.<tipo>.keys()` confirma los tipos de zona (velocity_inlet = `m_inlet`, pressure_outlet = `m_outlet`, symmetry = `m_walls` y `m_symmetry`, wall = `m_plane`).
 
+## Aprendizajes de la noche 2026-10-28 (recinto grande)
+- **Rutas del STEP siempre absolutas**: Fluent corre con `cwd=resultados/cfd_run`; con una ruta relativa `Import Geometry` se cuelga sin error (CPU ≈ 0, el log no avanza). `mallar_fluent.py` ahora hace `.resolve()`. Si un lanzamiento "no avanza" más de 2 min, matar por PID y revisar eso primero.
+- Malla grande (`encl_grande.step`, `--tam-max 1500`, con `zona_estela.step` a 200 mm): 288 s, 2 559 801 celdas (183 k hex, 563 k poly, 1.81 M prismas), ortogonalidad mín. 0.0686, aspecto máx. 3194. Las celdas casi no cambian respecto de la v5, así que la estela probablemente no refinó (sin verificar).
+- Solver: `vi.model = "transition-sst"` es válido en 24.1. En velocity-inlet la especificación de turbulencia depende del modelo: k-ω → `"Intensity and Viscosity Ratio"`; Transition SST → `"Intermittency, Intensity and Viscosity Ratio"`. La razón de viscosidades se llama `turbulent_viscosity_ratio_real` (con `turbulent_viscosity_ratio` falla sin avisar). Los valores permitidos salen de `zona.turbulence.turbulent_specification.allowed_values()`.
+- Tiempos con 2.56 M celdas, 8 procesos: k-ω SST 9.3 s/it; Transition SST 12.5–13.1 s/it. Transition SST a 0° y 1.21° oscila ±0.4 % en L y no cumple el criterio del 0.3 %: gasta el máximo de iteraciones (800 el primero, 450 los siguientes). Un criterio sobre la media de las últimas 100 iteraciones ahorraría ~1.5 h por ángulo.
+- y+ medio 0.63–0.75 (máx. ≈ 3.3) con la malla grande.
+- El `*>` de PowerShell escribe los logs en UTF-16: en Git Bash leer con `tr -d '\000\r' < log`.
+
 ## Lo que sigue
 1. Dominio nuevo (aguas abajo ≥ 10 m, laterales/verticales ≥ 5 m): el v2 de 8.3 × 2.5 × 3 m sigue siendo muy chico y la estela no se resuelve (celda máxima 600 mm). Con dominio grande agregar una caja de refinamiento (BOI) en la estela en vez de achicar la celda global.
 2. Solver: Transition SST (hay que cambiarlo desde el SST de la prueba), entrada Magnitude and Direction (22.22 m/s, (cos α, 0, sin α)), TI 0.1 %, μ = 1.7433e-5, ρ = 1.056, reportes con lift (−sin α, 0, cos α) y drag (cos α, 0, sin α), área de referencia 0.6067 m² (medio modelo), α = 0 / 1.21 / 4°.

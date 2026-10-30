@@ -224,6 +224,13 @@ def main():
     ap.add_argument("--etiqueta", default="v2")
     ap.add_argument("--gui", action="store_true")
     args = ap.parse_args()
+    # Fluent corre con cwd=SALIDA: una ruta relativa no se encuentra y la importacion se cuelga sin error
+    args.step = args.step.resolve()
+    if args.estela:
+        args.estela = args.estela.resolve()
+    for f in (args.step, args.estela):
+        if f and not f.exists():
+            sys.exit("no existe %s" % f)
 
     import ansys.fluent.core as pyfluent
 

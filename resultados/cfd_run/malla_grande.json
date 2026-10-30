@@ -1,0 +1,30 @@
+{
+  "parametros": {
+    "step": "C:\\Users\\felip\\Desktop\\UAV FP bateria\\encl_grande.step",
+    "procesos": 8,
+    "primera_capa": 0.025,
+    "crecimiento": 1.2,
+    "capas": 24,
+    "tam_avion": 8.0,
+    "tam_min": 1.0,
+    "tam_max": 1500.0,
+    "estela": "C:\\Users\\felip\\Desktop\\UAV FP bateria\\zona_estela.step",
+    "tam_estela": 200.0,
+    "hasta": "volumen",
+    "etiqueta": "grande",
+    "gui": false
+  },
+  "celdas": 2559801,
+  "tipos": {
+    "tet": 0,
+    "hex": 183429,
+    "pyramid": 0,
+    "wedge": 0,
+    "poly": 562668,
+    "poly_prism": 1813704,
+    "hex_prism": 0
+  },
+  "ortogonalidad_minima": 0.0686161,
+  "razon_aspecto_maxima": 3194.16,
+  "tiempo_s": 288.4
+}

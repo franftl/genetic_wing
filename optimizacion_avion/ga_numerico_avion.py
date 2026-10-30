@@ -91,3 +91,37 @@ def generar_hijos_avion(
             "rationale": "muestreo uniforme independiente dentro de BOUNDS",
         })
     return hijos
+
+
+def generar_poblacion_inicial(
+    semillas: List[dict],
+    topologia: str,
+    n: int,
+    sigma_frac: float = 0.12,
+    frac_mutadas: float = 0.5,
+    frac_cruces: float = 0.3,
+    alpha: float = 0.5,
+    prob_mutacion: float = 0.7,
+) -> List[dict]:
+    """Población inicial de `n` diseños (dicts de params) a partir de pocas
+    semillas. Las semillas van primero, sin tocar; el resto se completa con
+    mutantes de una semilla (`frac_mutadas`), cruces BLX entre dos semillas
+    distintas (`frac_cruces`) y comodines uniformes dentro de BOUNDS (lo que
+    quede). Todo se clampa a los límites de la topología."""
+    bounds = BOUNDS_POR_TOPOLOGIA[topologia]
+    out = [dict(s) for s in semillas]
+    faltan = max(0, n - len(out))
+    n_mut = int(round(faltan * frac_mutadas))
+    n_cru = int(round(faltan * frac_cruces)) if len(semillas) >= 2 else 0
+    n_wild = faltan - n_mut - n_cru
+    for _ in range(n_mut):
+        base = random.choice(semillas)
+        p = {k: _mutar(base[k], lo, hi, prob_mutacion, sigma_frac) for k, (lo, hi) in bounds.items()}
+        out.append(clamp_to_bounds_avion(p, topologia))
+    for _ in range(n_cru):
+        a, b = random.sample(semillas, 2)
+        p = {k: _blx_alpha_gen(a[k], b[k], lo, hi, alpha) for k, (lo, hi) in bounds.items()}
+        out.append(clamp_to_bounds_avion(p, topologia))
+    for _ in range(n_wild):
+        out.append(clamp_to_bounds_avion(_hijo_wildcard(bounds), topologia))
+    return out

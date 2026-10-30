@@ -416,3 +416,13 @@ Modificación de módulos (sube el número). Los resultados NO cambian: con el v
 - Consecuencia: el notebook y los scripts ya no necesitan `optimizacion_ala/` al lado. Los notebooks de `codigo_obsoleto/` que
   hacen `import optimizacion_ala` ya no corren sin restaurarla.
 
+## V55.1 (2026-10-30) — población inicial más extensa
+
+- Antes el GA arrancaba con solo las 2 semillas y 2 padres: casi sin diversidad. Ahora
+  `iniciar_evolucion_avion` arma `POBLACION_INICIAL = 30` diseños (semillas + mutantes,
+  cruces BLX y comodines, `ga_numerico_avion.generar_poblacion_inicial`), los evalúa a todos
+  y conserva los `N_PADRES = 6` mejores (factibles primero). Cada generación cruza pares de
+  padres al azar y sobreviven los 6 mejores.
+- Interruptores `POBLACION_INICIAL` y `N_PADRES` en la sección 0 del notebook y `--poblacion/--padres`
+  en `correr_escenarios.py`. El notebook corre por defecto solo `v_tail`.
+- Con 2 padres el comportamiento es el de antes.

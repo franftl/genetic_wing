@@ -135,6 +135,8 @@ def optimizar_topologia(
     checkpoint_path: Optional[Path] = None,
     verbose: bool = True,
     reanudar: bool = False,
+    n_poblacion_inicial: Optional[int] = None,
+    n_padres: Optional[int] = None,
 ) -> EstadoEvolucionAvion:
     """Evolución completa de UNA topología. Sin `seed_population` usa
     `semillas_para_escenario()` (las del escenario de viento/batería activo).
@@ -152,11 +154,12 @@ def optimizar_topologia(
     def generar_hijos_fn(parent_a, parent_b, ncb, nw):
         return generar_hijos_avion(parent_a, parent_b, ncb, nw)
 
+    extra = {k: v for k, v in (("n_poblacion_inicial", n_poblacion_inicial), ("n_padres", n_padres)) if v is not None}
     return correr_evolucion_completa_avion(
         seeds, topologia, generar_hijos_fn, objetivo_fn,
         n_crossbred=n_crossbred, n_wildcard=n_wildcard,
         paciencia=paciencia, max_generaciones=max_generaciones,
-        checkpoint_path=checkpoint_path, verbose=verbose, reanudar=reanudar,
+        checkpoint_path=checkpoint_path, verbose=verbose, reanudar=reanudar, **extra,
     )
 
 
@@ -169,6 +172,8 @@ def correr_competencia(
     checkpoint_dir: Optional[Path] = None,
     verbose: bool = True,
     reanudar: bool = False,
+    n_poblacion_inicial: Optional[int] = None,
+    n_padres: Optional[int] = None,
 ) -> dict:
     """Corre cada topología por separado y devuelve {topologia: estado}.
     No hay ningún intercambio entre topologías durante la corrida. Las
@@ -183,7 +188,8 @@ def correr_competencia(
         resultados[topologia] = optimizar_topologia(
             topologia, n_crossbred=n_crossbred, n_wildcard=n_wildcard,
             paciencia=paciencia, max_generaciones=max_generaciones,
-            checkpoint_path=ckpt, verbose=verbose, reanudar=reanudar)
+            checkpoint_path=ckpt, verbose=verbose, reanudar=reanudar,
+            n_poblacion_inicial=n_poblacion_inicial, n_padres=n_padres)
     return resultados
 
 

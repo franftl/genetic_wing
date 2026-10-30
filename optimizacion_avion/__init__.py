@@ -57,7 +57,7 @@ lleva la version; ver VERSIONES.md).
 # Version del optimizador. Regla (VERSIONES.md): una modificacion sobre la version
 # existente sube el decimal (V50 -> V50.1, V50.2 ...); agregar o modificar un
 # MODULO sube el numero (V50 -> V51). El notebook y su nombre salen de aca.
-VERSION = "V55"
+VERSION = "V55.1"
 
 from .perfiles_avion import (
     ALTA_SUSTENTACION,

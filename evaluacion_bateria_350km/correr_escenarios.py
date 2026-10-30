@@ -63,6 +63,8 @@ def main():
     ap.add_argument("--topologias", nargs="*", default=list(TOPOLOGIAS))
     ap.add_argument("--paciencia", type=int, default=10)
     ap.add_argument("--max-gen", type=int, default=60)
+    ap.add_argument("--poblacion", type=int, default=None, help="diseños de la población inicial (default 30)")
+    ap.add_argument("--padres", type=int, default=None, help="padres que sobreviven por generación (default 6)")
     ap.add_argument("--semilla", type=int, default=2026)
     ap.add_argument("--sufijo", default="", help="agrega un sufijo al nombre del archivo de salida")
     ap.add_argument("--sin-guardar", action="store_true",
@@ -84,7 +86,8 @@ def main():
     for top in args.topologias:
         random.seed(args.semilla + todas.index(top))
         est = competencia.optimizar_topologia(top, seed_population=semillas(top, ma.VIENTO_ACTIVO, ma.BATERIA_ACTIVA),
-                                              paciencia=args.paciencia, max_generaciones=args.max_gen)
+                                              paciencia=args.paciencia, max_generaciones=args.max_gen,
+                                              n_poblacion_inicial=args.poblacion, n_padres=args.padres)
         estados[top] = est
         mejor = est.mejor()
         a = ma.analizar_mision_avion(mejor.params, top)
@@ -116,7 +119,7 @@ def main():
     if not args.sin_guardar and estados:
         from optimizacion_avion.resultados import guardar_resultados
         guardar_resultados(estados, etiqueta=args.sufijo.strip("_-") or None,
-                           parametros_ga={"paciencia": args.paciencia, "max_generaciones": args.max_gen,
+                           parametros_ga={"poblacion_inicial": args.poblacion, "n_padres": args.padres, "paciencia": args.paciencia, "max_generaciones": args.max_gen,
                                           "semilla_azar": args.semilla})
 
 

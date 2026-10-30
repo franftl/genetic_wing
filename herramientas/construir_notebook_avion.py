@@ -123,7 +123,9 @@ Todo lo que se puede querer mover está en esta celda; hay que correrla **antes*
 |---|---|
 | `VIENTO` | `True`: la misión se evalúa con el aire y la ráfaga reales de los sitios (lo de imarzeniuk, `viento.py`). `False`: aire estándar y ráfaga de 3 m/s. |
 | `BATERIA` | `True`: la batería se dimensiona para el `ALCANCE_KM` a velocidad de crucero **todo el vuelo**, y su masa entra al peso del avión (`bateria.py`). `False`: vuelve el modelo viejo, con la batería dentro de `MASA_SISTEMAS = 1.5 kg`. |
-| `FAMILIAS` | Qué familias (topologías) se corren: una lista, por ejemplo `["pod_boom"]` o `["v_tail", "pod_boom"]`, o `"todas"`. Opciones: `convencional`, `t_tail`, `v_tail`, `doble_boom`, `pod_boom` (góndola + viga), `fuselaje_continuo`. |
+| `FAMILIAS` | Qué familias (topologías) se corren: una lista, por ejemplo `["pod_boom"]` o `["v_tail", "pod_boom"]`, o `"todas"` (por defecto solo `["v_tail"]`). Opciones: `convencional`, `t_tail`, `v_tail`, `doble_boom`, `pod_boom` (góndola + viga), `fuselaje_continuo`. |
+| `POBLACION_INICIAL` | Cuántos diseños se evalúan al arrancar (las semillas más mutantes, cruces y comodines). Default 30. Con solo 2 semillas el GA arrancaba casi a ciegas. |
+| `N_PADRES` | Cuántos de los mejores se conservan como padres en cada generación (μ). Default 6. |
 | `CORRIDA_RAPIDA` | `True`: 8 generaciones de paciencia y máximo 20 (~15–30 min por familia). `False`: 10 / 60, puede tardar **horas** por familia, porque con batería cada candidato cuesta el doble. |
 | `GUARDAR_RESULTADOS` | `True`: al final (sección 11b) guarda tablas, gráficos, vistas 3D, líneas de flujo y desgloses en `<CARPETA_RESULTADOS>/<fecha>_<escenario>_<familias>/`. |
 | `CARPETA_RESULTADOS` | Dónde se guardan, **fuera del repositorio**. `None` = `Proyecto final/resultados_optimizador/` (al lado de `genetic_wing`); o cualquier ruta de la computadora. |
@@ -139,7 +141,9 @@ VIENTO = True            # lo de imarzeniuk (viento de los sitios)
 BATERIA = True           # bateria dimensionada por alcance
 # Familias a correr: lista con cualquiera de convencional, t_tail, v_tail, doble_boom, pod_boom (gondola + viga),
 # fuselaje_continuo; o "todas"
-FAMILIAS = ["v_tail", "pod_boom"]
+FAMILIAS = ["v_tail"]
+POBLACION_INICIAL = 30   # diseños evaluados al arrancar (semillas + mutantes + cruces + comodines)
+N_PADRES = 6             # padres que sobreviven cada generación (mu)
 CORRIDA_RAPIDA = True    # True: paciencia 8 / max 20 generaciones. False: 10 / 60 (horas)
 GUARDAR_RESULTADOS = True   # carpeta <CARPETA_RESULTADOS>/<fecha>_<escenario>_<familias>/ al final (seccion 11b)
 CARPETA_RESULTADOS = None   # None = av.CARPETA_RESULTADOS (fuera del repo); o p. ej. r"C:\Users\...\Resultados UAV"
@@ -289,7 +293,7 @@ for t in TOPOLOGIAS_A_CORRER:
     def objetivo(params, _t=t):
         return av.evaluar_mision_avion(params, _t)
 
-    estados[t] = av.iniciar_evolucion_avion(seeds, t, objetivo)
+    estados[t] = av.iniciar_evolucion_avion(seeds, t, objetivo, POBLACION_INICIAL, N_PADRES)
 
     for i, c in enumerate(estados[t].parents):
         # Un score por debajo de -1000 es un avion INFACTIBLE: -1000 menos lo que
@@ -305,7 +309,8 @@ for t in TOPOLOGIAS_A_CORRER:
             "v_stall": a["v_stall"], "SM_%": 100*a["SM"],
             "Cm_cru": a["Cm_crucero"], "V_H": a["V_H"],
         })
-    print(f"[{t}] {len(seeds)} semillas -> padres: {[av.describir_puntaje(c.score) for c in estados[t].parents]}")
+    _h0 = estados[t].historial[0]
+    print(f"[{t}] {_h0['n_semillas']} semillas -> {_h0['n_poblacion_inicial']} diseños evaluados, {_h0['n_factibles_iniciales']} factibles; padres: {[av.describir_puntaje(c.score) for c in estados[t].parents]}")
 
 pd.DataFrame(filas).round(3)
 """)
@@ -602,6 +607,7 @@ if GUARDAR_RESULTADOS:
         etiqueta=None,            # p. ej. etiqueta="prueba_eta070"
         flujo=True,               # False saltea las lineas de flujo (~20 s y ~3 MB por familia)
         parametros_ga={"paciencia": PACIENCIA, "max_generaciones": MAX_GENERACIONES,
+                       "poblacion_inicial": POBLACION_INICIAL, "n_padres": N_PADRES,
                        "hijos_por_generacion": N_CROSSBRED + N_WILDCARD, "semilla_azar": SEMILLA_AZAR,
                        "semillas": SET_SEMILLAS or "las del escenario"})
 else:
